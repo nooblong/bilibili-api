@@ -1,23 +1,26 @@
-from sanic import Sanic
+import sys
+
+from sanic import Sanic, json
 from sanic.response import text
 import asyncio
 
-import bilibili_api.video
 from bilibili_api import *
 
 app = Sanic("MyHelloWorldApp")
 
 
-@app.get("/<i>/<j>")
-async def hello_world(request, i, j):
-    print(i)
-    print(j)
-    print(type("video", (object, ), {}))
-    clazz = type("bilibili_api.video.Video", (), dict(bvid="asd1"))
-    print(hasattr(clazz, "get_info"))
-    print(clazz())
-    print(bilibili_api.video.Video)
-    return text("Hello, world.")
+@app.get("/<package:str>/<clazz:str>/<func:str>")
+async def hello_world(request, package, clazz, func):
+    arg = dict()
+    for i in request.args:
+        arg[i] = request.args[i][0]
+
+    print(dir(sys.modules[__name__]))
+    b = getattr(sys.modules[__name__], package)
+    e = getattr(b, clazz)
+    f = e(**arg)
+    result = await getattr(f, func)()
+    return json(result)
 
 
 if __name__ == '__main__':
