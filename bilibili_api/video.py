@@ -1727,7 +1727,7 @@ class VideoOnlineMonitor(AsyncEvent):
         self.logger.debug(f"准备连接：{self.__video.get_bvid()}")
         self.logger.debug(f"获取服务器信息中...")
 
-        api = API["video"]["info"]["video_online_broadcast_servers"]
+        api = API["info"]["video_online_broadcast_servers"]
         resp = await Api(**api, credential=self.credential).result
 
         uri = f"wss://{resp['domain']}:{resp['wss_port']}/sub"
