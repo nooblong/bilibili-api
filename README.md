@@ -1,3 +1,24 @@
+
+## 在原版的基础上提供网络请求方式访问接口
+- 依赖: pip install sanic
+- 启动: python3 server.py 
+- 生成环境设置__main__中的dev为False
+
+### 例子
+- 普通类方法
+- - get `http://localhost:9000/video/Video/get_info?bvid=BV1cF411D7x4`
+- 登录信息通过url参数传递3个值
+- - get `http://localhost:9000/session/get_at?sessdata={{sessdata}}&bili_jct={{bili_jct}}&buvid3={{buvid3}}`
+- 有的是**类**方法，有的是**静态方法**，区别在于路径参数是否有**大写**的类名，类方法和静态方法的参数一起传，服务器按需获取
+- 类方法
+- - `http://localhost:9000/video/Video/get_info?bvid=BV1cF411D7x4`
+- 静态方法
+- - get `http://localhost:9000/favorite_list/get_video_favorite_list_content?media_id=68629352`
+- 添加一个监听器
+- - get `http://localhost:9000/addListener/session/Session/1?url=http://localhost:8000&sessdata={{sessdata}}&bili_jct={{bili_jct}}&buvid3={{buvid3}}`
+- - 触发事件时会调用传过来的url
+- 部分type还是要参考源码的枚举类型
+---
 ![bilibili-api logo](https://raw.githubusercontent.com/Nemo2011/bilibili-api/main/design/logo.png)
 
 <div align="center">
