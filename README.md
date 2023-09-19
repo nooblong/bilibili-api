@@ -14,7 +14,7 @@
   - `http://localhost:9000/video/Video/get_info?bvid=BV1cF411D7x4`
 - 静态方法
   - get `http://localhost:9000/favorite_list/get_video_favorite_list_content?media_id=68629352`
-- 添加一个监听器
+- 添加一个监听器(/addListener/包/类，必须基础AsyncEvent/监听的type)
   - get `http://localhost:9000/addListener/session/Session/1?url=http://localhost:8000&sessdata={{sessdata}}&bili_jct={{bili_jct}}&buvid3={{buvid3}}`
   - 触发事件时会调用传过来的url
 - 部分type还是要参考源码的枚举类型
