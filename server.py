@@ -4,6 +4,7 @@ import sys
 import httpx
 from sanic import Sanic, json
 from bilibili_api import *
+from bilibili_api.comment import CommentResourceType
 
 app = Sanic("SimpleNetworkAccess")
 
@@ -23,6 +24,8 @@ async def req_by_clazz(request, package, clazz, func):
         if i in clazz_params.keys():
             clazz_dict[i] = request.args[i][0]
 
+    special_param(clazz_dict, clazz)
+
     if cred_dict:
         cred_obj = Credential(**cred_dict)
 
@@ -41,7 +44,12 @@ async def req_by_clazz(request, package, clazz, func):
         if i in func_params.keys():
             func_dict[i] = request.args[i][0]
 
-    result = await func_attr(**func_dict)
+    special_param(func_dict, func)
+
+    if inspect.isasyncgenfunction(func_attr) or inspect.iscoroutinefunction(func_attr):
+        result = await func_attr(**func_dict)
+    else:
+        result = func_attr(**func_dict)
     return json(result)
 
 
@@ -67,7 +75,13 @@ async def req_by_static(request, package, func):
     if "credential" in func_params.keys():
         func_dict["credential"] = cred_obj
 
-    result = await func_attr(**func_dict)
+    special_param(func_dict, package)
+
+    if inspect.isasyncgenfunction(func_attr) or inspect.iscoroutinefunction(func_attr):
+        result = await func_attr(**func_dict)
+    else:
+        result = func_attr(**func_dict)
+
     return json(result)
 
 
@@ -112,3 +126,11 @@ async def add_listener(request, package, clazz, event_type):
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=9000, dev=True)
+
+
+def special_param(param_map, function_name):
+    # 处理评论
+    if function_name.lower() == "comment" and param_map["type_"]:
+        val = int(param_map["type_"])
+        obj = CommentResourceType(val)
+        param_map["type_"] = obj
