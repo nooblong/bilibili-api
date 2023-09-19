@@ -1,6 +1,7 @@
 import inspect
 import sys
 
+import httpx
 from sanic import Sanic, json
 from bilibili_api import *
 
@@ -98,7 +99,7 @@ async def add_listener(request, package, clazz, event_type):
     func_attr = getattr(clazz_obj, "add_event_listener")
 
     async def call_back(event):
-        print("call url: ", call_back_url)
+        httpx.post(call_back_url, json=event.__dict__)
         print("event: ", event)
 
     func_dict["name"] = event_type
