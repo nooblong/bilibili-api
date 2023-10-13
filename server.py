@@ -5,6 +5,7 @@ import httpx
 from sanic import Sanic, json
 from bilibili_api import *
 from bilibili_api.comment import CommentResourceType
+from bilibili_api.search import SearchObjectType
 
 app = Sanic("SimpleNetworkAccess")
 
@@ -134,3 +135,8 @@ def special_param(param_map, function_name):
         val = int(param_map["type_"])
         obj = CommentResourceType(val)
         param_map["type_"] = obj
+
+    if function_name.lower() == "search_by_type" and param_map["search_type"]:
+        val = int(param_map["search_type"])
+        obj = SearchObjectType(val)
+        param_map["search_type"] = obj
