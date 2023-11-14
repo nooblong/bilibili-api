@@ -19,9 +19,9 @@ async def req_by_clazz(request, package, clazz, func):
     cred_dict = dict()
     clazz_dict = dict()
     for i in request.args:
-        if i == "sessdata" or i == "bili_jct" or i == "buvid3":
+        if i == "sessdata" or i == "bili_jct" or i == "buvid3" or i == "ac_time_value":
             cred_dict[i] = request.args[i][0]
-            continue
+            # continue
         if i in clazz_params.keys():
             clazz_dict[i] = request.args[i][0]
 
@@ -64,14 +64,17 @@ async def req_by_static(request, package, func):
     func_dict = dict()
 
     for i in request.args:
-        if i == "sessdata" or i == "bili_jct" or i == "buvid3":
+        if i == "sessdata" or i == "bili_jct" or i == "buvid3" or i == "ac_time_value":
             cred_dict[i] = request.args[i][0]
-            continue
+            # continue
         if i in func_params:
             func_dict[i] = request.args[i][0]
 
     if cred_dict:
         cred_obj = Credential(**cred_dict)
+
+    if package == "Credential":
+        func_attr = getattr(cred_obj, func)
 
     if "credential" in func_params.keys():
         func_dict["credential"] = cred_obj
@@ -127,6 +130,23 @@ async def add_listener(request, package, clazz, event_type):
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=9000, dev=True)
+
+    # 生成一个 Credential 对象
+    # credential = Credential(sessdata="",
+    #                         bili_jct="", ac_time_value="")
+    #
+    # # 检查 Credential 是否需要刷新
+    # print(sync(credential.check_refresh()))
+    #
+    # print(sync(credential.check_valid()))
+    #
+    # # 刷新 Credential
+    # # sync(credential.refresh())
+    #
+    # print(credential.ac_time_value)
+    # print(credential.sessdata)
+    # print(credential.bili_jct)
+    # print(credential.buvid3)
 
 
 def special_param(param_map, function_name):

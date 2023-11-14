@@ -44,7 +44,7 @@ class Credential(_Credential):
         """
         return await check_cookies(self)
 
-    async def refresh(self) -> None:
+    async def refresh(self) -> dict:
         """
         刷新 cookies
         """
@@ -53,6 +53,12 @@ class Credential(_Credential):
         self.bili_jct = new_cred.bili_jct
         self.dedeuserid = new_cred.dedeuserid
         self.ac_time_value = new_cred.ac_time_value
+        return {
+            "sessdata": self.sessdata,
+            "bili_jct": self.bili_jct,
+            "dedeuserid": self.sessdata,
+            "ac_time_value": self.ac_time_value,
+        }
 
     async def check_valid(self) -> bool:
         """
