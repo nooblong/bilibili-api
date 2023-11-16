@@ -4,6 +4,7 @@ import sys
 import httpx
 from sanic import Sanic, json
 from bilibili_api import *
+from bilibili_api.channel_series import ChannelSeriesType
 from bilibili_api.comment import CommentResourceType
 from bilibili_api.search import SearchObjectType
 
@@ -160,3 +161,8 @@ def special_param(param_map, function_name):
         val = int(param_map["search_type"])
         obj = SearchObjectType(val)
         param_map["search_type"] = obj
+
+    if function_name.lower() == "channelseries" and param_map["type_"]:
+        val = int(param_map["type_"])
+        obj = ChannelSeriesType(val)
+        param_map["type_"] = obj
