@@ -130,7 +130,7 @@ async def add_listener(request, package, clazz, event_type):
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=9000, dev=True)
+    app.run(host="0.0.0.0", port=9000, dev=False)
 
     # 生成一个 Credential 对象
     # credential = Credential(sessdata="",
