@@ -4,7 +4,7 @@ import sys
 import httpx
 from sanic import Sanic, json
 from bilibili_api import *
-from bilibili_api.channel_series import ChannelSeriesType
+from bilibili_api.channel_series import ChannelSeriesType, ChannelOrder
 from bilibili_api.comment import CommentResourceType
 from bilibili_api.search import SearchObjectType
 
@@ -152,17 +152,22 @@ if __name__ == '__main__':
 
 def special_param(param_map, function_name):
     # 处理评论
-    if function_name.lower() == "comment" and param_map["type_"]:
+    if function_name.lower() == "comment" and "type_" in param_map:
         val = int(param_map["type_"])
         obj = CommentResourceType(val)
         param_map["type_"] = obj
 
-    if function_name.lower() == "search_by_type" and param_map["search_type"]:
+    if function_name.lower() == "search_by_type" and "search_type" in param_map:
         val = int(param_map["search_type"])
         obj = SearchObjectType(val)
         param_map["search_type"] = obj
 
-    if function_name.lower() == "channelseries" and param_map["type_"]:
+    if function_name.lower() == "channelseries" and "type_" in param_map:
         val = int(param_map["type_"])
         obj = ChannelSeriesType(val)
         param_map["type_"] = obj
+
+    if function_name.lower() == "get_videos" and "sort" in param_map:
+        val = (param_map["sort"])
+        obj = ChannelOrder(val)
+        param_map["sort"] = obj
