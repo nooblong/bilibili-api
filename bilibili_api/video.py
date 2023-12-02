@@ -449,6 +449,11 @@ class Video:
         result.update({"is_html5": True} if html5 else {})
         return result
 
+    async def my_detect(self, cid):
+        info = await self.get_download_url(cid=cid)
+        detecter = VideoDownloadURLDataDetecter(info)
+        return detecter.detect_best_streams()
+
     async def get_related(self) -> dict:
         """
         获取相关视频信息。
