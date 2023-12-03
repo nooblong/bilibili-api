@@ -1,3 +1,4 @@
+import enum
 import inspect
 import sys
 
@@ -9,6 +10,19 @@ from bilibili_api.comment import CommentResourceType
 from bilibili_api.search import SearchObjectType
 
 app = Sanic("SimpleNetworkAccess")
+
+
+def enum_to_value(obj):
+    if isinstance(obj, enum.Enum):
+        return obj.value
+    elif isinstance(obj, dict):
+        return {key: enum_to_value(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [enum_to_value(item) for item in obj]
+    elif hasattr(obj, '__dict__'):
+        return {key: enum_to_value(value) for key, value in vars(obj).items()}
+    else:
+        return obj
 
 
 @app.get("/<package:str>/<clazz:str>/<func:str>")
@@ -52,7 +66,7 @@ async def req_by_clazz(request, package, clazz, func):
         result = await func_attr(**func_dict)
     else:
         result = func_attr(**func_dict)
-    return json(result)
+    return json(enum_to_value(result))
 
 
 @app.get("/<package:str>/<func:str>")
@@ -87,7 +101,7 @@ async def req_by_static(request, package, func):
     else:
         result = func_attr(**func_dict)
 
-    return json(result)
+    return json(enum_to_value(result))
 
 
 @app.get("addListener/<package:str>/<clazz:str>/<event_type:str>")
