@@ -166,6 +166,8 @@ if __name__ == '__main__':
 
 def special_param(param_map, function_name):
     for key, value in param_map.items():
+        if key == "credential":
+            continue
         if ":parse" in value:
             process = value.replace(":parse", "")
             param_map[key] = eval(process)
