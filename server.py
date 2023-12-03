@@ -151,23 +151,27 @@ if __name__ == '__main__':
 
 
 def special_param(param_map, function_name):
-    # 处理评论
-    if function_name.lower() == "comment" and "type_" in param_map:
-        val = int(param_map["type_"])
-        obj = CommentResourceType(val)
-        param_map["type_"] = obj
+    for key, value in param_map.items():
+        if ":parse" in value:
+            process = value.replace(":parse", "")
+            param_map[key] = eval(process)
 
-    if function_name.lower() == "search_by_type" and "search_type" in param_map:
-        val = int(param_map["search_type"])
-        obj = SearchObjectType(val)
-        param_map["search_type"] = obj
-
-    if function_name.lower() == "channelseries" and "type_" in param_map:
-        val = int(param_map["type_"])
-        obj = ChannelSeriesType(val)
-        param_map["type_"] = obj
-
-    if function_name.lower() == "get_videos" and "sort" in param_map:
-        val = (param_map["sort"])
-        obj = ChannelOrder(val)
-        param_map["sort"] = obj
+    # if function_name.lower() == "comment" and "type_" in param_map:
+    #     val = int(param_map["type_"])
+    #     obj = CommentResourceType(val)
+    #     param_map["type_"] = obj
+    #
+    # if function_name.lower() == "search_by_type" and "search_type" in param_map:
+    #     val = int(param_map["search_type"])
+    #     obj = SearchObjectType(val)
+    #     param_map["search_type"] = obj
+    #
+    # if function_name.lower() == "channelseries" and "type_" in param_map:
+    #     val = int(param_map["type_"])
+    #     obj = ChannelSeriesType(val)
+    #     param_map["type_"] = obj
+    #
+    # if function_name.lower() == "get_videos" and "sort" in param_map:
+    #     val = (param_map["sort"])
+    #     obj = ChannelOrder(val)
+    #     param_map["sort"] = obj

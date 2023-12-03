@@ -17,7 +17,7 @@
 - 添加一个监听器(/addListener/包/类，须继承AsyncEvent/监听的type)
   - get `http://localhost:9000/addListener/session/Session/1?url=http://localhost:8000&sessdata={{sessdata}}&bili_jct={{bili_jct}}&buvid3={{buvid3}}`
   - 触发事件时会调用传过来的url
-- 部分type还是要参考源码的枚举类型
+- 特殊参数使用eval，注意安全
 ---
 ![bilibili-api logo](https://raw.githubusercontent.com/Nemo2011/bilibili-api/main/design/logo.png)
 

@@ -33,6 +33,19 @@ class Parser:
         把 params 中的参数先解析了
         """
         for key, val in self.params.items():
+            if val.startswith("Credential"):
+                comma_count = 0
+                result = ''
+                for char in val:
+                    if char == ',':
+                        comma_count += 1
+                        if comma_count > 2:
+                            result += '%2C'
+                        else:
+                            result += char
+                    else:
+                        result += char
+                val = result
             obj, err = await self.parse(val)
             if err is None:
                 if isinstance(obj, bilibili_api.Credential):
@@ -46,12 +59,12 @@ class Parser:
     async def transform(self, var: str) -> Any:
         """
         类型装换函数
-        
+
         通过在字符串后加上 `:int` `:float` `:bool` `:parse` 等操作符来实现
 
         Args:
             var (str): 需要转换的字符串
-        
+
         Returns:
             Any: 装换结果
         """
@@ -69,10 +82,10 @@ class Parser:
     async def parse(self, path: str) -> Tuple[Any, Optional[str]]:
         """
         分析指令
-        
+
         Args:
             path (str): 需要解析的 token 对应库中的路径
-        
+
         Returns:
             Any: 最终数据 若解析失败为 None
 
@@ -90,7 +103,7 @@ class Parser:
         async def inner() -> Optional[str]:
             """
             递归取值
-            
+
             Returns:
                 str: 错误信息 若解析成功为 None
             """
@@ -114,7 +127,7 @@ class Parser:
                 else:
                     kwargs[arg[0]] = await self.transform(arg[1])
 
-            # print(position, func, args, kwargs)
+            print(position, func, args, kwargs)
 
             # 开始转移
             if isinstance(position, dict):

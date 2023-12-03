@@ -450,7 +450,10 @@ class Video:
         return result
 
     async def my_detect(self, cid):
-        info = await self.get_download_url(cid=cid)
+        if cid is None:
+            info = await self.get_download_url()
+        else:
+            info = await self.get_download_url(cid=cid)
         detecter = VideoDownloadURLDataDetecter(info)
         return detecter.detect_best_streams()
 
@@ -573,7 +576,8 @@ class Video:
             await Api(**api, credential=self.credential).update_params(**params).result
         )
 
-    async def get_ai_conclusion(self, cid: Optional[int] = None, page_index: Optional[int] = None, up_mid: Optional[int] = None) -> dict:
+    async def get_ai_conclusion(self, cid: Optional[int] = None, page_index: Optional[int] = None,
+                                up_mid: Optional[int] = None) -> dict:
         """
         获取稿件 AI 总结结果。
 
@@ -596,7 +600,8 @@ class Video:
             cid = await self.__get_cid_by_index(page_index)
 
         api = API["info"]["ai_conclusion"]
-        params = {"aid": self.get_aid(), "bvid": self.get_bvid(), "cid": cid, "up_mid": await self.get_up_mid() if up_mid is None else up_mid}
+        params = {"aid": self.get_aid(), "bvid": self.get_bvid(), "cid": cid,
+                  "up_mid": await self.get_up_mid() if up_mid is None else up_mid}
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
@@ -1072,7 +1077,7 @@ class Video:
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
-    
+
     async def has_liked_danmakus(
         self,
         page_index: Union[int, None] = None,
@@ -1967,13 +1972,13 @@ class VideoOnlineMonitor(AsyncEvent):
         real_data = []
         while offset < len(data):
             region_header = struct.unpack(">IIII", data[:16])
-            region_data = data[offset : offset + region_header[0]]
+            region_data = data[offset: offset + region_header[0]]
             real_data.append(
                 {
                     "type": region_header[2],
                     "number": region_header[3],
                     "data": json.loads(
-                        region_data[offset + 18 : offset + 18 + (region_header[0] - 16)]
+                        region_data[offset + 18: offset + 18 + (region_header[0] - 16)]
                     ),
                 }
             )
