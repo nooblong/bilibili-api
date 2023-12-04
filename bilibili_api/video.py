@@ -126,6 +126,22 @@ class VideoAppealReasonType:
         """
         return {"tid": 52, "出处": source}
 
+class AudioQuality(Enum):
+    """
+    视频的音频流清晰度枚举
+
+    - _64K: 64K
+    - _132K: 132K
+    - _192K: 192K
+    - HI_RES: Hi-Res 无损
+    - DOLBY: 杜比全景声
+    """
+
+    _64K = 30216
+    _132K = 30232
+    DOLBY = 30250
+    HI_RES = 30251
+    _192K = 30280
 
 class Video:
     """
@@ -449,13 +465,14 @@ class Video:
         result.update({"is_html5": True} if html5 else {})
         return result
 
-    async def my_detect(self, cid):
+    async def my_detect(self, cid,
+                        audio_max_quality: AudioQuality = AudioQuality.HI_RES):
         if cid is None:
             info = await self.get_download_url()
         else:
             info = await self.get_download_url(cid=cid)
         detecter = VideoDownloadURLDataDetecter(info)
-        return detecter.detect_best_streams()
+        return detecter.detect_best_streams(audio_max_quality=audio_max_quality)
 
     async def get_related(self) -> dict:
         """
@@ -2028,22 +2045,7 @@ class VideoCodecs(Enum):
     AV1 = "av01"
 
 
-class AudioQuality(Enum):
-    """
-    视频的音频流清晰度枚举
 
-    - _64K: 64K
-    - _132K: 132K
-    - _192K: 192K
-    - HI_RES: Hi-Res 无损
-    - DOLBY: 杜比全景声
-    """
-
-    _64K = 30216
-    _132K = 30232
-    DOLBY = 30250
-    HI_RES = 30251
-    _192K = 30280
 
 
 @dataclass
