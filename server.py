@@ -138,7 +138,7 @@ async def add_listener(request, package, clazz, event_type):
     cred_dict = dict()
     clazz_dict = dict()
     for i in request.args:
-        if i == "sessdata" or i == "bili_jct" or i == "buvid3":
+        if i == "sessdata" or i == "bili_jct" or i == "buvid3" or i == "ac_time_value":
             cred_dict[i] = request.args[i][0]
             continue
         if i in clazz_params.keys():
