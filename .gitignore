@@ -25,4 +25,4 @@ virtualenv/
 # IDE
 .idea/
 .vscode/settings.json
-/server.spec
+.vscode/launch.json
