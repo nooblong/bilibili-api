@@ -126,22 +126,6 @@ class VideoAppealReasonType:
         """
         return {"tid": 52, "出处": source}
 
-class AudioQuality(Enum):
-    """
-    视频的音频流清晰度枚举
-
-    - _64K: 64K
-    - _132K: 132K
-    - _192K: 192K
-    - HI_RES: Hi-Res 无损
-    - DOLBY: 杜比全景声
-    """
-
-    _64K = 30216
-    _132K = 30232
-    DOLBY = 30250
-    HI_RES = 30251
-    _192K = 30280
 
 class Video:
     """
@@ -465,15 +449,6 @@ class Video:
         result.update({"is_html5": True} if html5 else {})
         return result
 
-    async def my_detect(self, cid=None,
-                        audio_max_quality: AudioQuality = AudioQuality.HI_RES):
-        if cid is None:
-            info = await self.get_download_url()
-        else:
-            info = await self.get_download_url(cid=cid)
-        detecter = VideoDownloadURLDataDetecter(info)
-        return detecter.detect_best_streams(audio_max_quality=audio_max_quality)
-
     async def get_related(self) -> dict:
         """
         获取相关视频信息。
@@ -593,8 +568,7 @@ class Video:
             await Api(**api, credential=self.credential).update_params(**params).result
         )
 
-    async def get_ai_conclusion(self, cid: Optional[int] = None, page_index: Optional[int] = None,
-                                up_mid: Optional[int] = None) -> dict:
+    async def get_ai_conclusion(self, cid: Optional[int] = None, page_index: Optional[int] = None, up_mid: Optional[int] = None) -> dict:
         """
         获取稿件 AI 总结结果。
 
@@ -617,8 +591,7 @@ class Video:
             cid = await self.__get_cid_by_index(page_index)
 
         api = API["info"]["ai_conclusion"]
-        params = {"aid": self.get_aid(), "bvid": self.get_bvid(), "cid": cid,
-                  "up_mid": await self.get_up_mid() if up_mid is None else up_mid}
+        params = {"aid": self.get_aid(), "bvid": self.get_bvid(), "cid": cid, "up_mid": await self.get_up_mid() if up_mid is None else up_mid}
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
@@ -1095,7 +1068,7 @@ class Video:
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
-
+    
     async def has_liked_danmakus(
         self,
         page_index: Union[int, None] = None,
@@ -1821,7 +1794,7 @@ class VideoOnlineMonitor(AsyncEvent):
         self.logger.debug(f"准备连接：{self.__video.get_bvid()}")
         self.logger.debug(f"获取服务器信息中...")
 
-        api = API["info"]["video_online_broadcast_servers"]
+        api = API["video"]["info"]["video_online_broadcast_servers"]
         resp = await Api(**api, credential=self.credential).result
 
         uri = f"wss://{resp['domain']}:{resp['wss_port']}/sub"
@@ -1990,13 +1963,13 @@ class VideoOnlineMonitor(AsyncEvent):
         real_data = []
         while offset < len(data):
             region_header = struct.unpack(">IIII", data[:16])
-            region_data = data[offset: offset + region_header[0]]
+            region_data = data[offset : offset + region_header[0]]
             real_data.append(
                 {
                     "type": region_header[2],
                     "number": region_header[3],
                     "data": json.loads(
-                        region_data[offset + 18: offset + 18 + (region_header[0] - 16)]
+                        region_data[offset + 18 : offset + 18 + (region_header[0] - 16)]
                     ),
                 }
             )
@@ -2046,7 +2019,22 @@ class VideoCodecs(Enum):
     AV1 = "av01"
 
 
+class AudioQuality(Enum):
+    """
+    视频的音频流清晰度枚举
 
+    - _64K: 64K
+    - _132K: 132K
+    - _192K: 192K
+    - HI_RES: Hi-Res 无损
+    - DOLBY: 杜比全景声
+    """
+
+    _64K = 30216
+    _132K = 30232
+    DOLBY = 30250
+    HI_RES = 30251
+    _192K = 30280
 
 
 @dataclass
@@ -2346,9 +2334,8 @@ class VideoDownloadURLDataDetecter:
                     streams.append(flac_stream)
             if dolby_data and (not no_dolby_audio):
                 if dolby_data["audio"]:
-                    dolby_stream_data = dolby_data["audio"][0]
-                    dolby_stream_url = dolby_stream_data["baseUrl"]
-                    dolby_stream_quality = AudioQuality(dolby_stream_data["id"])
+                    dolby_stream_url = dolby_data["audio"]["baseUrl"]
+                    dolby_stream_quality = AudioQuality(dolby_data["audio"]["id"])
                     dolby_stream = AudioStreamDownloadURL(
                         url=dolby_stream_url, audio_quality=dolby_stream_quality
                     )
