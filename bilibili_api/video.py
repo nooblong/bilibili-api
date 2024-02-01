@@ -465,7 +465,7 @@ class Video:
         result.update({"is_html5": True} if html5 else {})
         return result
 
-    async def my_detect(self, cid,
+    async def my_detect(self, cid=None,
                         audio_max_quality: AudioQuality = AudioQuality.HI_RES):
         if cid is None:
             info = await self.get_download_url()
