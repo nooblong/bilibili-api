@@ -7,6 +7,7 @@ bilibili_api.video
 """
 
 import re
+import os
 import json
 import struct
 import asyncio
@@ -37,6 +38,18 @@ from .exceptions import (
 )
 
 API = get_api("video")
+
+
+def get_cid_info_sync(cid: int):
+    """
+    获取 cid 信息 (对应的视频，具体分 P 序号，up 等)
+
+    Returns:
+        dict: 调用 https://hd.biliplus.com 的 API 返回的结果
+    """
+    api = API["info"]["cid_info"]
+    params = {"cid": cid}
+    return Api(**api).update_params(**params).result_sync
 
 
 async def get_cid_info(cid: int):
@@ -594,7 +607,8 @@ class Video:
             await Api(**api, credential=self.credential).update_params(**params).result
         )
 
-    async def get_ai_conclusion(self, cid: Optional[int] = None, page_index: Optional[int] = None, up_mid: Optional[int] = None) -> dict:
+    async def get_ai_conclusion(self, cid: Optional[int] = None, page_index: Optional[int] = None,
+                                up_mid: Optional[int] = None) -> dict:
         """
         获取稿件 AI 总结结果。
 
@@ -617,7 +631,8 @@ class Video:
             cid = await self.__get_cid_by_index(page_index)
 
         api = API["info"]["ai_conclusion"]
-        params = {"aid": self.get_aid(), "bvid": self.get_bvid(), "cid": cid, "up_mid": await self.get_up_mid() if up_mid is None else up_mid}
+        params = {"aid": self.get_aid(), "bvid": self.get_bvid(), "cid": cid,
+                  "up_mid": await self.get_up_mid() if up_mid is None else up_mid}
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
@@ -977,7 +992,7 @@ class Video:
                     elif data_type == 9:
                         dm.weight = dm_reader.varint()
                     elif data_type == 10:
-                        dm.action = str(dm_reader.varint())
+                        dm.action = str(dm_reader.string())
                     elif data_type == 11:
                         dm.pool = dm_reader.varint()
                     elif data_type == 12:
@@ -992,6 +1007,12 @@ class Video:
                         dm_reader.bytes_string()
                     elif data_type == 21:
                         dm_reader.bytes_string()
+                    elif data_type == 22:
+                        dm_reader.bytes_string()
+                    elif data_type == 25:
+                        dm_reader.varint()
+                    elif data_type == 26:
+                        dm_reader.varint()
                     else:
                         break
                 danmakus.append(dm)
@@ -1094,7 +1115,7 @@ class Video:
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
-    
+
     async def has_liked_danmakus(
         self,
         page_index: Union[int, None] = None,
@@ -1255,6 +1276,20 @@ class Video:
             "platform": "web_player",
         }
         return await Api(**api, credential=self.credential).update_data(**data).result
+
+    async def get_online(self, cid: Optional[int] = None, page_index: Optional[int] = 0) -> dict:
+        """
+        获取实时在线人数
+
+        Returns:
+            dict: 调用 API 返回的结果。
+        """
+        api = API["info"]["online"]
+        params = {"aid": self.get_aid(), "bvid": self.get_bvid(),
+                  "cid": cid if cid is not None else await self.get_cid(page_index=page_index)}
+        return (
+            await Api(**api, credential=self.credential).update_params(**params).result
+        )
 
     async def operate_danmaku(
         self,
@@ -1502,8 +1537,11 @@ class Video:
         params = {
             "aid": self.get_aid(),
             "cid": cid,
-            "ep_id": epid,
         }
+
+        if epid:
+            params["epid"] = epid
+
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
@@ -1516,7 +1554,7 @@ class Video:
         sign: bool,
         page_index: Union[int, None] = None,
         cid: Union[int, None] = None,
-    ):
+    ) -> dict:
         """
         上传字幕
 
@@ -1541,7 +1579,7 @@ class Video:
         ```
 
         Args:
-            lan        (str)                 : 字幕语言代码，参考 http://www.lingoes.cn/zh/translator/langcode.htm
+            lan        (str)                 : 字幕语言代码，参考 https://s1.hdslb.com/bfs/subtitle/subtitle_lan.json
 
             data       (dict)                : 字幕数据
 
@@ -1568,6 +1606,18 @@ class Video:
 
         api = API["operate"]["submit_subtitle"]
 
+        # lan check，应该是这里面的语言代码
+        with open(
+            os.path.join(os.path.dirname(__file__), "data/subtitle_lan.json"),
+            encoding="utf-8",
+        ) as f:
+            subtitle_lans = json.load(f)
+            for lan in subtitle_lans:
+                if lan["lan"] == lan:
+                    break
+            else:
+                raise ArgsException("lan 参数错误，请参见 https://s1.hdslb.com/bfs/subtitle/subtitle_lan.json")
+
         payload = {
             "type": 1,
             "oid": cid,
@@ -1578,7 +1628,7 @@ class Video:
             "bvid": self.get_bvid(),
         }
 
-        return await Api(**api, credential=self.credential).update_data(**data).result
+        return await Api(**api, credential=self.credential).update_data(**payload).result
 
     async def get_danmaku_snapshot(self) -> dict:
         """
@@ -1820,7 +1870,7 @@ class VideoOnlineMonitor(AsyncEvent):
         self.logger.debug(f"准备连接：{self.__video.get_bvid()}")
         self.logger.debug(f"获取服务器信息中...")
 
-        api = API["video"]["info"]["video_online_broadcast_servers"]
+        api = API["info"]["video_online_broadcast_servers"]
         resp = await Api(**api, credential=self.credential).result
 
         uri = f"wss://{resp['domain']}:{resp['wss_port']}/sub"
@@ -1989,13 +2039,13 @@ class VideoOnlineMonitor(AsyncEvent):
         real_data = []
         while offset < len(data):
             region_header = struct.unpack(">IIII", data[:16])
-            region_data = data[offset : offset + region_header[0]]
+            region_data = data[offset: offset + region_header[0]]
             real_data.append(
                 {
                     "type": region_header[2],
                     "number": region_header[3],
                     "data": json.loads(
-                        region_data[offset + 18 : offset + 18 + (region_header[0] - 16)]
+                        region_data[offset + 18: offset + 18 + (region_header[0] - 16)]
                     ),
                 }
             )
@@ -2360,8 +2410,9 @@ class VideoDownloadURLDataDetecter:
                     streams.append(flac_stream)
             if dolby_data and (not no_dolby_audio):
                 if dolby_data["audio"]:
-                    dolby_stream_url = dolby_data["audio"]["baseUrl"]
-                    dolby_stream_quality = AudioQuality(dolby_data["audio"]["id"])
+                    dolby_stream_data = dolby_data["audio"][0]
+                    dolby_stream_url = dolby_stream_data["baseUrl"]
+                    dolby_stream_quality = AudioQuality(dolby_stream_data["id"])
                     dolby_stream = AudioStreamDownloadURL(
                         url=dolby_stream_url, audio_quality=dolby_stream_quality
                     )
