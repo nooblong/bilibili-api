@@ -100,7 +100,7 @@ class LiveRoom:
     """
     直播类，获取各种直播间的操作均在里边。
 
-    AttributesL
+    Attributes:
         credential      (Credential): 凭据类
 
         room_display_id (int)       : 房间展示 id
@@ -118,9 +118,9 @@ class LiveRoom:
         self.room_display_id = room_display_id
 
         if credential is None:
-            self.credential = Credential()
+            self.credential: Credential = Credential()
         else:
-            self.credential = credential
+            self.credential: Credential = credential
 
         self.__ruid = None
 
@@ -135,13 +135,15 @@ class LiveRoom:
             dict: 调用 API 返回的结果
         """
         api = API["info"]["start"]
-        params = {
+        data = {
             "area_v2": area_id,
             "room_id": self.room_display_id,
             "platform": "pc",
+            "csrf": self.credential.bili_jct,
+            "csrf_token": self.credential.bili_jct
         }
         resp = (
-            await Api(**api, credential=self.credential).update_params(**params).result
+            await Api(**api, credential=self.credential).update_data(**data).result
         )
         return resp
 
@@ -153,11 +155,11 @@ class LiveRoom:
             dict: 调用 API 返回的结果
         """
         api = API["info"]["stop"]
-        params = {
+        data = {
             "room_id": self.room_display_id,
         }
         resp = (
-            await Api(**api, credential=self.credential).update_params(**params).result
+            await Api(**api, credential=self.credential).update_data(**data).result
         )
         return resp
 
@@ -181,6 +183,12 @@ class LiveRoom:
         return resp
 
     async def get_room_id(self) -> int:
+        """
+        获取直播间 id
+
+        Returns:
+            int: 直播间 id
+        """
         return (await self.get_room_play_info())["room_id"]
 
     async def __get_ruid(self) -> int:
@@ -193,6 +201,12 @@ class LiveRoom:
         return self.__ruid  # type: ignore
 
     async def get_ruid(self) -> int:
+        """
+        获取真实房间 id
+
+        Returns:
+            int: 真实房间 id
+        """
         return await self.__get_ruid()
 
     async def get_danmu_info(self) -> dict:
@@ -495,7 +509,7 @@ class LiveRoom:
         }
         return await Api(**api, credential=self.credential).update_data(**data).result
 
-    async def send_danmaku(self, danmaku: Danmaku, reply_mid: int = None) -> dict:
+    async def send_danmaku(self, danmaku: Danmaku, room_id: int = None, reply_mid: int = None) -> dict:
         """
         直播间发送弹幕
 
@@ -510,7 +524,8 @@ class LiveRoom:
         self.credential.raise_for_no_sessdata()
 
         api = API["operate"]["send_danmaku"]
-        room_id = (await self.get_room_play_info())["room_id"]
+        if not room_id:
+            room_id = (await self.get_room_play_info())["room_id"]
 
         data = {
             "mode": danmaku.mode,
@@ -884,17 +899,17 @@ class LiveDanmaku(AsyncEvent):
         """
         super().__init__()
 
-        self.credential = credential if credential is not None else Credential()
-        self.room_display_id = room_display_id
-        self.max_retry = max_retry
-        self.retry_after = retry_after
+        self.credential: Credential = credential if credential is not None else Credential()
+        self.room_display_id: int = room_display_id
+        self.max_retry: int = max_retry
+        self.retry_after: float = retry_after
         self.__room_real_id = None
         self.__status = 0
         self.__ws = None
         self.__tasks = []
         self.__debug = debug
         self.__heartbeat_timer = 60.0
-        self.err_reason = ""
+        self.err_reason: str = ""
 
         # logging
         self.logger = logging.getLogger(f"LiveDanmaku_{self.room_display_id}")
@@ -1110,7 +1125,6 @@ class LiveDanmaku(AsyncEvent):
                 self.logger.warning("检测到未知的数据包类型，无法处理")
 
     async def __send_verify_data(self, ws: ClientWebSocketResponse, token: str) -> None:
-        self.credential.raise_for_no_buvid3()
         # 没传入 dedeuserid 可以试图 live.get_self_info
         if not self.credential.has_dedeuserid():
             try:
@@ -1280,6 +1294,9 @@ async def get_self_dahanghai_info(
 
         page_size (int, optional): 每页数量. Defaults to 10.
 
+    Returns:
+        dict: 调用 API 返回的结果
+
     总页数取得方法:
 
     ```python
@@ -1288,9 +1305,6 @@ async def get_self_dahanghai_info(
     info = live.get_self_live_info(credential)
     pages = math.ceil(info['data']['guards'] / 10)
     ```
-
-    Returns:
-        dict: 调用 API 返回的结果
     """
     if credential is None:
         credential = Credential()

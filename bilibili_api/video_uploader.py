@@ -302,6 +302,9 @@ class VideoPorderShowType(Enum):
 
 
 class VideoPorderMeta:
+    """
+    视频商业相关参数
+    """
     flow_id: int
     industry_id: Optional[int] = None
     official: Optional[int] = None
@@ -331,6 +334,9 @@ class VideoPorderMeta:
 
 
 class VideoMeta:
+    """
+    视频源数据
+    """
     tid: int  # 分区 ID。可以使用 channel 模块进行查询。
     title: str  # 视频标题
     desc: str  # 视频简介。
@@ -728,7 +734,7 @@ class VideoUploader(AsyncEvent):
         super().__init__()
         self.meta = meta
         self.pages = pages
-        self.credential = credential
+        self.credential: Credential = credential
         self.cover = (
             self.meta.cover
             if isinstance(self.meta, VideoMeta)
@@ -1410,7 +1416,7 @@ class VideoEditor(AsyncEvent):
         super().__init__()
         self.bvid = bvid
         self.meta = meta
-        self.credential = credential if credential else Credential()
+        self.credential: Credential = credential if credential else Credential()
         self.cover_path = cover
         self.__old_configs = {}
         self.meta["aid"] = bvid2aid(bvid)

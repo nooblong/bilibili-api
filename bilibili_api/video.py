@@ -29,7 +29,7 @@ from .utils.AsyncEvent import AsyncEvent
 from .utils.credential import Credential
 from .utils.BytesReader import BytesReader
 from .utils.danmaku import Danmaku, SpecialDanmaku
-from .utils.network import get_aiohttp_session, Api, get_session
+from .utils.network import get_aiohttp_session, Api, get_session, get_mixin_key, enc_wbi
 from .exceptions import (
     ArgsException,
     NetworkException,
@@ -410,7 +410,6 @@ class Video:
         self,
         page_index: Union[int, None] = None,
         cid: Union[int, None] = None,
-        html5: bool = False,
     ) -> dict:
         """
         获取视频下载信息。
@@ -424,8 +423,6 @@ class Video:
 
             cid        (int | None, optional) : 分 P 的 ID。Defaults to None
 
-            html5      (bool, optional): 是否以 html5 平台访问，这样子能直接在网页中播放，但是链接少。
-
         Returns:
             dict: 调用 API 返回的结果。
         """
@@ -436,31 +433,20 @@ class Video:
             cid = await self.__get_cid_by_index(page_index)
 
         api = API["info"]["playurl"]
-        if html5:
-            params = {
-                "avid": self.get_aid(),
-                "cid": cid,
-                "qn": "127",
-                "otype": "json",
-                "fnval": 4048,
-                "fourk": 1,
-                "platform": "html5",
-                "high_quality": "1",
-            }
-        else:
-            params = {
-                "avid": self.get_aid(),
-                "cid": cid,
-                "qn": "127",
-                "otype": "json",
-                "fnval": 4048,
-                "fourk": 1,
-            }
-        result = (
-            await Api(**api, credential=self.credential).update_params(**params).result
-        )
-        result.update({"is_html5": True} if html5 else {})
-        return result
+        params = {
+            "avid": self.get_aid(),
+            "bvid": self.get_bvid(),
+            "cid": cid,
+            "qn": "127",
+            "fnver": 0,
+            "fnval": 4048,
+            "fourk": 1,
+            "gaia_source": "",
+            "isGaiaAvoided": "true",
+            "web_location": 1315873,
+            "voice_balance": 1
+        }
+        return await Api(**api, credential=self.credential, wbi=True).update_params(**params).result
 
     class AudioQuality(Enum):
         """
@@ -631,8 +617,13 @@ class Video:
             cid = await self.__get_cid_by_index(page_index)
 
         api = API["info"]["ai_conclusion"]
-        params = {"aid": self.get_aid(), "bvid": self.get_bvid(), "cid": cid,
-                  "up_mid": await self.get_up_mid() if up_mid is None else up_mid}
+        params = {
+            "aid": self.get_aid(),
+            "bvid": self.get_bvid(),
+            "cid": cid,
+            "up_mid": await self.get_up_mid() if up_mid is None else up_mid,
+            "web_location": "333.788",
+        }
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
@@ -662,7 +653,7 @@ class Video:
 
         config = {}
         config["url"] = api["url"]
-        config["params"] = {"type": 1, "oid": cid, "pid": self.get_aid()}
+        config["params"] = {"type": 1, "oid": cid, "pid": self.get_aid(), "duration": (await self.__get_info_cached())["duration"]}
         config["cookies"] = self.credential.get_cookies()
         config["headers"] = {
             "Referer": "https://www.bilibili.com",
@@ -874,13 +865,13 @@ class Video:
 
             to_seg (int, optional): 到第几段结束(0 开始编号，None 为到最后一段，包含编号的段，一段 6 分钟). Defaults to None.
 
-            注意：
-            - 1. 段数可以使用 `get_danmaku_view()["dm_seg"]["total"]` 查询。
-            - 2. `from_seg` 和 `to_seg` 仅对 `date == None` 的时候有效果。
-            - 3. 例：取前 `12` 分钟的弹幕：`from_seg=0, to_seg=1`
-
         Returns:
             List[Danmaku]: Danmaku 类的列表。
+
+        注意：
+            - 1. 段数可以通过视频时长计算。6分钟为一段。
+            - 2. `from_seg` 和 `to_seg` 仅对 `date == None` 的时候有效果。
+            - 3. 例：取前 `12` 分钟的弹幕：`from_seg=0, to_seg=1`
         """
         if date is not None:
             self.credential.raise_for_no_sessdata()
@@ -891,7 +882,6 @@ class Video:
 
             cid = await self.__get_cid_by_index(page_index)
 
-        session = get_session()
         aid = self.get_aid()
         params: dict[str, Any] = {"oid": cid, "type": 1, "pid": aid}
         if date is not None:
@@ -906,7 +896,10 @@ class Video:
                 from_seg = 0
             if to_seg == None:
                 view = await self.get_danmaku_view(cid=cid)
-                to_seg = view["dm_seg"]["total"] - 1
+                if view["dm_seg"].get("total"):
+                    to_seg = view["dm_seg"]["total"] - 1
+                else:
+                    to_seg = (await self.__get_info_cached())["duration"] // 360 + 1
 
         danmakus = []
 
@@ -914,30 +907,12 @@ class Video:
             if date is None:
                 # 仅当获取当前弹幕时需要该参数
                 params["segment_index"] = seg + 1
-
-            config = {}
-            config["url"] = api["url"]
-            config["params"] = params
-            config["headers"] = {
-                "Referer": "https://www.bilibili.com",
-                "User-Agent": "Mozilla/5.0",
-            }
-            config["cookies"] = self.credential.get_cookies()
-
             try:
-                req = await session.get(**config)
+                data = await Api(**api, credential=self.credential).update_params(**params).request(byte=True)
             except Exception as e:
+                raise e
                 raise NetworkException(-1, str(e))
 
-            if "content-type" not in req.headers.keys():
-                break
-            else:
-                content_type = req.headers["content-type"]
-                if content_type != "application/octet-stream":
-                    raise ResponseException("返回数据类型错误：")
-
-            # 解析二进制流数据
-            data = req.read()
             if data == b"\x10\x01":
                 # 视频弹幕被关闭
                 raise DanmakuClosedException()
@@ -1227,6 +1202,7 @@ class Video:
         url = f"https://comment.bilibili.com/{cid}.xml"
         sess = get_session()
         config: dict[Any, Any] = {"url": url}
+        config["headers"] = {"User-Agent": "Mozilla/5.0"}
         # 代理
         if settings.proxy:
             config["proxies"] = {"all://", settings.proxy}
@@ -1616,7 +1592,9 @@ class Video:
                 if lan_template["lan"] == lan:
                     break
             else:
-                raise ArgsException("lan 参数错误，请参见 https://s1.hdslb.com/bfs/subtitle/subtitle_lan.json")
+                raise ArgsException(
+                    "lan 参数错误，请参见 https://s1.hdslb.com/bfs/subtitle/subtitle_lan.json"
+                )
 
         payload = {
             "type": 1,
@@ -1816,7 +1794,7 @@ class VideoOnlineMonitor(AsyncEvent):
             debug      (bool, optional)             : 调试模式，将输出更详细信息. Defaults to False.
         """
         super().__init__()
-        self.credential = credential
+        self.credential: Credential = credential if credential else Credential()
         self.__video = Video(bvid, aid, credential=credential)
 
         # 智能选择在 log 中展示的 ID。
@@ -2108,7 +2086,7 @@ class AudioQuality(Enum):
 
     _64K = 30216
     _132K = 30232
-    DOLBY = 30250
+    DOLBY = 30255
     HI_RES = 30251
     _192K = 30280
 
@@ -2302,8 +2280,6 @@ class VideoDownloadURLDataDetecter:
         解析数据
 
         Args:
-            **以下参数仅能在音视频流分离的情况下产生作用，flv / mp4 试看流 / html5 mp4 流下以下参数均没有作用**
-
             video_max_quality       (VideoQuality, optional)      : 设置提取的视频流清晰度最大值，设置此参数绝对不会禁止 HDR/杜比. Defaults to VideoQuality._8K.
 
             audio_max_quality       (AudioQuality, optional)      : 设置提取的音频流清晰度最大值. 设置此参数绝对不会禁止 Hi-Res/杜比. Defaults to AudioQuality._192K.
@@ -2328,6 +2304,8 @@ class VideoDownloadURLDataDetecter:
 
         Returns:
             List[VideoStreamDownloadURL | AudioStreamDownloadURL | FLVStreamDownloadURL | HTML5MP4DownloadURL | EpisodeTryMP4DownloadURL]: 提取出来的视频/音频流
+
+        **参数仅能在音视频流分离的情况下产生作用，flv / mp4 试看流 / html5 mp4 流下以下参数均没有作用**
         """
         if "durl" in self.__data.keys():
             if self.__data["format"].startswith("flv"):
@@ -2344,9 +2322,9 @@ class VideoDownloadURLDataDetecter:
             # 正常情况
             streams = []
             videos_data = self.__data["dash"]["video"]
-            audios_data = self.__data["dash"]["audio"]
-            flac_data = self.__data["dash"]["flac"]
-            dolby_data = self.__data["dash"]["dolby"]
+            audios_data = self.__data["dash"].get("audio")
+            flac_data = self.__data["dash"].get("flac")
+            dolby_data = self.__data["dash"].get("dolby")
             for video_data in videos_data:
                 video_stream_url = video_data["baseUrl"]
                 video_stream_quality = VideoQuality(video_data["id"])
@@ -2402,7 +2380,7 @@ class VideoDownloadURLDataDetecter:
                     streams.append(audio_stream)
             if flac_data and (not no_hires):
                 if flac_data["audio"]:
-                    flac_stream_url = flac_data["audio"]["baseUrl"]
+                    flac_stream_url = flac_data["audio"]["base_url"]
                     flac_stream_quality = AudioQuality(flac_data["audio"]["id"])
                     flac_stream = AudioStreamDownloadURL(
                         url=flac_stream_url, audio_quality=flac_stream_quality
@@ -2411,7 +2389,7 @@ class VideoDownloadURLDataDetecter:
             if dolby_data and (not no_dolby_audio):
                 if dolby_data["audio"]:
                     dolby_stream_data = dolby_data["audio"][0]
-                    dolby_stream_url = dolby_stream_data["baseUrl"]
+                    dolby_stream_url = dolby_stream_data["base_url"]
                     dolby_stream_quality = AudioQuality(dolby_stream_data["id"])
                     dolby_stream = AudioStreamDownloadURL(
                         url=dolby_stream_url, audio_quality=dolby_stream_quality
@@ -2450,8 +2428,6 @@ class VideoDownloadURLDataDetecter:
         提取出分辨率、音质等信息最好的音视频流。
 
         Args:
-            **以下参数仅能在音视频流分离的情况下产生作用，flv / mp4 试看流 / html5 mp4 流下以下参数均没有作用**
-
             video_max_quality       (VideoQuality)                : 设置提取的视频流清晰度最大值，设置此参数绝对不会禁止 HDR/杜比. Defaults to VideoQuality._8K.
 
             audio_max_quality       (AudioQuality)                : 设置提取的音频流清晰度最大值. 设置此参数绝对不会禁止 Hi-Res/杜比. Defaults to AudioQuality._192K.
@@ -2476,6 +2452,8 @@ class VideoDownloadURLDataDetecter:
 
         Returns:
             List[VideoStreamDownloadURL | AudioStreamDownloadURL | FLVStreamDownloadURL | HTML5MP4DownloadURL | None]: FLV 视频流 / HTML5 MP4 视频流 / 番剧或课程试看 MP4 视频流返回 `[FLVStreamDownloadURL | HTML5MP4StreamDownloadURL | EpisodeTryMP4DownloadURL]`, 否则为 `[VideoStreamDownloadURL, AudioStreamDownloadURL]`, 如果未匹配上任何合适的流则对应的位置位 `None`
+
+        **以上参数仅能在音视频流分离的情况下产生作用，flv / mp4 试看流 / html5 mp4 流下以下参数均没有作用**
         """
         if self.check_flv_stream():
             return self.detect_all()  # type: ignore
@@ -2492,6 +2470,10 @@ class VideoDownloadURLDataDetecter:
                 video_accepted_qualities=video_accepted_qualities,
                 audio_accepted_qualities=audio_accepted_qualities,
                 codecs=codecs,
+                no_dolby_video=no_dolby_video,
+                no_dolby_audio=no_dolby_audio,
+                no_hires=no_hires,
+                no_hdr=no_hdr
             )
             video_streams = []
             audio_streams = []
@@ -2533,7 +2515,6 @@ class VideoDownloadURLDataDetecter:
                 if s2.audio_quality == AudioQuality.HI_RES and (not no_hires):
                     return -1
                 return s1.audio_quality.value - s2.audio_quality.value
-
             video_streams.sort(key=cmp_to_key(video_stream_cmp), reverse=True)
             audio_streams.sort(key=cmp_to_key(audio_stream_cmp), reverse=True)
             if len(video_streams) == 0:

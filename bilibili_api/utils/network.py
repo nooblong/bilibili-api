@@ -439,7 +439,7 @@ class Api:
         if self.wbi:
             global wbi_mixin_key
             if wbi_mixin_key == "":
-                wbi_mixin_key = await get_mixin_key()
+                wbi_mixin_key = await get_mixin_key(credential=self.credential)
             enc_wbi(self.params, wbi_mixin_key)
 
         # 自动添加 csrf
@@ -453,13 +453,9 @@ class Api:
 
         cookies = self.credential.get_cookies()
 
-        if self.credential.buvid3 is None:
-            global buvid3
-            if buvid3 == "" and self.url != API["info"]["spi"]["url"]:
-                resp = await get_spi_buvid()
-                buvid3 = resp["b_3"]
-                await active_buvid(buvid3, resp["b_4"])
-            cookies["buvid3"] = buvid3
+        if self.credential.buvid3 is None or self.credential.buvid3 == "":
+            if self.url != API["info"]["spi"]["url"]:
+                cookies["buvid3"] = await get_buvid3()
         else:
             cookies["buvid3"] = self.credential.buvid3
         # cookies["Domain"] = ".bilibili.com"
@@ -520,6 +516,7 @@ class Api:
         self._prepare_params_data()
         config = self._prepare_request_sync(**kwargs)
         session = get_httpx_sync_session()
+        session.cookies = config.pop("cookies")
         resp = session.request(**config)
         try:
             resp.raise_for_status()
@@ -531,7 +528,7 @@ class Api:
         return real_data
 
     @retry(times=settings.wbi_retry_times)
-    async def request(self, raw: bool = False, **kwargs) -> Union[int, str, dict]:
+    async def request(self, raw: bool = False, byte: bool = False, **kwargs) -> Union[int, str, dict]:
         """
         向接口发送请求。
 
@@ -544,11 +541,14 @@ class Api:
         # 判断http_client的类型
         if settings.http_client == settings.HTTPClient.HTTPX:
             session = get_session()
+            session.cookies = config.pop("cookies")
             resp = await session.request(**config)
             try:
                 resp.raise_for_status()
             except httpx.HTTPStatusError as e:
                 raise NetworkException(resp.status_code, str(resp.status_code))
+            if byte:
+                return resp.read()
             real_data = self._process_response(
                 resp, await self._get_resp_text(resp), raw=raw
             )
@@ -560,6 +560,8 @@ class Api:
                     resp.raise_for_status()
                 except aiohttp.ClientResponseError as e:
                     raise NetworkException(e.status, e.message)
+                if byte:
+                    return await resp.read()
                 real_data = self._process_response(
                     resp, await self._get_resp_text(resp), raw=raw
                 )
@@ -702,8 +704,7 @@ async def active_buvid(buvid3: str, buvid4: str) -> dict:
     text = json.loads(text)
     if text["code"] != 0:
         raise ExClimbWuzhiException(text["code"], text["msg"])
-    settings.logger.info("激活 buvid3 成功")
-
+    settings.logger.info(f"激活 buvid3: [{buvid3}] 成功")
 
 
 def get_nav_sync(credential: Union[Credential, None] = None):
@@ -752,14 +753,14 @@ def get_mixin_key_sync() -> str:
     return le[:32]
 
 
-async def get_mixin_key() -> str:
+async def get_mixin_key(credential: Credential = Credential()) -> str:
     """
     获取混合密钥
 
     Returns:
         str: 新获取的密钥
     """
-    data = await get_nav()
+    data = await get_nav(credential=credential)
     wbi_img: Dict[str, str] = data["wbi_img"]
 
     # 为什么要把里的 lambda 表达式换成函数 这不是一样的吗
@@ -784,7 +785,9 @@ def enc_wbi(params: dict, mixin_key: str):
     params.pop("w_rid", None)  # 重试时先把原有 w_rid 去除
     params["wts"] = int(time.time())
     # web_location 因为没被列入参数可能炸一些接口 比如 video.get_ai_conclusion
-    params["web_location"] = 1550101
+    # 但 video.get_download_url 的 web_location 不是这东西
+    if not params.get("web_location"):
+        params["web_location"] = 1550101
     Ae = urlencode(sorted(params.items()))
     params["w_rid"] = hashlib.md5((Ae + mixin_key).encode(encoding="utf-8")).hexdigest()
 
@@ -882,10 +885,10 @@ def get_session() -> httpx.AsyncClient:
         if settings.proxy != "":
             last_proxy = settings.proxy
             proxies = {"all://": settings.proxy}
-            session = httpx.AsyncClient(proxies=proxies)  # type: ignore
+            session = httpx.AsyncClient(proxies=proxies, timeout=settings.timeout)  # type: ignore
         else:
             last_proxy = ""
-            session = httpx.AsyncClient()
+            session = httpx.AsyncClient(timeout=settings.timeout)
         __httpx_session_pool[loop] = session
 
     return session
@@ -937,6 +940,25 @@ def to_form_urlencoded(data: dict) -> str:
         temp.append(f'{k}={quote(str(v)).replace("/", "%2F")}')
 
     return "&".join(temp)
+
+
+async def generate_buvid3() -> None:
+    global buvid3
+    resp = await get_spi_buvid()
+    buvid3 = resp["b_3"]
+    await active_buvid(buvid3, resp["b_4"])
+
+
+async def get_buvid3() -> str:
+    """
+    获取已激活的生成的 buvid3
+
+    Returns:
+        str: buvid3
+    """
+    if buvid3 == "":
+        await generate_buvid3()
+    return buvid3
 
 
 @atexit.register

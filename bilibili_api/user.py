@@ -5,6 +5,7 @@ bilibili_api.user
 """
 
 import json
+import random
 import time
 from enum import Enum
 from typing import List, Union, Tuple
@@ -13,7 +14,7 @@ from json.decoder import JSONDecodeError
 from .utils.utils import get_api, join, raise_for_statement
 from .utils.credential import Credential
 from .exceptions import ResponseCodeException
-from .utils.network import get_session, Api
+from .utils.network import get_session, Api, HEADERS
 from .channel_series import ChannelOrder, ChannelSeries, ChannelSeriesType
 
 API = get_api("user")
@@ -249,7 +250,7 @@ class User:
 
         if credential is None:
             credential = Credential()
-        self.credential = credential
+        self.credential: Credential = credential
         self.__self_info = None
 
     def get_user_info_sync(self) -> dict:
@@ -465,6 +466,7 @@ class User:
             dict: 调用接口返回的内容。
         """
         api = API["info"]["video"]
+        dm_rand = "ABCDEFGHIJK"
         params = {
             "mid": self.__uid,
             "ps": ps,
@@ -472,12 +474,12 @@ class User:
             "pn": pn,
             "keyword": keyword,
             "order": order.value,
-            # -352 https://github.com/Nemo2011/bilibili-api/issues/595
+            # -352 https://github.com/Nemo2011/bilibili-api/issues/595 需要跟进
             "dm_img_list": "[]",  # 鼠标/键盘操作记录
-            # WebGL 1.0 (OpenGL ES 2.0 Chromium)
-            "dm_img_str": "V2ViR0wgMS4wIChPcGVuR0wgRVMgMi4wIENocm9taXVtKQ",
-            # ANGLE (Intel, Intel(R) UHD Graphics 630 (0x00003E9B) Direct3D11 vs_5_0 ps_5_0, D3D11)Google Inc. (Intel
-            "dm_cover_img_str": "QU5HTEUgKEludGVsLCBJbnRlbChSKSBVSEQgR3JhcGhpY3MgNjMwICgweDAwMDAzRTlCKSBEaXJlY3QzRDExIHZzXzVfMCBwc181XzAsIEQzRDExKUdvb2dsZSBJbmMuIChJbnRlbC",
+            "dm_img_str": "".join(random.sample(dm_rand, 2)),
+            "dm_cover_img_str": "".join(random.sample(dm_rand, 2)),
+            "dm_img_inter": '{"ds":[],"wh":[0,0,0],"of":[0,0,0]}',
+            "order_avoided": True,
         }
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
@@ -620,14 +622,11 @@ class User:
         获取用户动态。
 
         建议使用 user.get_dynamics_new() 新接口。
+
         Args:
-            offset (str, optional):     该值为第一次调用本方法时，数据中会有个 next_offset 字段，
-                                        指向下一动态列表第一条动态（类似单向链表）。
-                                        根据上一次获取结果中的 next_offset 字段值，
-                                        循环填充该值即可获取到全部动态。
-                                        0 为从头开始。
-                                        Defaults to 0.
+            offset (str, optional):     该值为第一次调用本方法时，数据中会有个 next_offset 字段，指向下一动态列表第一条动态（类似单向链表）。根据上一次获取结果中的 next_offset 字段值，循环填充该值即可获取到全部动态。0 为从头开始。Defaults to 0.
             need_top (bool, optional):  显示置顶动态. Defaults to False.
+
         Returns:
             dict: 调用接口返回的内容。
         """
@@ -652,16 +651,7 @@ class User:
         获取用户动态。
 
         Args:
-            offset (str, optional):     该值为第一次调用本方法时，数据中会有个 offset 字段，
-
-                                        指向下一动态列表第一条动态（类似单向链表）。
-
-                                        根据上一次获取结果中的 next_offset 字段值，
-
-                                        循环填充该值即可获取到全部动态。
-
-                                        空字符串为从头开始。
-                                        Defaults to "".
+            offset (str, optional):     该值为第一次调用本方法时，数据中会有个 offset 字段，指向下一动态列表第一条动态（类似单向链表）。根据上一次获取结果中的 next_offset 字段值，循环填充该值即可获取到全部动态。空字符串为从头开始。Defaults to "".
 
         Returns:
             dict: 调用接口返回的内容。
@@ -759,7 +749,10 @@ class User:
         data = json.loads(
             (
                 await sess.get(
-                    url=api["url"], params=params, cookies=self.credential.get_cookies()
+                    url=api["url"],
+                    params=params,
+                    cookies=self.credential.get_cookies(),
+                    headers=HEADERS,
                 )
             ).text
         )

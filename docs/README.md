@@ -1,4 +1,4 @@
-![bilibili-api logo](https://raw.githubusercontent.com/Nemo2011/bilibili-api/main/design/logo-newYear.jpg)
+![bilibili-api logo](https://raw.githubusercontent.com/Nemo2011/bilibili-api/main/design/logo.png)
 
 <div align="center">
 
@@ -46,8 +46,16 @@ Github 仓库：[https://github.com/nemo2011/bilibili-api](https://github.com/ne
 首先使用以下指令安装本模块：
 
 ```
+# 主版本
 $ pip3 install bilibili-api-python
+
+# 开发版本
+$ pip3 install bilibili-api-dev
+
+# 最新修改会在 dev 分支
+$ pip3 install git+https://github.com/Nemo2011/bilibili-api.git@dev
 ```
+
 
 接下来我们来获取视频的播放量等信息：
 
@@ -130,9 +138,9 @@ if __name__ == '__main__':
 
 | Feature | 同步 | 异步 | aiohttp | httpx | 备注 |
 | ------ | ---- | ----- | ------ | ------ | ---- |
-| `LiveDanmaku` & `VideoOnlineMonitor` | [] | [x] | [x] | [ ] | httpx 暂不支持 `WebSocket` |
-| `login` | [x] | [ ] | [ ] | [x] | 目前暂时仅支持同步请求 |
-| other | [] | [x] | [x] | [x] | |
+| `LiveDanmaku` & `VideoOnlineMonitor` | :x: | :white_check_mark: | :white_check_mark: | :x: | httpx 暂不支持 `WebSocket` |
+| `login` | :white_check_mark: | :x: | :x: | :white_check_mark: | 目前暂时仅支持同步请求 |
+| other | :x: | :white_check_mark: | :white_check_mark: | :white_check_mark: | |
 
 # FA♂Q
 

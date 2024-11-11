@@ -18,7 +18,7 @@ from bilibili_api.utils.danmaku import Danmaku
 
 from . import settings
 from .video import Video
-from .utils.utils import get_api
+from .utils.utils import get_api, raise_for_statement
 from .utils.credential import Credential
 from .exceptions.ApiException import ApiException
 from .utils.network import Api, get_session, HEADERS
@@ -245,6 +245,7 @@ class IndexFilter:
         + PARAMOUNT: 派拉蒙
         + WARNER: 华纳
         + DISNEY: 迪士尼
+        + HBO: HBO
         + DOMESTIC_OTHER: 国内其他
         + FOREIGN_OTHER: 国外其他
         """
@@ -269,6 +270,7 @@ class IndexFilter:
         PARAMOUNT = 17
         WARNER = 18
         DISNEY = 19
+        HBO = 20
 
     class Payment(Enum):
         """
@@ -582,7 +584,9 @@ class IndexFilter:
             + PLOT: 剧情
             + FAMILY: 家庭
             + HISTORY: 历史
+            + EMOTION: 情感
             + ARMY: 军旅
+            + SCIENCE_FICTION: 科幻
             """
 
             ALL = -1
@@ -608,6 +612,7 @@ class IndexFilter:
             FAMILY = 10061
             HISTORY = 10033
             ARMY = 10089
+            SCIENCE_FICTION = 10023
 
         class Documentary(Enum):
             """
@@ -737,6 +742,9 @@ class IndexFilterMeta:
     """
 
     class Anime:
+        """
+        动画
+        """
         def __init__(
             self,
             version: IndexFilter.Version = IndexFilter.Version.ALL,
@@ -782,6 +790,9 @@ class IndexFilterMeta:
             self.style_id = style
 
     class Movie:
+        """
+        电影
+        """
         def __init__(
             self,
             area: IndexFilter.Area = IndexFilter.Area.ALL,
@@ -809,6 +820,9 @@ class IndexFilterMeta:
             self.season_status = payment
 
     class Documentary:
+        """
+        纪录片
+        """
         def __init__(
             self,
             release_date: str = -1,
@@ -834,6 +848,9 @@ class IndexFilterMeta:
             self.producer_id = producer
 
     class TV:
+        """
+        TV
+        """
         def __init__(
             self,
             area: IndexFilter.Area = IndexFilter.Area.ALL,
@@ -859,6 +876,9 @@ class IndexFilterMeta:
             self.season_status = payment
 
     class GuoChuang:
+        """
+        国创
+        """
         def __init__(
             self,
             version: IndexFilter.Version = IndexFilter.Version.ALL,
@@ -892,6 +912,9 @@ class IndexFilterMeta:
             self.style_id = style
 
     class Variety:
+        """
+        综艺
+        """
         def __init__(
             self,
             style: IndexFilter.Style.Variety = IndexFilter.Style.Variety.ALL,
@@ -998,7 +1021,7 @@ class Bangumi:
         """
         if media_id == -1 and ssid == -1 and epid == -1:
             raise ValueError("需要 Media_id 或 Season_id 或 epid 中的一个 !")
-        self.credential = credential if credential else Credential()
+        self.credential: Credential = credential if credential else Credential()
         # 处理极端情况
         params = {}
         self.__ssid = ssid
@@ -1043,9 +1066,21 @@ class Bangumi:
                 ]
 
     def get_media_id(self) -> int:
+        """
+        获取 media_id
+
+        Returns:
+            int: 获取 media_id
+        """
         return self.__media_id
 
     def get_season_id(self) -> int:
+        """
+        获取季度 id
+
+        Returns:
+            int: 获取季度 id
+        """
         return self.__ssid
 
     def get_up_info(self) -> dict:
@@ -1067,9 +1102,21 @@ class Bangumi:
         return self.__raw, self.oversea
 
     def set_media_id(self, media_id: int) -> None:
+        """
+        设置 media_id
+
+        Args:
+            media_id (int): 设置 media_id
+        """
         self.__init__(media_id=media_id, credential=self.credential)
 
     def set_ssid(self, ssid: int) -> None:
+        """
+        设置季度 id
+
+        Args:
+            ssid (int): 设置季度 id
+        """
         self.__init__(ssid=ssid, credential=self.credential)
 
     async def get_meta(self) -> dict:
@@ -1295,19 +1342,15 @@ class Episode(Video):
             if content_type == InitialDataType.NEXT_DATA:
                 content = res["props"]["pageProps"]["dehydratedState"]["queries"][0][
                     "state"
-                ]["data"]["seasonInfo"]["mediaInfo"]
+                ]["data"]["result"]["play_view_business_info"]
                 self.bangumi = (
-                    Bangumi(ssid=content["season_id"])
+                    Bangumi(ssid=content["season_info"]["season_id"])
                     if not epid in episode_data_cache.keys()
                     else episode_data_cache[epid]["bangumi_class"]
                 )
-                for ep_info in content["episodes"]:
-                    if int(
-                        ep_info["id"] if "id" in ep_info else ep_info["ep_id"]
-                    ) == int(epid):
-                        bvid = ep_info["bvid"]
-                        self.__ep_info: dict = ep_info
-                        break
+                ep_info = content["episode_info"]
+                bvid = ep_info["bvid"]
+                self.__ep_info: dict = ep_info
             else:  # InitialDataType.INITIAL_STATE
                 self.__ep_info: dict = res["epInfo"]
                 self.bangumi = (
@@ -1319,11 +1362,10 @@ class Episode(Video):
         else:
             content = episode_data_cache[epid]["bangumi_meta"]
             bvid = None
-            for einfo in content["props"]["pageProps"]["dehydratedState"]["queries"][0][
+            self.__ep_info = content["props"]["pageProps"]["dehydratedState"]["queries"][0][
                 "state"
-            ]["data"]["seasonInfo"]["mediaInfo"]["episodes"]:
-                if einfo["ep_id"] == epid:
-                    bvid = einfo["bvid"]
+            ]["data"]["result"]["play_view_business_info"]["episode_info"]
+            bvid = self.__ep_info["bvid"]
             self.bangumi = episode_data_cache[epid]["bangumi_class"]
             self.__ep_info: dict = episode_data_cache[epid]
 
@@ -1339,10 +1381,10 @@ class Episode(Video):
         return self.__epid
 
     def set_aid_e(self, aid: int) -> None:
-        print("Set aid is not allowed in Episode")
+        raise_for_statement(0, "Set aid is not allowed in Episode")
 
     def set_bvid_e(self, bvid: str) -> None:
-        print("Set bvid is not allowed in Episode")
+        raise_for_statement(0, "Set bvid is not allowed in Episode")
 
     async def get_cid(self) -> int:
         """
@@ -1363,6 +1405,12 @@ class Episode(Video):
         return self.bangumi  # type: ignore
 
     def set_epid(self, epid: int) -> None:
+        """
+        设置 epid
+
+        Args:
+            epid (int): epid
+        """
         self.__init__(epid, self.credential)
 
     async def get_episode_info(self) -> dict:

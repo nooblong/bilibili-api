@@ -28,6 +28,9 @@ _API = get_api("audio_uploader")
 
 
 class SongCategories:
+    """
+    歌曲分类
+    """
     class ContentType(Enum):  # cr_type
         """
         内容类型
@@ -177,6 +180,9 @@ class SongCategories:
 
 
 class CompilationCategories:
+    """
+    专辑分类
+    """
     class SongType(Enum):
         """
         声音类型
@@ -516,9 +522,9 @@ class AudioUploader(AsyncEvent):
             credential (Credential): 账号信息
         """
         super().__init__()
-        self.path = path
-        self.meta = meta
-        self.credential = credential
+        self.path: str = path
+        self.meta: str = meta
+        self.credential: Credential = credential
         self.__upos_file = UposFile(path)
 
     async def _preupload(self) -> dict:
@@ -802,6 +808,16 @@ async def get_upinfo(param: Union[int, str], credential: Credential) -> List[dic
 
 
 async def upload_cover(cover: Picture, credential: Credential) -> str:
+    """
+    上传封面
+
+    Args:
+        cover (Picture): 封面
+        credential (Credential): 凭据类
+
+    Returns:
+        str: 封面链接
+    """
     api = _API["image"]
     # 小于 3MB
     raise_for_statement(os.path.getsize(cover) < 1024 * 1024 * 3, "3MB size limit")

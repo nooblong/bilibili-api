@@ -133,7 +133,7 @@ class Comment:
         self.__oid = oid
         self.__rpid = rpid
         self.__type = type_
-        self.credential = credential if credential else Credential()
+        self.credential: Credential = credential if credential else Credential()
 
     def __get_data(self, status: bool) -> dict:
         """
@@ -153,12 +153,30 @@ class Comment:
         }
 
     def get_rpid(self) -> int:
+        """
+        获取评论 rpid
+
+        Returns:
+            int: rpid
+        """
         return self.__rpid
 
     def get_type(self) -> CommentResourceType:
+        """
+        获取评论资源类型
+
+        Returns:
+            CommentResourceType: 资源类型
+        """
         return self.__type
 
     def get_oid(self) -> int:
+        """
+        获取评论对应 oid
+
+        Returns:
+            int: oid
+        """
         return self.__oid
 
     async def like(self, status: bool = True) -> dict:
@@ -238,12 +256,13 @@ class Comment:
         del data["action"]
         return await Api(**api, credential=self.credential).update_data(**data).result
 
-    async def get_sub_comments(self, page_index: int = 1) -> dict:
+    async def get_sub_comments(self, page_index: int = 1, page_size: int = 10) -> dict:
         """
         获取子评论。即评论下的评论。
 
         Args:
             page_index (int, optional):  页码索引，从 1 开始。Defaults to 1.
+            page_size (int, optional):  每页评论数。设置大于20的数值不会起作用。Defaults to 10.
 
         Returns:
             dict: 调用 API 返回的结果
@@ -254,7 +273,7 @@ class Comment:
         api = API["comment"]["sub_reply"]
         params = {
             "pn": page_index,
-            "ps": 10,
+            "ps": page_size,
             "type": self.__type.value,
             "oid": self.__oid,
             "root": self.__rpid,
@@ -414,9 +433,7 @@ async def get_comments(
 async def get_comments_lazy(
     oid: int,
     type_: CommentResourceType,
-    # pagination_str: str = "",
-    pn: int = 1,
-    ps: int = 20,
+    offset: str = '',
     order: OrderType = OrderType.TIME,
     credential: Union[Credential, None] = None,
 ) -> dict:
@@ -430,11 +447,7 @@ async def get_comments_lazy(
 
         type_      (CommentsResourceType)        : 资源类枚举。
 
-        pagination_str (str, optional)       : 分页依据 Defaults to `{"offset":""}`. 弃用 #658
-
-        pn (int, optional)       : 页码. Defaults to 1.
-
-        ps (int, optional)       : 每页数量. Defaults to 20.
+        offset (str, optional)       : 偏移量。每次请求可获取下次请求对应的偏移量，类似单向链表。
 
         order      (OrderType, optional) : 排序方式枚举. Defaults to OrderType.TIME.
 
@@ -443,12 +456,14 @@ async def get_comments_lazy(
     Returns:
         dict: 调用 API 返回的结果
     """
+    offset = offset.replace('"', '\\"')
+    offset = '{"offset":"' + offset + '"}'
     api = API["comment"]["reply_by_session_id"]
     params = {
         "oid": oid,
         "type": type_.value,
         "mode": order.value,
-        "next": pn - 1,
-        "ps": ps,
+        "pagination_str": offset,
+        "web_location": "1315875",
     }
     return await Api(**api, credential=credential).update_params(**params).result

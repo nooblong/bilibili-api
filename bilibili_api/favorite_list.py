@@ -81,7 +81,7 @@ class FavoriteList:
         """
         self.__type = type_
         self.__media_id = media_id
-        self.credential = credential if credential else Credential()
+        self.credential: Credential = credential if credential else Credential()
 
     def is_video_favorite_list(self) -> bool:
         """
@@ -93,9 +93,21 @@ class FavoriteList:
         return self.__type == FavoriteListType.VIDEO
 
     def get_media_id(self) -> Union[int, None]:
+        """
+        获取收藏夹 media_id，仅视频收藏夹存在此属性
+
+        Returns:
+            Union[int, None]: media_id
+        """
         return self.__media_id
 
     def get_favorite_list_type(self) -> FavoriteListType:
+        """
+        获取收藏夹类型
+
+        Returns:
+            FavoriteListType: 收藏夹类型
+        """
         return self.__type
 
     async def get_info(self):
@@ -119,6 +131,7 @@ class FavoriteList:
         page: int = 1,
         keyword: Union[str, None] = None,
         order: FavoriteListContentOrder = FavoriteListContentOrder.MTIME,
+        mode: SearchFavoriteListMode = SearchFavoriteListMode.ONLY,
         tid=0,
     ) -> dict:
         """
@@ -131,6 +144,8 @@ class FavoriteList:
 
             order   (FavoriteListContentOrder, optional): 排序方式. Defaults to FavoriteListContentOrder.MTIME.
 
+            mode    (SearchFavoriteListMode, optional)  : 搜索模式，默认仅当前收藏夹.
+
             tid     (int, optional)                     : 分区 ID. Defaults to 0.
 
         Returns:
@@ -140,7 +155,7 @@ class FavoriteList:
         raise_for_statement(self.__media_id != None, "视频收藏夹需要 media_id")
 
         return await get_video_favorite_list_content(
-            self.__media_id, page, keyword, order, tid, self.credential
+            self.__media_id, page=page, keyword=keyword, order=order, tid=tid, mode=mode, credential=self.credential
         )
 
     async def get_content(self, page: int = 1) -> dict:

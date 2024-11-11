@@ -45,9 +45,15 @@ class Tag:
         else:
             self.__tag_id = tag_id
         credential = credential if credential else Credential()
-        self.credential = credential
+        self.credential: Credential = credential
 
     def get_tag_id(self) -> int:
+        """
+        获取标签 id
+
+        Returns:
+            int: 标签 id
+        """
         return self.__tag_id
 
     def __get_tag_info_sync(self, tag_name: str) -> dict:

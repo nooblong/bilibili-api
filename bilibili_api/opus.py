@@ -9,6 +9,7 @@ import yaml
 from typing import Optional
 from . import article
 from . import dynamic
+from . import note
 from .utils.credential import Credential
 from .utils.network import Api
 from .utils.utils import get_api, raise_for_statement
@@ -40,10 +41,12 @@ class Opus:
 
     def __init__(self, opus_id: int, credential: Optional[Credential] = None):
         self.__id = opus_id
-        self.credential = credential if credential else Credential()
+        self.__is_note = False
+        self.__info = None
+        self.credential: Credential = credential if credential else Credential()
 
         if cache_pool.opus_type.get(self.__id):
-            self.__info = cache_pool.opus_info[self.__id]
+            self.__is_note = cache_pool.opus_is_note[self.__id]
             self.__type = OpusType(cache_pool.opus_type[self.__id])
         else:
             api = API["info"]["detail"]
@@ -54,10 +57,17 @@ class Opus:
                 .result_sync
             )["item"]
             self.__type = OpusType(self.__info["type"])
-            cache_pool.opus_info[self.__id] = self.__info
+            self.__is_note = bool(self.__info["modules"][0].get("module_top"))
+            cache_pool.opus_is_note[self.__id] = self.__is_note
             cache_pool.opus_type[self.__id] = self.__type.value
 
-    def get_opus_id(self):
+    def get_opus_id(self) -> int:
+        """
+        获取图文 id
+
+        Returns:
+            int: 图文 idd
+        """
         return self.__id
 
     def get_type(self):
@@ -74,9 +84,13 @@ class Opus:
         对专栏图文，转换为专栏
         """
         raise_for_statement(self.__type == OpusType.ARTICLE, "仅支持专栏图文")
-        cvid = int(self.__info["basic"]["rid_str"])
+        if self.__info:
+            cvid = int(self.__info["basic"]["rid_str"])
+        else:
+            cvid = cache_pool.opus_cvid[self.__id]
         cache_pool.article_is_opus[cvid] = 1
         cache_pool.article_dyn_id[cvid] = self.__id
+        cache_pool.article_is_note[cvid] = self.is_note()
         return article.Article(cvid=cvid, credential=self.credential)
 
     def turn_to_dynamic(self) -> "dynamic.Dynamic":
@@ -85,6 +99,26 @@ class Opus:
         """
         cache_pool.dynamic_is_opus[self.__id] = 1
         return dynamic.Dynamic(dynamic_id=self.__id, credential=self.credential)
+
+    def is_note(self) -> bool:
+        """
+        是否为笔记
+        """
+        return self.__is_note
+
+    def turn_to_note(self) -> "note.Note":
+        """
+        转为笔记
+        """
+        raise_for_statement(self.is_note(), "仅支持笔记")
+        if self.__info:
+            cvid = int(self.__info["basic"]["rid_str"])
+        else:
+            cvid = cache_pool.opus_cvid[self.__id]
+        cache_pool.article_is_opus[cvid] = 1
+        cache_pool.article_dyn_id[cvid] = self.__id
+        cache_pool.article_is_note[cvid] = self.is_note()
+        return note.Note(cvid=cvid, credential=self.credential)
 
     async def get_info(self):
         """
@@ -106,6 +140,8 @@ class Opus:
         Returns:
             str: markdown 内容
         """
+        if self.is_note():
+            top, title, author, content = self.__info["modules"][:4]
         title, author, content = self.__info["modules"][:3]
 
         markdown = f'# {title["module_title"]["text"]}\n\n'

@@ -289,8 +289,9 @@ class MPlayer(object):
         self.player = QtMultimediaWidgets.QVideoWidget(Form)
         self.player.setGeometry(QtCore.QRect(0, 0, 800, 450))
         self.player.setObjectName("player")
+        self.videoplayer = QtMultimedia.QMediaPlayer()
+        self.videoplayer.setVideoOutput(self.player)
         self.mediaplayer = QtMultimedia.QMediaPlayer()
-        self.mediaplayer.setVideoOutput(self.player)
         self.audio_output = QtMultimedia.QAudioOutput()
         self.audio_output.setVolume(0.0)
         self.mediaplayer.setAudioOutput(self.audio_output)
@@ -389,17 +390,17 @@ class MPlayer(object):
                     else:
                         # 跳转类型
                         if (
-                            self.graph[str(children[0])]["jump_type"]
+                            self.graph[str(self.current_node)]["sub"][0]["jump_type"]
                             == InteractiveNodeJumpingType.DEFAULT.value
                         ):
                             # 直接跳转
-                            for node_id in children:
+                            for node in children:
                                 btn = Button(
-                                    node_id,
+                                    node["id"],
                                     [0, 0],
                                     "",
-                                    self.graph[str(node_id)]["condition"],
-                                    self.graph[str(node_id)]["command"],
+                                    node["condition"],
+                                    node["command"],
                                 )
                                 condition = InteractiveJumpingCondition(
                                     self.variables, btn.condition
@@ -414,36 +415,31 @@ class MPlayer(object):
                                     self.set_source(self.graph[str(btn_id)]["cid"])
                                     self.current_node = btn.node_id
                                     self.volume_change_event()
-                                    title = self.graph[str(node_id)]["title"]
+                                    title = self.graph[str(btn_id)]["title"]
                                     self.node.setText(f"(当前节点: {title})")
                                     break
                         else:
-                            # 进行选择
-                            def get_info(node_id: int):
-                                return self.graph[str(node_id)]
-
                             cnt = 0
                             for idx, child in enumerate(children):
                                 pos_x = cnt * 200
                                 pos_y = 600
-                                cur_info = get_info(child)
                                 # 生成 Button 对象
                                 self.choice_buttons.append(
                                     Button(
-                                        child,
+                                        child["id"],
                                         [pos_x, pos_y],
-                                        cur_info["button"]["text"],
-                                        cur_info["condition"],
-                                        cur_info["command"],
+                                        child["text"],
+                                        child["condition"],
+                                        child["command"],
                                     )
                                 )
                                 # 生成 ButtonLabel 对象
-                                if cur_info["button"]["pos"][0] == None:
+                                if child["pos"][0] == None:
                                     if idx != 0:
-                                        previous_info = get_info(children[idx - 1])
+                                        previous_info = children[idx - 1]
                                         curtext, previoustext = (
-                                            cur_info["button"]["text"],
-                                            previous_info["button"]["text"],
+                                            child["text"],
+                                            previous_info["text"],
                                         )
                                         if curtext[2:] == previoustext[2:]:
                                             # 可确定与上一个按钮同一个位置（即概率按钮）
@@ -453,16 +449,16 @@ class MPlayer(object):
                                     cnt += 1
                                     lbl = ButtonLabel(self.win)
                                     lbl.prep_text(
-                                        cur_info["button"]["text"], pos_x, pos_y
+                                        child["text"], pos_x, pos_y
                                     )
                                     lbl.show()
                                     self.choice_labels.append(lbl)
                                     continue
                                 if idx != 0:
-                                    previous_info = get_info(children[idx - 1])
+                                    previous_info = children[idx - 1]
                                     curpos, previouspos = (
-                                        cur_info["button"]["pos"],
-                                        previous_info["button"]["pos"],
+                                        child["pos"],
+                                        previous_info["pos"],
                                     )
                                     if (abs(curpos[0] - previouspos[0]) <= 5) and (
                                         abs(curpos[1] - previouspos[1]) <= 5
@@ -475,7 +471,7 @@ class MPlayer(object):
                                         cnt += 1
                                         lbl = ButtonLabel(self.win)
                                         lbl.prep_text(
-                                            cur_info["button"]["text"], pos_x, pos_y
+                                            child["text"], pos_x, pos_y
                                         )
                                         lbl.show()
                                         self.choice_labels.append(lbl)
@@ -484,7 +480,7 @@ class MPlayer(object):
                                     cnt += 1
                                     lbl = ButtonLabel(self.win)
                                     lbl.prep_text(
-                                        cur_info["button"]["text"], pos_x, pos_y
+                                        child["text"], pos_x, pos_y
                                     )
                                     lbl.show()
                                     self.choice_labels.append(lbl)
@@ -509,11 +505,11 @@ class MPlayer(object):
                 self.label.setText("--:--/--:--")
                 return
             if (
-                (self.mediaplayer.duration() // 1000)
-                == ((self.mediaplayer.position() // 1000))
+                abs(self.mediaplayer.duration() - self.mediaplayer.position()) <= 500
             ) and (not self.has_end):
                 self.has_end = True
                 self.mediaplayer.pause()
+                self.videoplayer.pause()
                 self.final_position = self.mediaplayer.position()
                 self.mediaplayer.setAudioOutput(
                     QtMultimedia.QAudioOutput().setVolume(0)
@@ -540,6 +536,7 @@ class MPlayer(object):
                 self.mediaplayer.setAudioOutput(
                     QtMultimedia.QAudioOutput().setVolume(0)
                 )
+                self.videoplayer.setPosition(self.final_position)
                 duration = self.mediaplayer.duration() // 1000
                 duration_sec = duration % 60
                 duration_min = duration // 60
@@ -621,14 +618,17 @@ class MPlayer(object):
         self.win.mouseReleaseEvent = mouseReleaseEvent
 
     def start_playing(self):
+        self.videoplayer.play()
         self.mediaplayer.play()
         self.is_stoping = False
 
     def stop_playing(self):
+        self.videoplayer.stop()
         self.mediaplayer.stop()
         self.is_stoping = True
 
     def pause_playing(self):
+        self.videoplayer.pause()
         self.mediaplayer.pause()
         self.is_stoping = True
 
@@ -661,11 +661,16 @@ class MPlayer(object):
         )
         self.stop_playing()
         self.pp.setText("Pause")
-        dest = self.temp_dir + str(cid) + ".mp4"
+        dest = self.temp_dir + str(cid) + ".audio.mp4"
+        dest_v = self.temp_dir + str(cid) + ".video.mp4"
         self.mediaplayer.setSource(QtCore.QUrl(dest))
         self.mediaplayer.setPosition(0)
         if self.mediaplayer.duration() <= 7:
             self.mediaplayer.setPosition(self.mediaplayer.duration())
+        self.videoplayer.setSource(QtCore.QUrl(dest_v))
+        self.videoplayer.setPosition(0)
+        if self.videoplayer.duration() <= 7:
+            self.videoplayer.setPosition(self.videoplayer.duration())
         self.start_playing()
 
     def extract_ivi(self, path: str):
@@ -693,15 +698,17 @@ class MPlayer(object):
         self.graph = json.load(
             open(self.temp_dir + "ivideo.json", "r", encoding="utf-8")
         )
-        self.current_node = 1
-        variables = self.graph["1"]["vars"]
+        self.current_node = bilivideo_parser.decode(
+            open(self.temp_dir + "bilivideo.json", "r", encoding="utf-8").read()
+        )["root_id"]
+        variables = self.graph[str(self.current_node)]["vars"]
         for var in variables:
             self.variables.append(
                 InteractiveVariable(
                     var["name"], var["id"], var["value"], var["show"], var["random"]
                 )
             )
-        self.set_source(self.graph["1"]["cid"])
+        self.set_source(self.graph[str(self.current_node)]["cid"])
         self.volume_change_event()
 
     def close_ivi(self):
@@ -722,10 +729,12 @@ class MPlayer(object):
         self.pp.setText("Pause")
         self.has_end = False
         self.mediaplayer = QtMultimedia.QMediaPlayer()  # Clear the multimedia source
-        self.mediaplayer.setVideoOutput(self.player)
         self.mediaplayer.setAudioOutput(QtMultimedia.QAudioOutput())
+        self.videoplayer = QtMultimedia.QMediaPlayer()
+        self.videoplayer.setVideoOutput(self.player)
         self.volume_change_event()
-        shutil.rmtree(self.temp_dir)
+        if os.path.exists(self.temp_dir):
+            shutil.rmtree(self.temp_dir)
         while True:
             if not os.path.exists(self.temp_dir):
                 break
@@ -781,10 +790,12 @@ class MPlayer(object):
             pass
         else:
             self.mediaplayer.setPosition(position)
+            self.videoplayer.setPosition(position)
             self.start_playing()
 
     def position_start_change_event(self):
         self.mediaplayer.pause()
+        self.videoplayer.pause()
         self.is_draging_slider = True
 
     def position_change_event(self):
@@ -793,6 +804,7 @@ class MPlayer(object):
             self.slider.setValue(100)
             return
         self.mediaplayer.setPosition(int(self.mediaplayer.duration() * volume / 100))
+        self.videoplayer.setPosition(int(self.videoplayer.duration() * volume / 100))
         if not self.is_stoping:
             self.start_playing()
         self.is_draging_slider = False

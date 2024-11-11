@@ -198,7 +198,7 @@ class BlackRoom:
             credential    (Credential | None, optional): 凭据类. Defaults to None.
         """
         self.__id = black_room_id
-        self.credential = credential if credential else Credential()
+        self.credential: Credential = credential if credential else Credential()
 
     async def get_details(self) -> dict:
         """
@@ -223,13 +223,28 @@ class BlackRoom:
         return BlackReasonType((await self.get_details())["reasonType"])
 
     async def get_id(self) -> int:
+        """
+        获取小黑屋 id
+
+        Returns:
+            int: 小黑屋 id
+        """
         return self.__id
 
-    async def set_id(self, id_) -> None:
+    async def set_id(self, id_: int) -> None:
+        """
+        设置小黑屋 id
+
+        Args:
+            id_ (int): 小黑屋 id
+        """
         self.__init__(id_, self.credential)
 
 
 class JuryCase:
+    """
+    案件仲裁
+    """
     def __init__(self, case_id: str, credential: Credential):
         """
         Args:
@@ -238,7 +253,7 @@ class JuryCase:
             credential (Credential)                    : 凭据类
         """
         self.case_id = case_id
-        self.credential = credential
+        self.credential: Credential = credential
 
     async def get_details(self) -> dict:
         """
