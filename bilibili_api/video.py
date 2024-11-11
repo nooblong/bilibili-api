@@ -448,6 +448,32 @@ class Video:
         }
         return await Api(**api, credential=self.credential, wbi=True).update_params(**params).result
 
+    class AudioQuality(Enum):
+        """
+        视频的音频流清晰度枚举
+
+        - _64K: 64K
+        - _132K: 132K
+        - _192K: 192K
+        - HI_RES: Hi-Res 无损
+        - DOLBY: 杜比全景声
+        """
+
+        _64K = 30216
+        _132K = 30232
+        DOLBY = 30250
+        HI_RES = 30251
+        _192K = 30280
+
+    async def my_detect(self, cid=None,
+                        audio_max_quality: AudioQuality = AudioQuality.HI_RES):
+        if cid is None:
+            info = await self.get_download_url()
+        else:
+            info = await self.get_download_url(cid=cid)
+        detecter = VideoDownloadURLDataDetecter(info)
+        return detecter.detect_best_streams(audio_max_quality=audio_max_quality)
+
     async def get_related(self) -> dict:
         """
         获取相关视频信息。
