@@ -303,6 +303,9 @@ class Event:
             logging.error(f"解析消息错误：{data}")
 
     def __str__(self):
+        msg_type = "[]"
+        user_id = 0
+
         if self.receiver_type == 1:
             if self.receiver_id == self.uid:
                 msg_type = "收到"
@@ -421,6 +424,7 @@ class Session(AsyncEvent):
     """
     会话类，用来开启消息监听。
     """
+
     def __init__(self, credential: Credential, debug=False):
         super().__init__()
         # 会话状态

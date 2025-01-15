@@ -63,6 +63,18 @@ Events：
 
 
 
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| room_display_id | int | 房间展示 ID |
+| debug | Union[bool, None] | 调试模式，将输出更多信息。. Defaults to False. |
+| credential | Union[Credential, None] | 凭据. Defaults to None. |
+| max_retry | Union[int, None] | 连接出错后最大重试次数. Defaults to 5 |
+| retry_after | Union[int, None] | 连接出错后重试间隔时间（秒）. Defaults to 1 |
+
+
 ### async def connect()
 
 连接直播间
@@ -140,6 +152,15 @@ Events：
 | room_display_id | int | 房间展示 id |
 
 
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| room_display_id | int | 房间展示 ID（即 URL 中的 ID） |
+| credential | Union[Credential, None] | 凭据. Defaults to None. |
+
+
 ### async def ban_user()
 
 封禁用户
@@ -148,6 +169,7 @@ Events：
 | name | type | description |
 | - | - | - |
 | uid | int | 用户 UID |
+| hour | int | 禁言时长，-1为永久，0为直到本场结束 |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -182,6 +204,17 @@ Events：
 ### async def get_danmu_info()
 
 获取聊天弹幕服务器配置信息(websocket)
+
+
+
+**Returns:** dict: 调用 API 返回的结果
+
+
+
+
+### async def get_emoticons()
+
+获取本房间可用表情包
 
 
 
@@ -407,6 +440,20 @@ Events：
 | - | - | - |
 | danmaku | Danmaku | 弹幕类 |
 | reply_mid | Union[int, None] | @的 UID. Defaults to None. |
+
+**Returns:** dict: 调用 API 返回的结果
+
+
+
+
+### async def send_emoticon()
+
+直播间发送表情包
+
+
+| name | type | description |
+| - | - | - |
+| emoticon | Danmaku | text为表情包代号 |
 
 **Returns:** dict: 调用 API 返回的结果
 

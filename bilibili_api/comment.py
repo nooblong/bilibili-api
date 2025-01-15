@@ -12,6 +12,7 @@ bilibili_api.comment
 + 课程：ep{5556}
 + 小黑屋: ban/{2600321}
 """
+
 from enum import Enum
 from typing import Union, Optional
 
@@ -316,7 +317,9 @@ class Comment:
 
         api = API["comment"]["report"]
         if content is not None and report_reason != ReportReason.OTHER:
-            raise ArgsException("content 只能在 report_reason=ReportReason.OTHER 时使用")
+            raise ArgsException(
+                "content 只能在 report_reason=ReportReason.OTHER 时使用"
+            )
         elif content is None and report_reason == ReportReason.OTHER:
             raise ArgsException("report_reason=ReportReason.OTHER 时 content 不能为空")
         data = {
@@ -433,7 +436,7 @@ async def get_comments(
 async def get_comments_lazy(
     oid: int,
     type_: CommentResourceType,
-    offset: str = '',
+    offset: str = "",
     order: OrderType = OrderType.TIME,
     credential: Union[Credential, None] = None,
 ) -> dict:
@@ -447,7 +450,7 @@ async def get_comments_lazy(
 
         type_      (CommentsResourceType)        : 资源类枚举。
 
-        offset (str, optional)       : 偏移量。每次请求可获取下次请求对应的偏移量，类似单向链表。
+        offset (str, optional)       : 偏移量。每次请求可获取下次请求对应的偏移量，类似单向链表。对应返回结果的 `["cursor"]["pagination_reply"]["next_offset"]`
 
         order      (OrderType, optional) : 排序方式枚举. Defaults to OrderType.TIME.
 
@@ -458,11 +461,12 @@ async def get_comments_lazy(
     """
     offset = offset.replace('"', '\\"')
     offset = '{"offset":"' + offset + '"}'
+    old_to_new = {0: 2, 2: 3}
     api = API["comment"]["reply_by_session_id"]
     params = {
         "oid": oid,
         "type": type_.value,
-        "mode": order.value,
+        "mode": old_to_new[order.value],
         "pagination_str": offset,
         "web_location": "1315875",
     }

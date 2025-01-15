@@ -200,40 +200,29 @@ class OrderType(Enum):
     asc = "asc"
 
 
-async def name2uid_sync(names: Union[str, List[str]]):
+async def name2uid(names: Union[str, List[str]], credential: Credential = None):
     """
     将用户名转为 uid
 
     Args:
         names (str/List[str]): 用户名
+        credential (Credential, optional): 凭据类. Defaults to None.
 
     Returns:
         dict: 调用 API 返回的结果
     """
+    credential = credential if credential else Credential()
+    credential.raise_for_no_sessdata()
     if isinstance(names, str):
         n = names
     else:
         n = ",".join(names)
     params = {"names": n}
-    return Api(**API["info"]["name_to_uid"]).update_params(**params).result_sync
-
-
-async def name2uid(names: Union[str, List[str]]):
-    """
-    将用户名转为 uid
-
-    Args:
-        names (str/List[str]): 用户名
-
-    Returns:
-        dict: 调用 API 返回的结果
-    """
-    if isinstance(names, str):
-        n = names
-    else:
-        n = ",".join(names)
-    params = {"names": n}
-    return await Api(**API["info"]["name_to_uid"]).update_params(**params).result
+    return (
+        await Api(**API["info"]["name_to_uid"], credential=credential)
+        .update_params(**params)
+        .result
+    )
 
 
 class User:
@@ -256,23 +245,6 @@ class User:
         self.__self_info = None
         self.__access_id: Union[str, None] = None
 
-    def get_user_info_sync(self) -> dict:
-        """
-        获取用户信息（昵称，性别，生日，签名，头像 URL，空间横幅 URL 等）
-
-        Returns:
-            dict: 调用接口返回的内容。
-
-        [用户空间详细信息](https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/user/info.md#%E7%94%A8%E6%88%B7%E7%A9%BA%E9%97%B4%E8%AF%A6%E7%BB%86%E4%BF%A1%E6%81%AF)
-        """
-        params = {
-            "mid": self.__uid,
-        }
-        result = Api(
-            **API["info"]["info"], credential=self.credential, params=params
-        ).result_sync
-        return result
-
     async def get_user_info(self) -> dict:
         """
         获取用户信息（昵称，性别，生日，签名，头像 URL，空间横幅 URL 等）
@@ -282,10 +254,7 @@ class User:
 
         [用户空间详细信息](https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/user/info.md#%E7%94%A8%E6%88%B7%E7%A9%BA%E9%97%B4%E8%AF%A6%E7%BB%86%E4%BF%A1%E6%81%AF)
         """
-        params = {
-            "mid": self.__uid,
-            "w_webid": await self.get_access_id()
-        }
+        params = {"mid": self.__uid, "w_webid": await self.get_access_id()}
         return (
             await Api(**API["info"]["info"], credential=self.credential)
             .update_params(**params)
@@ -439,10 +408,7 @@ class User:
             dict: 调用接口返回的内容。
         """
         api = API["info"]["live"]
-        params = {
-            "mid": self.__uid,
-            "w_webid": await self.get_access_id()
-        }
+        params = {"mid": self.__uid, "w_webid": await self.get_access_id()}
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
@@ -473,7 +439,6 @@ class User:
             dict: 调用接口返回的内容。
         """
         api = API["info"]["video"]
-        dm_rand = "ABCDEFGHIJK"
         params = {
             "mid": self.__uid,
             "ps": ps,
@@ -481,12 +446,9 @@ class User:
             "pn": pn,
             "keyword": keyword,
             "order": order.value,
-            # -352 https://github.com/Nemo2011/bilibili-api/issues/595 需要跟进
-            "dm_img_list": "[]",  # 鼠标/键盘操作记录
-            "dm_img_str": "".join(random.sample(dm_rand, 2)),
-            "dm_cover_img_str": "".join(random.sample(dm_rand, 2)),
-            "dm_img_inter": '{"ds":[],"wh":[0,0,0],"of":[0,0,0]}',
             "order_avoided": True,
+            "platform": "web",
+            "w_webid": await self.get_access_id(),
         }
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
@@ -1072,7 +1034,7 @@ class User:
                 return self.__access_id
 
         render_data: dict = await get_user_dynamic_render_data(self.__uid)
-        self.__access_id = render_data['access_id']
+        self.__access_id = render_data["access_id"]
 
         return self.__access_id
 
@@ -1084,8 +1046,8 @@ class User:
             return False
 
         payload = jwt.decode(jwt=self.__access_id, options={"verify_signature": False})
-        created_at: int = payload['iat']
-        ttl: int = payload['ttl']
+        created_at: int = payload["iat"]
+        ttl: int = payload["ttl"]
         current_timestamp: int = int(time.time())
 
         return (created_at + ttl) <= current_timestamp

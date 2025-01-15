@@ -4,6 +4,7 @@ bilibili_api.manga
 漫画相关操作
 """
 
+import base64
 import datetime
 from enum import Enum
 from urllib.parse import urlparse
@@ -12,10 +13,12 @@ from typing import Dict, List, Union, Optional
 import httpx
 
 from bilibili_api.utils.utils import get_api
-from bilibili_api.errors import ArgsException
+from bilibili_api.exceptions import ArgsException
 from bilibili_api.utils.picture import Picture
 from bilibili_api.utils.credential import Credential
 from bilibili_api.utils.network import HEADERS, Api
+
+from Cryptodome.PublicKey import ECC
 
 API = get_api("manga")
 
@@ -162,21 +165,12 @@ class Manga:
             dict: 调用 API 返回的结果
         """
         api = API["info"]["detail"]
-        params = {"comic_id": self.__manga_id}
+        params = {"device": "pc", "platform": "web", "nov": 25}
+        data = {"comic_id": self.get_manga_id()}
         return (
-            await Api(
-                **api,
-                credential=self.credential,
-                no_csrf=(
-                    False
-                    if (
-                        self.credential.has_sessdata()
-                        and self.credential.has_bili_jct()
-                    )
-                    else True
-                ),
-            )
+            await Api(**api, credential=self.credential, no_csrf=True, json_body=True)
             .update_params(**params)
+            .update_data(**data)
             .result
         )
 
@@ -194,7 +188,7 @@ class Manga:
         episode_id: Optional[int] = None,
     ) -> dict:
         """
-        获取某一话的详细信息
+        获取某一话信息
 
         Args:
             episode_count (int | float | None): 第几话.
@@ -202,7 +196,7 @@ class Manga:
             episode_id    (int | None)        : 对应的话的 id. 可以通过 `get_episode_id` 获取。
 
         Returns:
-            dict: 对应的话的详细信息
+            dict: 对应的话信息
 
         **注意：episode_count 和 episode_id 中必须提供一个参数。**
         """
@@ -257,122 +251,109 @@ class Manga:
                 raise ArgsException("episode_count 和 episode_id 中必须提供一个参数。")
             episode_id = await self.get_episode_id(episode_count)
         api = API["info"]["episode_images"]
-        params = {"ep_id": episode_id}
+        params = {"device": "pc", "platform": "web", "nov": 25}
+        data = {"ep_id": episode_id}
         return (
-            await Api(
-                **api,
-                credential=self.credential,
-                no_csrf=(
-                    False
-                    if (
-                        self.credential.has_sessdata()
-                        and self.credential.has_bili_jct()
-                    )
-                    else True
-                ),
-            )
+            await Api(**api, credential=self.credential, no_csrf=True)
             .update_params(**params)
+            .update_data(**data)
             .result
         )
 
-    async def get_images(
-        self,
-        episode_count: Optional[Union[int, float]] = None,
-        episode_id: Optional[int] = None,
-    ) -> List[Dict]:
-        """
-        获取某一话的所有图片
+    # async def get_images(
+    #     self,
+    #     episode_count: Optional[Union[int, float]] = None,
+    #     episode_id: Optional[int] = None,
+    # ) -> List[Dict]:
+    #     """
+    #     # 此函数已失效 2025-01-04
+    #     获取某一话的所有图片
 
-        Args:
-            episode_count (int | float | None): 第几话.
+    #     Args:
+    #         episode_count (int | float | None): 第几话.
 
-            episode_id    (int | None)        : 对应的话的 id. 可以通过 `get_episode_id` 获取。
+    #         episode_id    (int | None)        : 对应的话的 id. 可以通过 `get_episode_id` 获取。
 
-        Returns:
-            List[Picture]: 所有的图片
+    #     Returns:
+    #         List[Picture]: 所有的图片
 
-        **注意：episode_count 和 episode_id 中必须提供一个参数。**
+    #     **注意：episode_count 和 episode_id 中必须提供一个参数。**
 
-        注意事项：此函数速度非常慢并且失败率高
-        """
-        data = await self.get_images_url(
-            episode_count=episode_count, episode_id=episode_id
-        )
-        pictures: List[Dict] = []
+    #     注意事项：此函数速度非常慢并且失败率高
+    #     """
+    #     data = await self.get_images_url(
+    #         episode_count=episode_count, episode_id=episode_id
+    #     )
+    #     pictures: List[Dict] = []
 
-        async def get_real_image_url(url: str) -> str:
-            token_api = API["info"]["image_token"]
-            datas = {"urls": f'["{url}"]'}
-            token_data = (
-                await Api(
-                    **token_api,
-                    credential=self.credential,
-                    no_csrf=(
-                        False
-                        if (
-                            self.credential.has_sessdata()
-                            and self.credential.has_bili_jct()
-                        )
-                        else True
-                    ),
-                )
-                .update_data(**datas)
-                .result
-            )
-            return token_data[0]["url"] + "?token=" + token_data[0]["token"]
+    #     async def get_real_image_url(url: str) -> str:
+    #         token_api = API["info"]["image_token"]
+    #         params = {"device": "pc", "platform": "web", "nov": 25}
+    #         datas = {"urls": f'["{url}"]'}
+    #         token_data = (
+    #             await Api(
+    #                 **token_api,
+    #                 credential=self.credential,
+    #                 no_csrf=True,
+    #             )
+    #             .update_params(**params)
+    #             .update_data(**datas)
+    #             .result
+    #         )
+    #         return token_data[0]["url"] + "?token=" + token_data[0]["token"]
 
-        for img in data["images"]:
-            url = await get_real_image_url(img["path"])
-            pictures.append(
-                {
-                    "x": img["x"],
-                    "y": img["y"],
-                    "picture": Picture.from_content(
-                        (await httpx.AsyncClient().get(url, headers=HEADERS)).content,
-                        "jpg",
-                    ),
-                }
-            )
-        return pictures
+    #     for img in data["images"]:
+    #         url = await get_real_image_url(img["path"])
+    #         pictures.append(
+    #             {
+    #                 "x": img["x"],
+    #                 "y": img["y"],
+    #                 "picture": Picture.from_content(
+    #                     (await httpx.AsyncClient().get(url, headers=HEADERS)).content,
+    #                     "jpg",
+    #                 ),
+    #             }
+    #         )
+    #     return pictures
 
 
-async def manga_image_url_turn_to_Picture(
-    url: str, credential: Optional[Credential] = None
-) -> Picture:
-    """
-    将 Manga.get_images_url 函数获得的图片 url 转换为 Picture 类。
+# async def manga_image_url_turn_to_Picture(
+#     url: str, credential: Optional[Credential] = None
+# ) -> Picture:
+#     """
+#     # 此函数已失效 2025-01-04
+#     将 Manga.get_images_url 函数获得的图片 url 转换为 Picture 类。
 
-    Args:
-        url        (str)               : 未经处理的漫画图片链接。
+#     Args:
+#         url        (str)               : 未经处理的漫画图片链接。
 
-        credential (Credential | None): 凭据类. Defaults to None.
+#         credential (Credential | None): 凭据类. Defaults to None.
 
-    Returns:
-        Picture: 图片类。
-    """
-    url = urlparse(url).path
-    credential = credential if credential else Credential()
+#     Returns:
+#         Picture: 图片类。
+#     """
+#     url = urlparse(url).path
+#     credential = credential if credential else Credential()
 
-    async def get_real_image_url(url: str) -> str:
-        token_api = API["info"]["image_token"]
-        datas = {"urls": f'["{url}"]'}
-        token_data = (
-            await Api(
-                **token_api,
-                credential=credential,
-                no_csrf=(
-                    False
-                    if (credential.has_sessdata() and credential.has_bili_jct())
-                    else True
-                ),
-            )
-            .update_data(**datas)
-            .result
-        )
-        return f'{token_data[0]["url"]}?token={token_data[0]["token"]}'
+#     def get_m1():
+#         key = ECC.generate(curve="P-256")
+#         pubKey = key.public_key().export_key(format="raw")
+#         return base64.b64encode(pubKey).decode("ascii")
 
-    url = await get_real_image_url(url)
-    return await Picture.async_load_url(url)
+#     async def get_real_image_url(url: str) -> str:
+#         token_api = API["info"]["image_token"]
+#         params = {"device": "pc", "platform": "web", "nov": 25}
+#         datas = {"urls": f'["{url}@1100w.avif"]', "m1": get_m1()}
+#         token_data = (
+#             await Api(**token_api, credential=credential, no_csrf=True, json_body=True)
+#             .update_params(**params)
+#             .update_data(**datas)
+#             .result
+#         )
+#         return token_data[0]["complete_url"]
+
+#     url = await get_real_image_url(url)
+#     return await Picture.async_load_url(url)
 
 
 async def set_follow_manga(
@@ -399,8 +380,15 @@ async def set_follow_manga(
         api = API["operate"]["add_favorite"]
     else:
         api = API["operate"]["del_favorite"]
+
+    params = {"device": "pc", "platform": "web", "nov": 25}
     data = {"comic_ids": str(manga.get_manga_id())}
-    return await Api(**api, credential=credential).update_data(**data).result
+    return (
+        await Api(**api, credential=credential)
+        .update_params(**params)
+        .update_data(**data)
+        .result
+    )
 
 
 async def get_raw_manga_index(
@@ -438,7 +426,7 @@ async def get_raw_manga_index(
     """
     credential = credential if credential else Credential()
     api = API["info"]["index"]
-    params = {"device": "pc", "platform": "web"}
+    params = {"device": "pc", "platform": "web", "nov": 25}
     data = {
         "area_id": area.value,
         "order": order.value,
@@ -519,7 +507,7 @@ async def get_manga_update(
     """
     credential = credential if credential else Credential()
     api = API["info"]["update"]
-    params = {"device": "pc", "platform": "web"}
+    params = {"device": "pc", "platform": "web", "nov": 25}
     if isinstance(date, datetime.datetime):
         date = date.strftime("%Y-%m-%d")
     data = {"date": date, "page_num": pn, "page_size": ps}
@@ -550,7 +538,7 @@ async def get_manga_home_recommend(
     """
     credential = credential if credential else Credential()
     api = API["info"]["home_recommend"]
-    params = {"device": "pc", "platform": "web"}
+    params = {"device": "pc", "platform": "web", "nov": 25}
     data = {"page_num": pn, "seed": seed}
     manga_data = (
         await Api(**api, credential=credential, no_csrf=True)

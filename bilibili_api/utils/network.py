@@ -10,7 +10,9 @@ import time
 import atexit
 import asyncio
 import hashlib
+import urllib
 import hmac
+import pprint
 from functools import reduce
 from urllib.parse import urlencode
 from dataclasses import field, dataclass
@@ -25,7 +27,12 @@ from .sync import sync
 from .. import settings
 from .utils import get_api
 from .credential import Credential
-from ..exceptions import ApiException, ResponseCodeException, NetworkException, ExClimbWuzhiException
+from ..exceptions import (
+    ApiException,
+    ResponseCodeException,
+    NetworkException,
+    ExClimbWuzhiException,
+)
 from .exclimbwuzhi import *
 
 __httpx_session_pool: Dict[asyncio.AbstractEventLoop, httpx.AsyncClient] = {}
@@ -110,12 +117,9 @@ HEADERS = {
 API = get_api("credential")
 
 
-def retry_sync(times: int = 3):
+def retry_sync():
     """
     重试装饰器
-
-    Args:
-        times (int): 最大重试次数 默认 3 次 负数则一直重试直到成功
 
     Returns:
         Any: 原函数调用结果
@@ -123,8 +127,7 @@ def retry_sync(times: int = 3):
 
     def wrapper(func):
         def inner(*args, **kwargs):
-            # 这里必须新建一个变量用来计数！！不能直接对 times 操作！！！
-            nonlocal times
+            times = settings.wbi_retry_times
             loop = times
             while loop != 0:
                 if loop != times and settings.request_log:
@@ -150,12 +153,9 @@ def retry_sync(times: int = 3):
     return wrapper
 
 
-def retry(times: int = 3):
+def retry():
     """
     重试装饰器
-
-    Args:
-        times (int): 最大重试次数 默认 3 次 负数则一直重试直到成功
 
     Returns:
         Any: 原函数调用结果
@@ -164,7 +164,7 @@ def retry(times: int = 3):
     def wrapper(func: Coroutine):
         async def inner(*args, **kwargs):
             # 这里必须新建一个变量用来计数！！不能直接对 times 操作！！！
-            nonlocal times
+            times = settings.wbi_retry_times
             loop = times
             while loop != 0:
                 if loop != times and settings.request_log:
@@ -187,12 +187,6 @@ def retry(times: int = 3):
 
         return inner
 
-    if isAsync(times):
-        # 防呆不防傻 防止有人 @retry() 不打括号
-        func = times
-        times = 3
-        return wrapper(func)
-
     return wrapper
 
 
@@ -209,6 +203,10 @@ class Api:
         comment (str, optional): 注释. Defaults to "".
 
         wbi (bool, optional): 是否使用 wbi 鉴权. Defaults to False.
+
+        wbi2 (bool, optional): 是否使用参数进一步的 wbi 鉴权. Defaults to False.
+
+        bili_ticket (bool, optional): 是否使用 bili_ticket. Defaults to False.
 
         verify (bool, optional): 是否验证凭据. Defaults to False.
 
@@ -229,10 +227,13 @@ class Api:
     method: str
     comment: str = ""
     wbi: bool = False
+    wbi2: bool = False
+    bili_ticket: bool = False
     verify: bool = False
     no_csrf: bool = False
     json_body: bool = False
     ignore_code: bool = False
+    sign: bool = False
     data: dict = field(default_factory=dict)
     params: dict = field(default_factory=dict)
     files: dict = field(default_factory=dict)
@@ -360,12 +361,21 @@ class Api:
         if self.method != "GET" and not self.no_csrf:
             self.credential.raise_for_no_bili_jct()
 
-        if settings.request_log:
-            settings.logger.info(self)
-
         # jsonp
         if self.params.get("jsonp") == "jsonp":
             self.params["callback"] = "callback"
+
+        if self.wbi2:
+            # -352 https://github.com/Nemo2011/bilibili-api/issues/595 需要跟进
+            dm_rand = "ABCDEFGHIJK"
+            self.params.update(
+                {
+                    "dm_img_list": "[]",  # 鼠标/键盘操作记录
+                    "dm_img_str": "".join(random.sample(dm_rand, 2)),
+                    "dm_cover_img_str": "".join(random.sample(dm_rand, 2)),
+                    "dm_img_inter": '{"ds":[],"wh":[0,0,0],"of":[0,0,0]}',
+                }
+            )
 
         if self.wbi:
             global wbi_mixin_key
@@ -392,6 +402,24 @@ class Api:
         else:
             cookies["buvid3"] = self.credential.buvid3
         # cookies["Domain"] = ".bilibili.com"
+
+        if settings.request_log:
+            settings.logger.info(self)
+        if self.sign:
+            appkey = "4409e2ce8ffd12b8"
+            appsec = "59b43e04ad6965f34319062b478f83dd"
+            if self.method in ["POST", "DELETE", "PATCH"]:
+                self.data["appkey"] = appkey
+                self.data = dict(sorted(self.data.items()))
+                self.data["sign"] = hashlib.md5(
+                    (urllib.parse.urlencode(self.data) + appsec).encode("utf-8")
+                ).hexdigest()
+            else:
+                self.params["appkey"] = appkey
+                self.params = dict(sorted(self.params.items()))
+                self.params["sign"] = hashlib.md5(
+                    (urllib.parse.urlencode(self.params) + appsec).encode("utf-8")
+                ).hexdigest()
 
         config = {
             "url": self.url,
@@ -429,12 +457,22 @@ class Api:
         if self.method != "GET" and not self.no_csrf:
             self.credential.raise_for_no_bili_jct()
 
-        if settings.request_log:
-            settings.logger.info(self)
-
         # jsonp
         if self.params.get("jsonp") == "jsonp":
             self.params["callback"] = "callback"
+
+        # 这东西不放在前面工作不了，不到
+        if self.wbi2:
+            # -352 https://github.com/Nemo2011/bilibili-api/issues/595 需要跟进
+            dm_rand = "ABCDEFGHIJK"
+            self.params.update(
+                {
+                    "dm_img_list": "[]",  # 鼠标/键盘操作记录
+                    "dm_img_str": "".join(random.sample(dm_rand, 2)),
+                    "dm_cover_img_str": "".join(random.sample(dm_rand, 2)),
+                    "dm_img_inter": '{"ds":[],"wh":[0,0,0],"of":[0,0,0]}',
+                }
+            )
 
         if self.wbi:
             global wbi_mixin_key
@@ -459,6 +497,34 @@ class Api:
         else:
             cookies["buvid3"] = self.credential.buvid3
         # cookies["Domain"] = ".bilibili.com"
+
+        cookies["opus-goback"] = "1"
+
+        if self.bili_ticket:
+            cookies["bili_ticket"] = await get_bili_ticket(self.credential)
+            cookies["bili_ticket_expires"] = str(int(time.time()) + 2 * 86400)
+            if settings.request_log:
+                settings.logger.info(
+                    f'使用 bili_ticket [{cookies["bili_ticket"]}] expires [{cookies["bili_ticket_expires"]}]'
+                )
+
+        if settings.request_log:
+            settings.logger.info(self)
+        if self.sign:
+            appkey = "4409e2ce8ffd12b8"
+            appsec = "59b43e04ad6965f34319062b478f83dd"
+            if self.method in ["POST", "DELETE", "PATCH"]:
+                self.data["appkey"] = appkey
+                self.data = dict(sorted(self.data.items()))
+                self.data["sign"] = hashlib.md5(
+                    (urllib.parse.urlencode(self.data) + appsec).encode("utf-8")
+                ).hexdigest()
+            else:
+                self.params["appkey"] = appkey
+                self.params = dict(sorted(self.params.items()))
+                self.params["sign"] = hashlib.md5(
+                    (urllib.parse.urlencode(self.params) + appsec).encode("utf-8")
+                ).hexdigest()
 
         config = {
             "url": self.url,
@@ -505,7 +571,7 @@ class Api:
         else:
             return await resp.text()
 
-    @retry_sync(times=settings.wbi_retry_times)
+    @retry_sync()
     def request_sync(self, raw: bool = False, **kwargs) -> Union[int, str, dict]:
         """
         向接口发送请求。
@@ -527,8 +593,10 @@ class Api:
         )
         return real_data
 
-    @retry(times=settings.wbi_retry_times)
-    async def request(self, raw: bool = False, byte: bool = False, **kwargs) -> Union[int, str, dict]:
+    @retry()
+    async def request(
+        self, raw: bool = False, byte: bool = False, **kwargs
+    ) -> Union[int, str, dict]:
         """
         向接口发送请求。
 
@@ -548,7 +616,10 @@ class Api:
             except httpx.HTTPStatusError as e:
                 raise NetworkException(resp.status_code, str(resp.status_code))
             if byte:
-                return resp.read()
+                ret = resp.read()
+                if settings.request_log and settings.request_log_show_response:
+                    settings.logger.info(f"获得字节数据\n{str(ret)}")
+                return ret
             real_data = self._process_response(
                 resp, await self._get_resp_text(resp), raw=raw
             )
@@ -561,7 +632,10 @@ class Api:
                 except aiohttp.ClientResponseError as e:
                     raise NetworkException(e.status, e.message)
                 if byte:
-                    return await resp.read()
+                    ret = await resp.read()
+                    if settings.request_log and settings.request_log_show_response:
+                        settings.logger.info(f"获得字节数据\n{str(ret)}")
+                    return ret
                 real_data = self._process_response(
                     resp, await self._get_resp_text(resp), raw=raw
                 )
@@ -590,6 +664,9 @@ class Api:
             # JSON
             resp_data: dict = json.loads(resp_text)
 
+        if settings.request_log and settings.request_log_show_response:
+            settings.logger.info(f"获得 json 数据\n{pprint.pformat(resp_data)}")
+
         if raw:
             return resp_data
 
@@ -612,8 +689,6 @@ class Api:
                     raise ResponseCodeException(code, msg, resp_data)
             elif OK != 1:
                 raise ResponseCodeException(-1, "API 返回数据 OK 不为 1", resp_data)
-        elif settings.request_log:
-            settings.logger.info(resp_data)
 
         real_data = resp_data.get("data") if OK is None else resp_data
         if real_data is None:
@@ -694,7 +769,7 @@ async def active_buvid(buvid3: str, buvid4: str) -> dict:
             "buvid3": buvid3,
             "buvid4": buvid4,
             "buvid_fp": gen_buvid_fp(payload, 31),
-            "_uuid": uuid
+            "_uuid": uuid,
         },
     )
     if settings.http_client == settings.HTTPClient.HTTPX:
@@ -704,7 +779,8 @@ async def active_buvid(buvid3: str, buvid4: str) -> dict:
     text = json.loads(text)
     if text["code"] != 0:
         raise ExClimbWuzhiException(text["code"], text["msg"])
-    settings.logger.info(f"激活 buvid3: [{buvid3}] 成功")
+    if settings.request_log:
+        settings.logger.info(f"激活 buvid3: [{buvid3}] 成功")
 
 
 def get_nav_sync(credential: Union[Credential, None] = None):
@@ -815,7 +891,7 @@ def hmac_sha256(key: str, message: str) -> str:
     return hash_hex
 
 
-async def get_bili_ticket() -> str:
+async def get_bili_ticket(credential: Credential = None) -> str:
     """
     获取 bili_ticket，但目前没用到，暂时不启用
 
@@ -824,6 +900,7 @@ async def get_bili_ticket() -> str:
     Returns:
         str: bili_ticket
     """
+    credential = credential if credential else Credential()
     o = hmac_sha256("XgwSnGZ1p", f"ts{int(time.time())}")
     url = "https://api.bilibili.com/bapis/bilibili.api.ticket.v1.Ticket/GenWebTicket"
     params = {
@@ -833,7 +910,9 @@ async def get_bili_ticket() -> str:
         "csrf": "",
     }
     return (
-        await Api(method="POST", url=url, no_csrf=True).update_params(**params).result
+        await Api(method="POST", url=url, no_csrf=True, credential=credential)
+        .update_params(**params)
+        .result
     )["ticket"]
 
 
@@ -884,8 +963,7 @@ def get_session() -> httpx.AsyncClient:
     if session is None or last_proxy != settings.proxy:
         if settings.proxy != "":
             last_proxy = settings.proxy
-            proxies = {"all://": settings.proxy}
-            session = httpx.AsyncClient(proxies=proxies, timeout=settings.timeout)  # type: ignore
+            session = httpx.AsyncClient(proxy=settings.proxy, timeout=settings.timeout)  # type: ignore
         else:
             last_proxy = ""
             session = httpx.AsyncClient(timeout=settings.timeout)

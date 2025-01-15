@@ -3,6 +3,7 @@ bilibili_api.utils.short
 
 一个很简单的处理短链接的模块，主要是读取跳转链接。
 """
+
 from typing import Optional
 
 from .. import settings
@@ -17,7 +18,7 @@ async def get_real_url(short_url: str, credential: Optional[Credential] = None) 
     Args:
         short_url(str): 短链接。
 
-        credential(Credential \| None): 凭据类。
+        credential(Credential | None): 凭据类。
 
     Returns:
         目标链接（如果不是有效的链接会报错）

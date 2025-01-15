@@ -31,6 +31,13 @@ BuildDynamic.create_by_args(text="114514", topic_id=114514)
 
 
 
+### def \_\_init\_\_()
+
+构建动态内容
+
+
+
+
 ### def add_at()
 
 添加@用户，支持传入 User 类或 UID
@@ -274,6 +281,15 @@ BuildDynamic.create_by_args(text="114514", topic_id=114514)
 | credential | Credential | 凭据类 |
 
 
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| dynamic_id | int | 动态 ID |
+| credential | Union[Credential, None] | 凭据类. Defaults to None. |
+
+
 ### async def delete()
 
 删除动态
@@ -287,11 +303,11 @@ BuildDynamic.create_by_args(text="114514", topic_id=114514)
 
 ### def get_dynamic_id()
 
-获取动态 id
+获取 动态 ID。
 
 
 
-**Returns:** int: _description_
+**Returns:** int: 动态 ID。
 
 
 
@@ -305,7 +321,7 @@ BuildDynamic.create_by_args(text="114514", topic_id=114514)
 
 | name | type | description |
 | - | - | - |
-| features | Union[str, None] | 默认 itemOpusStyle. |
+| features | Union[str, None] | 默认 itemOpusStyle,opusBigCover,onlyfansVote,endFooterHidden,decorationCard,onlyfansAssetsV2,ugcDelete. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -355,17 +371,6 @@ BuildDynamic.create_by_args(text="114514", topic_id=114514)
 
 
 
-### def is_opus()
-
-判断是否为 opus 动态
-
-
-
-**Returns:** bool: 是否为 opus 动态
-
-
-
-
 ### async def repost()
 
 转发动态
@@ -374,6 +379,20 @@ BuildDynamic.create_by_args(text="114514", topic_id=114514)
 | name | type | description |
 | - | - | - |
 | text | Union[str, None] | 转发动态时的文本内容. Defaults to "转发动态" |
+
+**Returns:** dict: 调用 API 返回的结果
+
+
+
+
+### async def set_favorite()
+
+设置动态（图文）收藏状态
+
+
+| name | type | description |
+| - | - | - |
+| status | Union[bool, None] | 收藏状态. Defaults to True |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -391,16 +410,6 @@ BuildDynamic.create_by_args(text="114514", topic_id=114514)
 
 **Returns:** dict: 调用 API 返回的结果
 
-
-
-
-### def turn_to_opus()
-
-对 opus 动态，将其转换为图文
-
-
-
-**Returns:** None
 
 
 

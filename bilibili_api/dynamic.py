@@ -13,20 +13,17 @@ from enum import Enum
 from datetime import datetime
 from typing import Any, List, Tuple, Union, Optional
 
-import httpx
-
-from .user import name2uid_sync
 from .utils import utils
-from .utils.sync import sync
 from .utils.picture import Picture
-from . import user, vote, exceptions
+from . import user, vote
 from .utils.credential import Credential
 from .utils.network import Api
-from .utils import cache_pool
 from .exceptions.DynamicExceedImagesException import DynamicExceedImagesException
-from . import opus
+from .article import Article
+from .utils import cache_pool
 
 API = utils.get_api("dynamic")
+API_opus = utils.get_api("opus")
 raise_for_statement = utils.raise_for_statement
 
 
@@ -338,7 +335,7 @@ class BuildDynamic:
         """
         if isinstance(uid, user.User):
             uid = uid.__uid
-        name = user.User(uid).get_user_info_sync().get("name")
+        name = user.User(uid).get_user_info_sync().get("name") # FIXME: Don't use sync function
         self.contents.append(
             {"biz_id": uid, "type": DynamicContentType.AT.value, "raw_text": f"@{name}"}
         )
@@ -373,7 +370,7 @@ class BuildDynamic:
         Args:
             vote (vote.Vote): 投票对象
         """
-        vote.get_info_sync()
+        vote.get_info_sync() # FIXME: Don't use sync function
         self.contents.append(
             {
                 "biz_id": str(vote.get_vote_id()),
@@ -412,7 +409,7 @@ class BuildDynamic:
             for match in match_result:
                 uname = match.group()
                 try:
-                    name_to_uid_resp = name2uid_sync(uname)
+                    name_to_uid_resp = name2uid_sync(uname) # FIXME: Don't use sync function
                     uid = name_to_uid_resp["uid_list"][0]["uid"]
                 except KeyError:
                     # 没有此用户
@@ -780,11 +777,28 @@ class Dynamic:
             credential (Credential | None, optional): 凭据类. Defaults to None.
         """
         self.__dynamic_id = dynamic_id
-        self.credential: Credential = credential if credential is not None else Credential()
+        self.__detail = None
+        self.credential: Credential = (
+            credential if credential is not None else Credential()
+        )
 
-        if cache_pool.dynamic_is_opus.get(self.__dynamic_id):
-            self.__opus = cache_pool.dynamic_is_opus[self.__dynamic_id]
-        else:
+    def get_dynamic_id(self) -> None:
+        """
+        获取 动态 ID。
+
+        Returns:
+            int: 动态 ID。
+        """
+        return self.__dynamic_id
+
+    async def get_info(self) -> dict:
+        """
+        获取动态信息
+
+        Returns:
+            dict: 调用 API 返回的结果
+        """
+        if not self.__detail:
             api = API["info"]["detail"]
             params = {
                 "id": self.__dynamic_id,
@@ -796,62 +810,66 @@ class Dynamic:
                 "x-bili-device-req-json": '{"platform":"web","device":"pc"}',
                 "x-bili-web-req-json": '{"spm_id":"333.1368"}',
             }
-            data = (
-                Api(**api, credential=self.credential)
+            self.__detail = (
+                await Api(**api, credential=self.credential)
                 .update_params(**params)
-                .result_sync
+                .result
             )
-            self.__opus = data["item"]["basic"]["comment_type"] != 11
-            cache_pool.dynamic_is_opus[self.__dynamic_id] = self.__opus
+        return self.__detail
 
-    def get_dynamic_id(self) -> int:
+    async def is_article(self) -> bool:
         """
-        获取动态 id
+        判断动态是否为专栏发布动态（评论、点赞等数据专栏/动态/图文共享）
 
         Returns:
-            int: _description_
+            bool: 是否为专栏
         """
-        return self.__dynamic_id
+        if cache_pool.dynamic_is_article.get(self.get_dynamic_id()) is None:
+            cache_pool.dynamic_is_article[self.get_dynamic_id()] = (
+                await self.get_info()
+            )["item"]["basic"]["comment_type"] == 12
+        return cache_pool.dynamic_is_article[self.get_dynamic_id()]
 
-    def is_opus(self) -> DynamicType:
+    async def turn_to_article(self) -> "Article":
         """
-        判断是否为 opus 动态
+        将专栏发布动态转为对应专栏（评论、点赞等数据专栏/动态/图文共享）
+
+        不会核验。如需核验使用 `await is_article()`。
+
+        转换后可投币。
 
         Returns:
-            bool: 是否为 opus 动态
+            Article: 专栏实例
         """
-        return self.__opus
-
-    def turn_to_opus(self) -> "opus.Opus":
-        """
-        对 opus 动态，将其转换为图文
-        """
-        raise_for_statement(self.__opus, "仅支持图文动态")
-        return opus.Opus(self.__dynamic_id, credential=self.credential)
-
-    async def get_info(self, features: str = "itemOpusStyle") -> dict:
-        """
-        (对 Opus 动态，获取动态内容建议使用 Opus.get_detail())
-
-        获取动态信息
-
-        Args:
-            features (str, optional): 默认 itemOpusStyle.
-
-        Returns:
-            dict: 调用 API 返回的结果
-        """
-
-        api = API["info"]["detail"]
-        params = {
-            "id": self.__dynamic_id,
-            "timezone_offset": -480,
-            "features": features,
-        }
-        data = (
-            await Api(**api, credential=self.credential).update_params(**params).result
+        if cache_pool.dynamic2article.get(self.get_dynamic_id()) is None:
+            # 此处使用 is_article 需要调用 get_info
+            # 而获取动态对应专栏也需要 get_info，且请求结果会缓存
+            # 因此最终只会请求一次，可以认为是提前请求
+            if not await self.is_article():
+                # 为防止 rid_str 字段其他的值匹配到对应专栏，
+                # 用动态的 id 覆盖
+                cache_pool.dynamic2article[self.get_dynamic_id()] = (
+                    self.get_dynamic_id()
+                )
+            else:
+                cache_pool.dynamic2article[self.get_dynamic_id()] = (
+                    await self.get_info()
+                )["item"]["basic"]["rid_str"]
+            # 所以为什么这里不设置核验呢，~~为了追求和 Article.turn_to_note 一样的对称美~~
+            # 考虑 article 和 note 转换，note 初始化可以瞎填，不能保证存在
+            # 而转换的时候无需网络请求，因此可能转换完 article 的 is_note 会被造假
+            # 因此 Note.turn_to_article 没有 cache_pool 缓存
+            # 同理 Article.turn_to_note 也没有缓存，缓存只存在于 await is_note()，有请求
+            # 如果在 Article.turn_to_note 中加入核验，某些情境下会多出请求，因此将核验剥离
+            # 这样既可以实现核验，也可以不核验。
+            # 这里这么做也是这个遵循目的，为此还需要保证将错就错不会造成其他逻辑问题。
+            cache_pool.article2dynamic[
+                cache_pool.dynamic2article[self.get_dynamic_id()]
+            ] = self.get_dynamic_id()
+        return Article(
+            cvid=cache_pool.dynamic2article[self.get_dynamic_id()],
+            credential=self.credential,
         )
-        return data
 
     async def get_reaction(self, offset: str = "") -> dict:
         """
@@ -865,7 +883,7 @@ class Dynamic:
         """
 
         api = API["info"]["reaction"]
-        params = {"web_location": "333.1369", "offset": "", "id": self.get_dynamic_id()}
+        params = {"web_location": "333.1369", "offset": "", "id": self.__dynamic_id}
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
@@ -960,6 +978,65 @@ class Dynamic:
         data = await _get_text_data(text)
         data["dynamic_id"] = self.__dynamic_id
         return await Api(**api, credential=self.credential).update_data(**data).result
+
+    async def set_favorite(self, status: bool = True) -> dict:
+        """
+        设置动态（图文）收藏状态
+
+        Args:
+            status (bool, optional): 收藏状态. Defaults to True
+
+        Returns:
+            dict: 调用 API 返回的结果
+        """
+        self.credential.raise_for_no_sessdata()
+        self.credential.raise_for_no_bili_jct()
+
+        api = API_opus["operate"]["simple_action"]
+        params = {
+            "csrf": self.credential.bili_jct,
+        }
+        data = {
+            "meta": {
+                "spmid": "444.42.0.0",
+                "from_spmid": "333.1365.0.0",
+                "from": "unknown",
+            },
+            "entity": {
+                "object_id_str": str(self.__dynamic_id),
+                "type": {
+                    "biz": 2,
+                },
+            },
+            "action": 3 if status else 4,
+        }
+        return (
+            await Api(**api, credential=self.credential)
+            .update_params(**params)
+            .update_data(**data)
+            .result
+        )
+
+    async def get_lottery_info(self) -> dict:
+        """
+        获取动态抽奖信息
+
+        Returns:
+            dict: 调用 API 返回的结果
+        """
+        self.credential.raise_for_no_sessdata()
+        self.credential.raise_for_no_bili_jct()
+
+        api = API["info"]["lottery"]
+        params = {
+            "business_id": self.get_dynamic_id(),
+            "business_type": 1,
+            "csrf": self.credential.bili_jct,
+            "web_location": "333.1330",
+        }
+        return (
+            await Api(**api, credential=self.credential).update_params(**params).result
+        )
 
 
 async def get_new_dynamic_users(credential: Union[Credential, None] = None) -> dict:

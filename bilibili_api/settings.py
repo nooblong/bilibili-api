@@ -7,6 +7,7 @@ bilibili_api.settings
 import logging
 from enum import Enum
 
+
 class HTTPClient(Enum):
     """
     - AioHttp: aiohttp
@@ -16,14 +17,15 @@ class HTTPClient(Enum):
     AIOHTTP = "aiohttp"
     HTTPX = "httpx"
 
+
 http_client: HTTPClient = HTTPClient.AIOHTTP
 """
-用于设置使用的 HTTP 客户端，默认为 Httpx
+用于设置使用的 HTTP 客户端，默认为 AioHTTP
 
 e.x.:
 ``` python
 from bilibili_api import settings
-settings.http_client = settings.HTTPClient.AIOHTTP
+settings.http_client = settings.HTTPClient.HTTPX
 ```
 
 **Note: 当前模块所有 `Web Socket` 操作强制使用 `aiohttp`**
@@ -53,6 +55,11 @@ geetest_auto_open: bool = True
 request_log: bool = False
 """
 请求 Api 时是否打印 Api 信息
+"""
+
+request_log_show_response: bool = False
+"""
+请求 Api 打印 Api 信息是否打印响应信息（避免信息过多）
 """
 
 wbi_retry_times: int = 3

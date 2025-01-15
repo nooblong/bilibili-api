@@ -3,16 +3,19 @@ bilibili_api.utils.initial_state
 
 用于获取页码的初始化信息
 """
+
+import pprint
 import re
 import json
 import httpx
 from enum import Enum
-from typing import Union
+from typing import Tuple
 
 from ..exceptions import *
 from .short import get_real_url
 from .credential import Credential
-from .network import get_session
+from .network import get_session, Api
+from .. import settings
 
 
 class InitialDataType(Enum):
@@ -26,7 +29,7 @@ class InitialDataType(Enum):
 
 async def get_initial_state(
     url: str, credential: Credential = Credential()
-) -> Union[dict, InitialDataType]:
+) -> Tuple[dict, InitialDataType]:
     """
     异步获取初始化信息
 
@@ -36,17 +39,13 @@ async def get_initial_state(
         credential (Credential, optional): 用户凭证. Defaults to Credential().
     """
     try:
-        session = get_session()
-        resp = await session.get(
-            url,
-            cookies=credential.get_cookies(),
-            headers={"User-Agent": "Mozilla/5.0"},
-            follow_redirects=True,
-        )
+        resp = await Api(
+            url=url, method="GET", credential=credential, comment="[获取初始化信息]"
+        ).request(byte=True)
     except Exception as e:
         raise e
     else:
-        content = resp.text
+        content = resp.decode("utf-8")
         pattern = re.compile(r"window.__INITIAL_STATE__=(\{.*?\});")
         match = re.search(pattern, content)
         if match is None:
@@ -63,13 +62,16 @@ async def get_initial_state(
             content = json.loads(match.group(1))
         except json.JSONDecodeError:
             raise ApiException("信息解析错误")
-
+        if settings.request_log_show_response:
+            settings.logger.info(
+                f"获取到 {content_type.value} 初始化信息\n{pprint.pformat(content)}"
+            )
         return content, content_type
 
 
 def get_initial_state_sync(
     url: str, credential: Credential = Credential()
-) -> Union[dict, InitialDataType]:
+) -> Tuple[dict, InitialDataType]:
     """
     同步获取初始化信息
 

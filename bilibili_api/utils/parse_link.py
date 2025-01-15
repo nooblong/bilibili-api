@@ -82,9 +82,7 @@ class ResourceType(Enum):
     FAILED = "failed"
 
 
-async def parse_link(
-    url: str, credential: Union[Credential, None] = None
-) -> Union[
+async def parse_link(url: str, credential: Union[Credential, None] = None) -> Union[
     Tuple[Video, Literal[ResourceType.VIDEO]],
     Tuple[InteractiveVideo, Literal[ResourceType.INTERACTIVE_VIDEO]],
     Tuple[Bangumi, Literal[ResourceType.BANGUMI]],
@@ -161,7 +159,7 @@ async def parse_link(
         url = await get_real_url(str(url))  # type: ignore
         url = URL(url)  # type: ignore
 
-        fl_space = parse_space_favorite_list(url, credential)  # type: ignore
+        fl_space = await parse_space_favorite_list(url, credential)  # type: ignore
         if fl_space != -1:
             return fl_space  # type: ignore
         game = parse_game(url, credential)  # type: ignore
@@ -256,9 +254,7 @@ async def auto_convert_video(
     return (video, ResourceType.VIDEO)
 
 
-async def check_short_name(
-    name: str, credential: Credential
-) -> Union[
+async def check_short_name(name: str, credential: Credential) -> Union[
     Tuple[Video, Literal[ResourceType.VIDEO]],
     Tuple[Episode, Literal[ResourceType.EPISODE]],
     Tuple[CheeseVideo, Literal[ResourceType.CHEESE_VIDEO]],
@@ -491,7 +487,7 @@ def parse_season_series(url: URL, credential: Credential) -> Union[ChannelSeries
     return -1
 
 
-def parse_space_favorite_list(
+async def parse_space_favorite_list(
     url: URL, credential: Credential
 ) -> Union[
     Tuple[FavoriteList, ResourceType], Tuple[ChannelSeries, ResourceType], Literal[-1]
@@ -505,10 +501,10 @@ def parse_space_favorite_list(
                 ):  # query 中不存在 fid 则返回默认收藏夹
                     api = get_api("favorite-list")["info"]["list_list"]
                     params = {"up_mid": uid, "type": 2}
-                    favorite_lists = (
+                    favorite_lists = await (
                         Api(**api, credential=credential)
                         .update_params(**params)
-                        .result_sync
+                        .result
                     )
 
                     if favorite_lists == None:

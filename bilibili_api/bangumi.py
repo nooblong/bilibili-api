@@ -14,24 +14,26 @@ import datetime
 from enum import Enum
 from typing import Any, List, Tuple, Union, Optional
 
-from bilibili_api.utils.danmaku import Danmaku
-
 from . import settings
 from .video import Video
+from .utils.aid_bvid_transformer import aid2bvid, bvid2aid
+from .utils.danmaku import Danmaku
 from .utils.utils import get_api, raise_for_statement
 from .utils.credential import Credential
-from .exceptions.ApiException import ApiException
-from .utils.network import Api, get_session, HEADERS
+from .utils.network import Api
 from .utils.initial_state import (
     get_initial_state,
     get_initial_state_sync,
     InitialDataType,
 )
+from .exceptions import ApiException
 
 API = get_api("bangumi")
 
 
 episode_data_cache = {}
+bangumi_ss_to_md = {}
+bangumi_md_to_ss = {}
 
 
 class BangumiCommentOrder(Enum):
@@ -745,6 +747,7 @@ class IndexFilterMeta:
         """
         动画
         """
+
         def __init__(
             self,
             version: IndexFilter.Version = IndexFilter.Version.ALL,
@@ -793,6 +796,7 @@ class IndexFilterMeta:
         """
         电影
         """
+
         def __init__(
             self,
             area: IndexFilter.Area = IndexFilter.Area.ALL,
@@ -823,6 +827,7 @@ class IndexFilterMeta:
         """
         纪录片
         """
+
         def __init__(
             self,
             release_date: str = -1,
@@ -851,6 +856,7 @@ class IndexFilterMeta:
         """
         TV
         """
+
         def __init__(
             self,
             area: IndexFilter.Area = IndexFilter.Area.ALL,
@@ -879,6 +885,7 @@ class IndexFilterMeta:
         """
         国创
         """
+
         def __init__(
             self,
             version: IndexFilter.Version = IndexFilter.Version.ALL,
@@ -915,6 +922,7 @@ class IndexFilterMeta:
         """
         综艺
         """
+
         def __init__(
             self,
             style: IndexFilter.Style.Variety = IndexFilter.Style.Variety.ALL,
@@ -1019,31 +1027,63 @@ class Bangumi:
 
             credential (Credential | None, optional): 凭据类. Defaults to None.
         """
+        global bangumi_md_to_ss, bangumi_ss_to_md
+
         if media_id == -1 and ssid == -1 and epid == -1:
             raise ValueError("需要 Media_id 或 Season_id 或 epid 中的一个 !")
         self.credential: Credential = credential if credential else Credential()
+        self.__media_id = media_id
+        self.__ssid = ssid
+        self.__epid = epid
+        self.__up_info = None
+        self.raw = None
+        self.oversea = oversea
+        self.ep_list = None
+        self.ep_item = None
+
+        if self.__media_id != -1 and self.__ssid != -1:
+            bangumi_md_to_ss[self.__media_id] = self.__ssid
+            bangumi_ss_to_md[self.__ssid] = self.__media_id
+        if (
+            self.__media_id != -1
+            and self.__ssid == -1
+            and self.__media_id in bangumi_md_to_ss.keys()
+        ):
+            self.__ssid = bangumi_md_to_ss[self.__media_id]
+        if (
+            self.__media_id == -1
+            and self.__ssid != -1
+            and self.__ssid in bangumi_ss_to_md.keys()
+        ):
+            self.__media_id = bangumi_ss_to_md[self.__ssid]
+
+    async def __fetch_raw(self) -> None:
+        global bangumi_md_to_ss, bangumi_ss_to_md
         # 处理极端情况
         params = {}
-        self.__ssid = ssid
-        if self.__ssid == -1 and epid == -1:
+        if self.__ssid == -1 and self.__epid == -1:
             api = API["info"]["meta"]
-            params = {"media_id": media_id}
-            meta = Api(**api, credential=credential).update_params(**params).result_sync
+            params = {"media_id": self.__media_id}
+            meta = (
+                await Api(**api, credential=self.credential)
+                .update_params(**params)
+                .result
+            )
             self.__ssid = meta["media"]["season_id"]
-            params["media_id"] = media_id
+            params["media_id"] = self.__media_id
         # 处理正常情况
         if self.__ssid != -1:
             params["season_id"] = self.__ssid
-        if epid != -1:
-            params["ep_id"] = epid
-        self.oversea = oversea
-        if oversea:
+        if self.__epid != -1:
+            params["ep_id"] = self.__epid
+        if self.oversea:
             api = API["info"]["collective_info_oversea"]
         else:
             api = API["info"]["collective_info"]
-        resp = Api(**api, credential=credential).update_params(**params).result_sync
+        resp = (
+            await Api(**api, credential=self.credential).update_params(**params).result
+        )
         self.__raw = resp
-        self.__epid = epid
         # 确认有结果后，取出数据
         self.__ssid = resp["season_id"]
         self.__media_id = resp["media_id"]
@@ -1051,57 +1091,54 @@ class Bangumi:
             self.__up_info = resp["up_info"]
         else:
             self.__up_info = {}
-        # 获取剧集相关
-        self.ep_list = resp.get("episodes")
-        self.ep_item = [{}]
-        # 出海 Api 和国内的字段有些不同
-        if self.ep_list:
-            if self.oversea:
-                self.ep_item = [
-                    item for item in self.ep_list if item["ep_id"] == self.__epid
-                ]
-            else:
-                self.ep_item = [
-                    item for item in self.ep_list if item["id"] == self.__epid
-                ]
+        bangumi_md_to_ss[self.__media_id] = self.__ssid
+        bangumi_ss_to_md[self.__ssid] = self.__media_id
 
-    def get_media_id(self) -> int:
+    async def get_media_id(self) -> int:
         """
         获取 media_id
 
         Returns:
             int: 获取 media_id
         """
+        if self.__media_id == -1:
+            await self.__fetch_raw()
         return self.__media_id
 
-    def get_season_id(self) -> int:
+    async def get_season_id(self) -> int:
         """
         获取季度 id
 
         Returns:
             int: 获取季度 id
         """
+        if self.__ssid == -1:
+            await self.__fetch_raw()
         return self.__ssid
 
-    def get_up_info(self) -> dict:
+    async def get_up_info(self) -> dict:
         """
         番剧上传者信息 出差或者原版
 
         Returns:
             Api 相关字段
         """
+        if not self.__up_info:
+            await self.__fetch_raw()
         return self.__up_info
 
-    def get_raw(self) -> Tuple[dict, bool]:
+    async def get_raw(self) -> Tuple[dict, bool]:
         """
         原始初始化数据
 
         Returns:
             Api 相关字段
         """
+        if not self.__raw:
+            await self.__fetch_raw()
         return self.__raw, self.oversea
 
-    def set_media_id(self, media_id: int) -> None:
+    async def set_media_id(self, media_id: int) -> None:
         """
         设置 media_id
 
@@ -1109,8 +1146,9 @@ class Bangumi:
             media_id (int): 设置 media_id
         """
         self.__init__(media_id=media_id, credential=self.credential)
+        await self.__fetch_raw()
 
-    def set_ssid(self, ssid: int) -> None:
+    async def set_ssid(self, ssid: int) -> None:
         """
         设置季度 id
 
@@ -1118,6 +1156,7 @@ class Bangumi:
             ssid (int): 设置季度 id
         """
         self.__init__(ssid=ssid, credential=self.credential)
+        await self.__fetch_raw()
 
     async def get_meta(self) -> dict:
         """
@@ -1129,7 +1168,7 @@ class Bangumi:
         credential = self.credential if self.credential is not None else Credential()
 
         api = API["info"]["meta"]
-        params = {"media_id": self.__media_id}
+        params = {"media_id": await self.get_media_id()}
         return await Api(**api, credential=credential).update_params(**params).result
 
     async def get_short_comment_list(
@@ -1151,7 +1190,7 @@ class Bangumi:
         credential = self.credential if self.credential is not None else Credential()
 
         api = API["info"]["short_comment"]
-        params = {"media_id": self.__media_id, "ps": 20, "sort": order.value}
+        params = {"media_id": await self.get_media_id(), "ps": 20, "sort": order.value}
         if next is not None:
             params["cursor"] = next
 
@@ -1176,7 +1215,7 @@ class Bangumi:
         credential = self.credential if self.credential is not None else Credential()
 
         api = API["info"]["long_comment"]
-        params = {"media_id": self.__media_id, "ps": 20, "sort": order.value}
+        params = {"media_id": await self.get_media_id(), "ps": 20, "sort": order.value}
         if next is not None:
             params["cursor"] = next
 
@@ -1189,6 +1228,21 @@ class Bangumi:
         Returns:
             dict: 调用 API 返回的结果
         """
+        if not self.raw:
+            await self.__fetch_raw()
+        if not self.ep_list:
+            self.ep_list = self.__raw.get("episodes")
+            self.ep_item = [{}]
+            # 出海 Api 和国内的字段有些不同
+            if self.ep_list:
+                if self.oversea:
+                    self.ep_item = [
+                        item for item in self.ep_list if item["ep_id"] == self.__epid
+                    ]
+                else:
+                    self.ep_item = [
+                        item for item in self.ep_list if item["id"] == self.__epid
+                    ]
         if self.oversea:
             # 转换 ep_id->id ，index_title->longtitle ，index->title
             fix_ep_list = []
@@ -1203,7 +1257,7 @@ class Bangumi:
                 self.credential if self.credential is not None else Credential()
             )
             api = API["info"]["episodes_list"]
-            params = {"season_id": self.__ssid}
+            params = {"season_id": await self.get_season_id()}
             return (
                 await Api(**api, credential=credential).update_params(**params).result
             )
@@ -1216,20 +1270,11 @@ class Bangumi:
         episode_list = await self.get_episode_list()
         if len(episode_list["main_section"]["episodes"]) == 0:
             return []
-        first_epid = episode_list["main_section"]["episodes"][0]["id"]
-        credential = self.credential if self.credential else Credential()
-        content_type = None
-        while content_type != InitialDataType.NEXT_DATA:
-            bangumi_meta, content_type = await get_initial_state(
-                url=f"https://www.bilibili.com/bangumi/play/ep{first_epid}",
-                credential=credential,
-            )
-        bangumi_meta["media_id"] = self.get_media_id()
 
         episodes = []
         for ep in episode_list["main_section"]["episodes"]:
             episode_data_cache[ep["id"]] = {
-                "bangumi_meta": bangumi_meta,
+                "bangumi_meta": ep,
                 "bangumi_class": self,
             }
             episodes.append(Episode(epid=ep["id"], credential=self.credential))
@@ -1245,7 +1290,7 @@ class Bangumi:
         credential = self.credential if self.credential is not None else Credential()
 
         api = API["info"]["season_status"]
-        params = {"season_id": self.__ssid}
+        params = {"season_id": await self.get_season_id()}
         return await Api(**api, credential=credential).update_params(**params).result
 
     async def get_overview(self) -> dict:
@@ -1260,7 +1305,7 @@ class Bangumi:
             api = API["info"]["collective_info_oversea"]
         else:
             api = API["info"]["collective_info"]
-        params = {"season_id": self.__ssid}
+        params = {"season_id": await self.get_season_id()}
         return await Api(**api, credential=credential).update_params(**params).result
 
 
@@ -1284,7 +1329,7 @@ async def set_follow(
     credential.raise_for_no_sessdata()
 
     api = API["operate"]["follow_add"] if status else API["operate"]["follow_del"]
-    data = {"season_id": bangumi.get_season_id()}
+    data = {"season_id": await bangumi.get_season_id()}
     return await Api(**api, credential=credential).update_data(**data).result
 
 
@@ -1307,7 +1352,7 @@ async def update_follow_status(
     credential.raise_for_no_sessdata()
 
     api = API["operate"]["follow_status"]
-    data = {"season_id": bangumi.get_season_id(), "status": status}
+    data = {"season_id": await bangumi.get_season_id(), "status": status}
     return await Api(**api, credential=credential).update_data(**data).result
 
 
@@ -1323,68 +1368,108 @@ class Episode(Video):
         bangumi     (Bangumi)   : 所属番剧
     """
 
-    def __init__(self, epid: int, credential: Union[Credential, None] = None):
+    def __init__(
+        self,
+        epid: int,
+        credential: Union[Credential, None] = None,
+        initial_state_retry_times: int = 3,
+    ):
         """
         Args:
             epid       (int)                 : 番剧 epid
 
             credential (Credential, optional): 凭据. Defaults to None.
+
+            initial_state_retry_times (int)  : 番剧剧集加载初始化信息请求重试次数上限设置. Defaults to 3.
         """
         global episode_data_cache
         self.credential: Credential = credential if credential else Credential()
+        self.__initial_state_retry_times = initial_state_retry_times
         self.__epid: int = epid
+        self.bangumi = None
+        self.__ep_aid = None
+        self.__ep_bvid = None
+        self.__ep_info_html = None
 
-        if not epid in episode_data_cache.keys():
-            res, content_type = get_initial_state_sync(
-                url=f"https://www.bilibili.com/bangumi/play/ep{self.__epid}",
-                credential=self.credential,
-            )  # 随机 __NEXT_DATA__ 见 https://github.com/Nemo2011/bilibili-api/issues/433
-            if content_type == InitialDataType.NEXT_DATA:
-                content = res["props"]["pageProps"]["dehydratedState"]["queries"][0][
-                    "state"
-                ]["data"]["result"]["play_view_business_info"]
-                self.bangumi = (
-                    Bangumi(ssid=content["season_info"]["season_id"])
-                    if not epid in episode_data_cache.keys()
-                    else episode_data_cache[epid]["bangumi_class"]
-                )
-                ep_info = content["episode_info"]
-                bvid = ep_info["bvid"]
-                self.__ep_info: dict = ep_info
-            else:  # InitialDataType.INITIAL_STATE
-                self.__ep_info: dict = res["epInfo"]
-                self.bangumi = (
-                    Bangumi(ssid=res["mediaInfo"]["season_id"])
-                    if not epid in episode_data_cache.keys()
-                    else episode_data_cache[epid]["bangumi_class"]
-                )
-                bvid = res["epInfo"]["bvid"]
-        else:
-            content = episode_data_cache[epid]["bangumi_meta"]
-            bvid = None
-            self.__ep_info = content["props"]["pageProps"]["dehydratedState"]["queries"][0][
-                "state"
-            ]["data"]["result"]["play_view_business_info"]["episode_info"]
-            bvid = self.__ep_info["bvid"]
+        if epid in episode_data_cache.keys():
             self.bangumi = episode_data_cache[epid]["bangumi_class"]
-            self.__ep_info: dict = episode_data_cache[epid]
+            self.__ep_aid = episode_data_cache[epid]["bangumi_meta"]["aid"]
+            self.__ep_bvid = aid2bvid(self.__ep_aid)
 
-        self.video_class = Video(bvid=bvid, credential=self.credential)
-        super().__init__(bvid=bvid, credential=self.credential)
-        self.set_aid = self.set_aid_e
-        self.set_bvid = self.set_bvid_e
+        super().__init__(bvid="BV1Am411y7iK", credential=self.credential)
+        self.set_aid = self.__set_aid_e
+        self.set_bvid = self.__set_bvid_e
+
+    async def __fetch_bangumi(self) -> None:
+        for _ in range(self.__initial_state_retry_times + 1):
+            res, content_type = (
+                await self.get_episode_info()
+            )  # 随机 __NEXT_DATA__ 见 https://github.com/Nemo2011/bilibili-api/issues/433
+            try:
+                if content_type == InitialDataType.NEXT_DATA:
+                    content = res["props"]["pageProps"]["dehydratedState"]["queries"][
+                        0
+                    ]["state"]["data"]["result"]["play_view_business_info"]
+                    self.bangumi = Bangumi(
+                        ssid=content["season_info"]["season_id"],
+                        media_id=res["props"]["pageProps"]["dehydratedState"][
+                            "queries"
+                        ][1]["state"]["data"]["media_id"],
+                    )
+                    self.__ep_bvid = content["episode_info"]["bvid"]
+                    self.__ep_aid = bvid2aid(self.__ep_bvid)
+                    return
+                else:  # InitialDataType.INITIAL_STATE
+                    self.bangumi = Bangumi(
+                        ssid=res["mediaInfo"]["season_id"]
+                    )  # 刷不出 INITIAL_STATE 了，暂时不动
+                    self.__ep_bvid = res["epInfo"]["bvid"]
+                    self.__ep_aid = bvid2aid(self.__ep_bvid)
+                    return
+            except Exception as e:
+                if settings.request_log and _ != self.__initial_state_retry_times:
+                    settings.logger.info("第 %d 次重试", _ + 1)
+        raise ApiException("重试达到最大次数")
+
+    async def get_bvid(self) -> str:
+        """
+        获取 BVID。
+
+        Returns:
+            str: BVID。
+        """
+        if not self.__ep_bvid:
+            await self.__fetch_bangumi()
+        return self.__ep_bvid
+
+    async def get_aid(self) -> str:
+        """
+        获取 AID。
+
+        Returns:
+            str: AID。
+        """
+        if not self.__ep_aid:
+            await self.__fetch_bangumi()
+        return self.__ep_aid
+
+    async def __set_bvid_e(self) -> None:
+        """
+        此方法不可用于 Episode 类。
+        """
+        raise ApiException("此方法不可用于 Episode 类。")
+
+    async def __set_aid_e(self) -> None:
+        """
+        此方法不可用于 Episode 类。
+        """
+        raise ApiException("此方法不可用于 Episode 类。")
 
     def get_epid(self) -> int:
         """
         获取 epid
         """
         return self.__epid
-
-    def set_aid_e(self, aid: int) -> None:
-        raise_for_statement(0, "Set aid is not allowed in Episode")
-
-    def set_bvid_e(self, bvid: str) -> None:
-        raise_for_statement(0, "Set bvid is not allowed in Episode")
 
     async def get_cid(self) -> int:
         """
@@ -1393,18 +1478,23 @@ class Episode(Video):
         Returns:
             int: cid
         """
-        return (await self.get_episode_info())["epInfo"]["cid"]
+        content, content_type = await self.get_episode_info()
+        if content_type == InitialDataType.NEXT_DATA:
+            return content["props"]["pageProps"]["dehydratedState"]["queries"][0][
+                "state"
+            ]["data"]["result"]["play_view_business_info"]["episode_info"]["cid"]
+        return content["epInfo"]["cid"]
 
-    def get_bangumi(self) -> "Bangumi":
+    async def get_bangumi(self) -> "Bangumi":
         """
         获取对应的番剧
 
         Returns:
             Bangumi: 番剧类
         """
-        return self.bangumi  # type: ignore
+        return await self.get_bangumi_from_episode()
 
-    def set_epid(self, epid: int) -> None:
+    async def set_epid(self, epid: int) -> None:
         """
         设置 epid
 
@@ -1412,32 +1502,21 @@ class Episode(Video):
             epid (int): epid
         """
         self.__init__(epid, self.credential)
+        await self.__fetch_bangumi()
 
-    async def get_episode_info(self) -> dict:
+    async def get_episode_info(self) -> Tuple[dict, InitialDataType]:
         """
         获取番剧单集信息
 
         Returns:
-            HTML 中的数据
+            Tuple[dict, InitialDataType]: 前半部分为数据，后半部分为数据类型（__INITIAL_STATE__ 或 __NEXT_DATA）
         """
-        if self.__ep_info is None:
-            res, content_type = get_initial_state(
-                url=f"https://www.bilibili.com/bangumi/play/ep{self.__epid}",
-                credential=self.credential,
-            )
-            if content_type == InitialDataType.NEXT_DATA:
-                content = res["props"]["pageProps"]["dehydratedState"]["queries"][0][
-                    "state"
-                ]["data"]["mediaInfo"]
-                for ep_info in content["episodes"]:
-                    if int(
-                        ep_info["id"] if "id" in ep_info else ep_info["ep_id"]
-                    ) == int(self.get_epid()):
-                        return ep_info
-            else:
-                return res["epInfo"]
-        else:
-            return self.__ep_info
+        if self.__ep_info_html:
+            return self.__ep_info_html
+        return await get_initial_state(
+            url=f"https://www.bilibili.com/bangumi/play/ep{self.__epid}",
+            credential=self.credential,
+        )
 
     async def get_bangumi_from_episode(self) -> "Bangumi":
         """
@@ -1446,9 +1525,9 @@ class Episode(Video):
         Returns:
             Bangumi: 输入的集对应的番剧类
         """
-        info = await self.get_episode_info()
-        ssid = info["mediaInfo"]["season_id"]
-        return Bangumi(ssid=ssid)
+        if not self.bangumi:
+            await self.__fetch_bangumi()
+        return self.bangumi
 
     async def get_download_url(self) -> dict:
         """
@@ -1458,15 +1537,14 @@ class Episode(Video):
             dict: 调用 API 返回的结果。
         """
         api = API["info"]["playurl"]
-        if True:
-            params = {
-                "avid": self.get_aid(),
-                "ep_id": self.get_epid(),
-                "qn": "127",
-                "otype": "json",
-                "fnval": 4048,
-                "fourk": 1,
-            }
+        params = {
+            "avid": await self.get_aid(),
+            "ep_id": self.get_epid(),
+            "qn": "127",
+            "otype": "json",
+            "fnval": 4048,
+            "fourk": 1,
+        }
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
@@ -1480,13 +1558,7 @@ class Episode(Video):
         """
         cid = await self.get_cid()
         url = f"https://comment.bilibili.com/{cid}.xml"
-        sess = get_session()
-        config: dict[str, Any] = {"url": url}
-        # 代理
-        if settings.proxy:
-            config["proxies"] = {"all://", settings.proxy}
-        resp = await sess.get(**config)
-        return resp.content.decode("utf-8")
+        return (await Api(url=url, method="GET").request(byte=True)).decode("utf-8")
 
     async def get_danmaku_view(self) -> dict:
         """
@@ -1495,10 +1567,13 @@ class Episode(Video):
         Returns:
             dict: 二进制流解析结果
         """
-        return await self.video_class.get_danmaku_view(0)
+        return await super().get_danmaku_view(0)
 
     async def get_danmakus(
-        self, date: Union[datetime.date, None] = None
+        self,
+        date: Union[datetime.date, None] = None,
+        from_seg: Union[int, None] = None,
+        to_seg: Union[int, None] = None,
     ) -> List["Danmaku"]:
         """
         获取弹幕
@@ -1506,10 +1581,14 @@ class Episode(Video):
         Args:
             date (datetime.date | None, optional): 指定某一天查询弹幕. Defaults to None. (不指定某一天)
 
+            from_seg (int, optional): 从第几段开始(0 开始编号，None 为从第一段开始，一段 6 分钟). Defaults to None.
+
+            to_seg (int, optional): 到第几段结束(0 开始编号，None 为到最后一段，包含编号的段，一段 6 分钟). Defaults to None.
+
         Returns:
             dict[Danmaku]: 弹幕列表
         """
-        return await self.video_class.get_danmakus(0, date)
+        return await super().get_danmakus(0, date, from_seg=from_seg, to_seg=to_seg)
 
     async def get_history_danmaku_index(
         self, date: Union[datetime.date, None] = None
@@ -1523,4 +1602,105 @@ class Episode(Video):
         Returns:
             None | List[str]: 调用 API 返回的结果。不存在时为 None。
         """
-        return await self.video_class.get_history_danmaku_index(0, date)
+        return await super().get_history_danmaku_index(0, date)
+
+    async def send_danmaku(self, danmaku: Danmaku):
+        """
+        发送弹幕。
+
+        Args:
+            danmaku    (Danmaku | None)      : Danmaku 类。
+
+        Returns:
+            dict: 调用 API 返回的结果。
+        """
+        return await super().send_danmaku(0, danmaku)
+
+    async def recall_danmaku(self, dmid: int):
+        """
+        撤回弹幕。
+
+        Args:
+            dmid(int)      : 弹幕 id
+
+        Returns:
+            dict: 调用 API 返回的结果。
+        """
+        return await super().recall_danmaku(0, dmid)
+
+    async def get_player_info(self):
+        """
+        获取视频上一次播放的记录，字幕和地区信息。需要分集的 cid, 返回数据中含有json字幕的链接
+
+        Returns:
+            调用 API 返回的结果
+        """
+        return await super().get_player_info(await self.get_cid(), self.get_epid())
+
+    async def get_subtitle(self):
+        """
+        获取字幕信息
+
+        Returns:
+            调用 API 返回的结果
+        """
+        return (await self.get_player_info()).get("subtitle")
+
+    async def submit_subtitle(self, lan: str, data: dict, submit: bool, sign: bool):
+        """
+        上传字幕
+
+        字幕数据 data 参考：
+
+        ```json
+        {
+          "font_size": "float: 字体大小，默认 0.4",
+          "font_color": "str: 字体颜色，默认 \"#FFFFFF\"",
+          "background_alpha": "float: 背景不透明度，默认 0.5",
+          "background_color": "str: 背景颜色，默认 \"#9C27B0\"",
+          "Stroke": "str: 描边，目前作用未知，默认为 \"none\"",
+          "body": [
+            {
+              "from": "int: 字幕开始时间（秒）",
+              "to": "int: 字幕结束时间（秒）",
+              "location": "int: 字幕位置，默认为 2",
+              "content": "str: 字幕内容"
+            }
+          ]
+        }
+        ```
+
+        Args:
+            lan        (str)                 : 字幕语言代码，参考 https://s1.hdslb.com/bfs/subtitle/subtitle_lan.json
+
+            data       (dict)                : 字幕数据
+
+            submit     (bool)                : 是否提交，不提交为草稿
+
+            sign       (bool)                : 是否署名
+
+        Returns:
+            dict: API 调用返回结果
+        """
+        return await super().submit_subtitle(lan, data, submit, sign, 0)
+
+    async def get_pbp(self):
+        """
+        获取高能进度条
+
+        Returns:
+            调用 API 返回的结果
+        """
+        return await super().get_pbp(0)
+
+    async def get_ai_conclusion(self, up_mid: int = None):
+        """
+        获取稿件 AI 总结结果。
+
+        Args:
+            up_mid (Optional, int): up 主的 mid。
+
+        Returns:
+            dict: 调用 API 返回的结果。
+        """
+        return await super().get_ai_conclusion(0, up_mid=up_mid)

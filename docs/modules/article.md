@@ -22,6 +22,15 @@ from bilibili_api import article
 | credential | Credential | 凭据类 |
 
 
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| cvid | int | cv 号 |
+| credential | Union[Credential, None] | 凭据. Defaults to None. |
+
+
 ### async def add_coins()
 
 给专栏投币，目前只能投一个
@@ -74,28 +83,6 @@ from bilibili_api import article
 
 
 **Returns:** dict: 调用 API 返回的结果
-
-
-
-
-### def get_type()
-
-获取专栏类型(专栏/笔记)
-
-
-
-**Returns:** ArticleType: 专栏类型
-
-
-
-
-### def is_note()
-
-检查专栏是否笔记
-
-
-
-**Returns:** bool: 是否笔记
 
 
 
@@ -154,27 +141,6 @@ from bilibili_api import article
 
 
 
-### def turn_to_note()
-
-对于完全与 opus 兼容的部分的特殊专栏，将 Article 对象转换为 Dynamic 对象。
-
-
-
-**Returns:** Note: 笔记类
-
-
-
-
-### def turn_to_opus()
-
-对于 SPECIAL_ARTICLE，将其转为图文
-
-
-
-**Returns:** None
-
-
-
 ---
 
 ## class ArticleList()
@@ -185,6 +151,15 @@ from bilibili_api import article
 | name | type | description |
 | - | - | - |
 | credential | Credential | 凭据类 |
+
+
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| rlid | int | 文集 id |
+| credential | Union[Credential, None] | 凭据类. Defaults to None. |
 
 
 ### async def get_content()
@@ -221,21 +196,6 @@ from bilibili_api import article
 + WEEK: 周榜
 + DAY_BEFORE_YESTERDAY: 前日榜
 + YESTERDAY: 昨日榜
-
-
-
-
----
-
-## class ArticleType()
-
-**Extend: enum.Enum**
-
-专栏类型
-
-- ARTICLE: 普通专栏，不与 opus 图文兼容。
-- OPUS   : opus。
-- SPECIAL_ARTICLE: 特殊专栏，与 opus 兼容。
 
 
 

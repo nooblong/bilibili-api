@@ -3,6 +3,7 @@ bilibili_api.live
 
 直播相关
 """
+
 import json
 import time
 import base64
@@ -140,11 +141,9 @@ class LiveRoom:
             "room_id": self.room_display_id,
             "platform": "pc",
             "csrf": self.credential.bili_jct,
-            "csrf_token": self.credential.bili_jct
+            "csrf_token": self.credential.bili_jct,
         }
-        resp = (
-            await Api(**api, credential=self.credential).update_data(**data).result
-        )
+        resp = await Api(**api, credential=self.credential).update_data(**data).result
         return resp
 
     async def stop(self) -> dict:
@@ -158,9 +157,7 @@ class LiveRoom:
         data = {
             "room_id": self.room_display_id,
         }
-        resp = (
-            await Api(**api, credential=self.credential).update_data(**data).result
-        )
+        resp = await Api(**api, credential=self.credential).update_data(**data).result
         return resp
 
     async def get_room_play_info(self) -> dict:
@@ -180,6 +177,23 @@ class LiveRoom:
 
         # 缓存真实房间 ID
         self.__ruid = resp["uid"]
+        return resp
+
+    async def get_emoticons(self) -> dict:
+        """
+        获取本房间可用表情包
+
+        Returns:
+            dict: 调用 API 返回的结果
+        """
+        api = API["info"]["emoticons"]
+        params = {
+            "platform": "pc",
+            "room_id": self.room_display_id,
+        }
+        resp = (
+            await Api(**api, credential=self.credential).update_params(**params).result
+        )
         return resp
 
     async def get_room_id(self) -> int:
@@ -470,12 +484,13 @@ class LiveRoom:
             await Api(**api, credential=self.credential).update_params(**params).result
         )
 
-    async def ban_user(self, uid: int) -> dict:
+    async def ban_user(self, uid: int, hour: int = -1) -> dict:
         """
         封禁用户
 
         Args:
             uid (int): 用户 UID
+            hour (int): 禁言时长，-1为永久，0为直到本场结束
 
         Returns:
             dict: 调用 API 返回的结果
@@ -487,6 +502,7 @@ class LiveRoom:
             "room_id": self.room_display_id,
             "tuid": uid,
             "mobile_app": "web",
+            "hour": hour,
             "visit_id": "",
         }
         return await Api(**api, credential=self.credential).update_data(**data).result
@@ -506,10 +522,13 @@ class LiveRoom:
         data = {
             "room_id": self.room_display_id,
             "tuid": uid,
+            "visit_id": "",
         }
         return await Api(**api, credential=self.credential).update_data(**data).result
 
-    async def send_danmaku(self, danmaku: Danmaku, room_id: int = None, reply_mid: int = None) -> dict:
+    async def send_danmaku(
+        self, danmaku: Danmaku, room_id: int = None, reply_mid: int = None
+    ) -> dict:
         """
         直播间发送弹幕
 
@@ -536,7 +555,37 @@ class LiveRoom:
             "color": int(danmaku.color, 16),
             "fontsize": danmaku.font_size,
         }
-        if reply_mid: data["reply_mid"] = reply_mid
+        if reply_mid:
+            data["reply_mid"] = reply_mid
+        return await Api(**api, credential=self.credential).update_data(**data).result
+
+    async def send_emoticon(self, emoticon: Danmaku, room_id: int = None) -> dict:
+        """
+        直播间发送表情包
+
+        Args:
+            emoticon (Danmaku): text为表情包代号
+
+        Returns:
+            dict: 调用 API 返回的结果
+        """
+        self.credential.raise_for_no_sessdata()
+
+        api = API["operate"]["send_emoticon"]
+        if not room_id:
+            room_id = (await self.get_room_play_info())["room_id"]
+
+        data = {
+            "mode": emoticon.mode,
+            "msg": emoticon.text,
+            "roomid": room_id,
+            "bubble": 0,
+            "dm_type": 1,
+            "rnd": int(time.time()),
+            "color": int(emoticon.color, 16),
+            "fontsize": emoticon.font_size,
+            "emoticonOptions": "[object Object]",
+        }
         return await Api(**api, credential=self.credential).update_data(**data).result
 
     async def sign_up_dahanghai(self, task_id: int = 1447) -> dict:
@@ -899,7 +948,9 @@ class LiveDanmaku(AsyncEvent):
         """
         super().__init__()
 
-        self.credential: Credential = credential if credential is not None else Credential()
+        self.credential: Credential = (
+            credential if credential is not None else Credential()
+        )
         self.room_display_id: int = room_display_id
         self.max_retry: int = max_retry
         self.retry_after: float = retry_after
@@ -1197,9 +1248,13 @@ class LiveDanmaku(AsyncEvent):
         """
         sendData = bytearray()
         sendData += struct.pack(">H", 16)
-        raise_for_statement(0 <= protocol_version <= 2, LiveException("数据包协议版本错误，范围 0~2"))
+        raise_for_statement(
+            0 <= protocol_version <= 2, LiveException("数据包协议版本错误，范围 0~2")
+        )
         sendData += struct.pack(">H", protocol_version)
-        raise_for_statement(datapack_type in [2, 7], LiveException("数据包类型错误，可用类型：2, 7"))
+        raise_for_statement(
+            datapack_type in [2, 7], LiveException("数据包类型错误，可用类型：2, 7")
+        )
         sendData += struct.pack(">I", datapack_type)
         sendData += struct.pack(">I", 1)
         sendData += data
@@ -1234,14 +1289,14 @@ class LiveDanmaku(AsyncEvent):
             return ret
 
         while offset < len(realData):
-            header = struct.unpack(">IHHII", realData[offset: offset + 16])
+            header = struct.unpack(">IHHII", realData[offset : offset + 16])
             length = header[0]
             recvData = {
                 "protocol_version": header[2],
                 "datapack_type": header[3],
                 "data": None,
             }
-            chunkData = realData[(offset + 16): (offset + length)]
+            chunkData = realData[(offset + 16) : (offset + length)]
             if header[2] == 0:
                 recvData["data"] = json.loads(chunkData.decode())
             elif header[2] == 2:
