@@ -10,6 +10,30 @@ bilibili_api.video_uploader
 from bilibili_api import video_uploader
 ```
 
+- [class Lines()](#class-Lines)
+- [class VideoEditor()](#class-VideoEditor)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def abort()](#async-def-abort)
+- [class VideoEditorEvents()](#class-VideoEditorEvents)
+- [class VideoMeta()](#class-VideoMeta)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def verify()](#async-def-verify)
+- [class VideoPorderIndustry()](#class-VideoPorderIndustry)
+- [class VideoPorderMeta()](#class-VideoPorderMeta)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+- [class VideoPorderShowType()](#class-VideoPorderShowType)
+- [class VideoPorderType()](#class-VideoPorderType)
+- [class VideoUploader()](#class-VideoUploader)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def abort()](#async-def-abort)
+- [class VideoUploaderEvents()](#class-VideoUploaderEvents)
+- [class VideoUploaderPage()](#class-VideoUploaderPage)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [def get\_size()](#def-get\_size)
+- [async def get\_available\_topics()](#async-def-get\_available\_topics)
+- [async def get\_missions()](#async-def-get\_missions)
+- [async def upload\_cover()](#async-def-upload\_cover)
+
 ---
 
 ## class Lines()
@@ -43,6 +67,40 @@ bupfetch 模式下 kodo 目前弃用 `{'error': 'no such bucket'}`
 | meta | Dict | 视频信息 |
 | cover_path | str | 封面路径. Defaults to None(不更换封面). |
 | credential | Credential | 凭据类. Defaults to None. |
+
+
+### def \_\_init\_\_()
+
+``` json
+{
+"title": "str: 标题",
+"copyright": "int: 是否原创，0 否 1 是",
+"tag": "标签. 用,隔开. ",
+"desc_format_id": "const int: 0",
+"desc": "str: 描述",
+"dynamic": "str: 动态信息",
+"interactive": "const int: 0",
+"new_web_edit": "const int: 1",
+"act_reserve_create": "const int: 0",
+"handle_staff": "const bool: false",
+"topic_grey": "const int: 1",
+"no_reprint": "int: 是否显示“未经允许禁止转载”. 0 否 1 是",
+"subtitles # 字幕设置": {
+"lan": "str: 字幕投稿语言，不清楚作用请将该项设置为空",
+"open": "int: 是否启用字幕投稿，1 or 0"
+},
+"web_os": "const int: 2"
+}
+```
+
+
+| name | type | description |
+| - | - | - |
+| bvid | str | 稿件 BVID |
+| meta | Dict | 视频信息 |
+| cover | str \| Picture | 封面地址. Defaults to None(不更改封面). |
+| credential | Credential \| None | 凭据类. Defaults to None. |
+| meta 参数示例: |  | (保留 video, cover, tid, aid 字段) |
 
 
 ### async def abort()
@@ -86,6 +144,39 @@ bupfetch 模式下 kodo 目前弃用 `{'error': 'no such bucket'}`
 视频源数据
 
 
+
+
+### def \_\_init\_\_()
+
+基本视频上传参数
+
+可调用 VideoMeta.verify() 验证部分参数是否可用
+
+
+| name | type | description |
+| - | - | - |
+| tid | int | 分区 id |
+| title | str | 视频标题，最多 80 字 |
+| desc | str | 视频简介，最多 2000 字 |
+| cover | Union[Picture, str] | 封面，可以传入路径 |
+| tags | List[str], str | 标签列表，传入 List 或者传入 str 以 "," 为分隔符，至少 1 个 Tag，最多 10 个 |
+| topic | Optional[Union[int, Topic]] | 活动主题，应该从 video_uploader.get_available_topics(tid) 获取，可选 |
+| mission_id | Optional[int] | 任务 id，与 topic 一同获取传入 |
+| original | bool | 是否原创，默认原创 |
+| source | Optional[str] | 转载来源，非原创应该提供 |
+| recreate | Optional[bool] | 是否允许转载. 可选，默认为不允许二创 |
+| no_reprint | Optional[bool] | 未经允许是否禁止转载. 可选，默认为允许转载 |
+| open_elec | Optional[bool] | 是否开启充电. 可选，默认为关闭充电 |
+| up_selection_reply | Optional[bool] | 是否开启评论精选. 可选，默认为关闭评论精选 |
+| up_close_danmu | Optional[bool] | 是否关闭弹幕. 可选，默认为开启弹幕 |
+| up_close_reply | Optional[bool] | 是否关闭评论. 可选，默认为开启评论 |
+| lossless_music | Optional[bool] | 是否开启无损音乐. 可选，默认为关闭无损音乐 |
+| dolby | Optional[bool] | 是否开启杜比音效. 可选，默认为关闭杜比音效 |
+| subtitle | Optional[Dict] | 字幕信息，可选 |
+| dynamic | Optional[str] | 粉丝动态，可选，最多 233 字 |
+| neutral_mark | Optional[str] | 创作者声明，可选 |
+| delay_time | Optional[Union[int, datetime]] | 定时发布时间，可选 |
+| porder | Optional[VideoPorderMeta] | 商业相关参数，可选 |
 
 
 ### async def verify()
@@ -134,6 +225,12 @@ bupfetch 模式下 kodo 目前弃用 `{'error': 'no such bucket'}`
 ## class VideoPorderMeta()
 
 视频商业相关参数
+
+
+
+
+### def \_\_init\_\_()
+
 
 
 
@@ -187,7 +284,49 @@ bupfetch 模式下 kodo 目前弃用 `{'error': 'no such bucket'}`
 | meta | VideoMeta, Dict | 视频信息 |
 | credential | Credential | 凭据 |
 | cover_path | str | 封面路径 |
-| line | Union[Lines, None] | 线路. Defaults to None. 不选择则自动测速选择 |
+| line | Lines, Optional | 线路. Defaults to None. 不选择则自动测速选择 |
+
+
+### def \_\_init\_\_()
+
+建议传入 VideoMeta 对象，避免参数有误
+
+meta 参数示例：
+
+```json
+{
+"title": "",
+"copyright": 1,
+"tid": 130,
+"tag": "",
+"desc_format_id": 9999,
+"desc": "",
+"recreate": -1,
+"dynamic": "",
+"interactive": 0,
+"act_reserve_create": 0,
+"no_disturbance": 0,
+"no_reprint": 1,
+"subtitle": {
+"open": 0,
+"lan": "",
+},
+"dolby": 0,
+"lossless_music": 0,
+"web_os": 1,
+}
+```
+
+meta 保留字段：videos, cover
+
+
+| name | type | description |
+| - | - | - |
+| pages | List[VideoUploaderPage] | 分 P 列表 |
+| meta | VideoMeta, Dict | 视频信息 |
+| credential | Credential | 凭据 |
+| cover | Union[str, Picture] | 封面路径或者封面对象. Defaults to ""，传入 meta 类型为 VideoMeta 时可不传 |
+| line: |  | (Lines, Optional) |
 
 
 ### async def abort()
@@ -241,6 +380,16 @@ Events:
 
 
 
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| path | str | 视频文件路径 |
+| title | str | 视频标题 |
+| description | str, optional | 视频简介. Defaults to "". |
+
+
 ### def get_size()
 
 获取文件大小
@@ -273,8 +422,8 @@ Events:
 
 | name | type | description |
 | - | - | - |
-| tid | Union[int, None] | 分区 ID. Defaults to 0. |
-| credential | Union[Credential, None] | 凭据. Defaults to None. |
+| tid | int, optional | 分区 ID. Defaults to 0. |
+| credential | Credential, optional | 凭据. Defaults to None. |
 
 **Returns:** dict API 调用返回结果
 

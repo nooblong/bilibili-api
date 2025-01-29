@@ -10,6 +10,17 @@ bilibili_api.topic
 from bilibili_api import topic
 ```
 
+- [class Topic()](#class-Topic)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def get\_cards()](#async-def-get\_cards)
+  - [async def get\_info()](#async-def-get\_info)
+  - [def get\_topic\_id()](#def-get\_topic\_id)
+  - [async def like()](#async-def-like)
+  - [async def set\_favorite()](#async-def-set\_favorite)
+- [class TopicCardsSortBy()](#class-TopicCardsSortBy)
+- [async def get\_hot\_topics()](#async-def-get\_hot\_topics)
+- [async def search\_topic()](#async-def-search\_topic)
+
 ---
 
 ## class Topic()
@@ -19,6 +30,15 @@ from bilibili_api import topic
 
 | name | type | description |
 | - | - | - |
+| credential | Credential | 凭据类 |
+
+
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| topic_id | int | 话题 id |
 | credential | Credential | 凭据类 |
 
 
@@ -32,7 +52,7 @@ from bilibili_api import topic
 | name | type | description |
 | - | - | - |
 | ps | int | 数据数量. Defaults to 100. |
-| offset | Union[str, None] | 偏移量. 生成格式为 f'{页码}_{页码*数据量]}' 如'2_40' Defaults to None. |
+| offset | Optional, str | 偏移量. 生成格式为 f'{页码}_{页码*数据量]}' 如'2_40' Defaults to None. |
 | sort_by | TopicCardsSortBy | 排序方式. Defaults to TopicCardsSortBy.HOT. |
 
 **Returns:** dict: 调用 API 返回的结果

@@ -18,6 +18,37 @@ bilibili_api.cheese
 from bilibili_api import cheese
 ```
 
+- [class CheeseList()](#class-CheeseList)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def get\_list()](#async-def-get\_list)
+  - [async def get\_list\_raw()](#async-def-get\_list\_raw)
+  - [async def get\_meta()](#async-def-get\_meta)
+  - [async def get\_season\_id()](#async-def-get\_season\_id)
+  - [async def set\_ep\_id()](#async-def-set\_ep\_id)
+  - [async def set\_season\_id()](#async-def-set\_season\_id)
+- [class CheeseVideo()](#class-CheeseVideo)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def get\_aid()](#async-def-get\_aid)
+  - [async def get\_cheese()](#async-def-get\_cheese)
+  - [async def get\_cid()](#async-def-get\_cid)
+  - [async def get\_danmaku\_view()](#async-def-get\_danmaku\_view)
+  - [async def get\_danmaku\_xml()](#async-def-get\_danmaku\_xml)
+  - [async def get\_danmakus()](#async-def-get\_danmakus)
+  - [async def get\_download\_url()](#async-def-get\_download\_url)
+  - [def get\_epid()](#def-get\_epid)
+  - [async def get\_meta()](#async-def-get\_meta)
+  - [async def get\_pages()](#async-def-get\_pages)
+  - [async def get\_pay\_coins()](#async-def-get\_pay\_coins)
+  - [async def get\_pbp()](#async-def-get\_pbp)
+  - [async def get\_stat()](#async-def-get\_stat)
+  - [async def has\_favoured()](#async-def-has\_favoured)
+  - [async def has\_liked()](#async-def-has\_liked)
+  - [async def like()](#async-def-like)
+  - [async def pay\_coin()](#async-def-pay\_coin)
+  - [async def send\_danmaku()](#async-def-send\_danmaku)
+  - [async def set\_epid()](#async-def-set\_epid)
+  - [async def set\_favorite()](#async-def-set\_favorite)
+
 ---
 
 ## class CheeseList()
@@ -27,6 +58,19 @@ from bilibili_api import cheese
 
 | name | type | description |
 | - | - | - |
+| credential | Credential | 凭据类 |
+
+
+### def \_\_init\_\_()
+
+注意：season_id 和 ep_id 任选一个即可，两个都选的话
+以 season_id 为主
+
+
+| name | type | description |
+| - | - | - |
+| season_id | int | ssid |
+| ep_id | int | 单集 ep_id |
 | credential | Credential | 凭据类 |
 
 
@@ -63,7 +107,7 @@ from bilibili_api import cheese
 
 
 
-### def get_season_id()
+### async def get_season_id()
 
 获取季度 id
 
@@ -74,7 +118,7 @@ from bilibili_api import cheese
 
 
 
-### def set_ep_id()
+### async def set_ep_id()
 
 设置 epid 并通过 epid 找到课程
 
@@ -87,7 +131,7 @@ from bilibili_api import cheese
 
 
 
-### def set_season_id()
+### async def set_season_id()
 
 设置季度 id
 
@@ -114,7 +158,16 @@ from bilibili_api import cheese
 | cheese | CheeseList | 所属的课程 |
 
 
-### def get_aid()
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| epid | int | 单集 ep_id |
+| credential | Credential | 凭据类 |
+
+
+### async def get_aid()
 
 获取 aid
 
@@ -125,7 +178,7 @@ from bilibili_api import cheese
 
 
 
-### def get_cheese()
+### async def get_cheese()
 
 获取所属课程
 
@@ -136,7 +189,7 @@ from bilibili_api import cheese
 
 
 
-### def get_cid()
+### async def get_cid()
 
 获取 cid
 
@@ -160,11 +213,11 @@ from bilibili_api import cheese
 
 ### async def get_danmaku_xml()
 
-获取弹幕(xml 源)
+获取所有弹幕的 xml 源文件（非装填）
 
 
 
-**Returns:** str: xml 文件源
+**Returns:** str: 文件源
 
 
 
@@ -176,10 +229,17 @@ from bilibili_api import cheese
 
 | name | type | description |
 | - | - | - |
-| date | Union[datetime.Date, None] | 指定日期后为获取历史弹幕，精确到年月日。Defaults to None. |
+| date | datetime.Date \| None, optional | 指定日期后为获取历史弹幕，精确到年月日。Defaults to None. |
+| from_seg | int, optional | 从第几段开始(0 开始编号，None 为从第一段开始，一段 6 分钟). Defaults to None. |
+| to_seg | int, optional | 到第几段结束(0 开始编号，None 为到最后一段，包含编号的段，一段 6 分钟). Defaults to None. |
 
 **Returns:** List[Danmaku]: Danmaku 类的列表。
 
+
+注意：
+- 1. 段数可以通过视频时长计算。6分钟为一段。
+- 2. `from_seg` 和 `to_seg` 仅对 `date == None` 的时候有效果。
+- 3. 例：取前 `12` 分钟的弹幕：`from_seg=0, to_seg=1`
 
 
 
@@ -205,7 +265,7 @@ from bilibili_api import cheese
 
 
 
-### def get_meta()
+### async def get_meta()
 
 获取课程元数据
 
@@ -289,7 +349,7 @@ from bilibili_api import cheese
 
 | name | type | description |
 | - | - | - |
-| status | Union[bool, None] | 点赞状态。Defaults to True. |
+| status | bool, optional | 点赞状态。Defaults to True. |
 
 **Returns:** dict: 调用 API 返回的结果。
 
@@ -303,8 +363,8 @@ from bilibili_api import cheese
 
 | name | type | description |
 | - | - | - |
-| num | Union[int, None] | 硬币数量，为 1 ~ 2 个。Defaults to 1. |
-| like | Union[bool, None] | 是否同时点赞。Defaults to False. |
+| num | int, optional | 硬币数量，为 1 ~ 2 个。Defaults to 1. |
+| like | bool, optional | 是否同时点赞。Defaults to False. |
 
 **Returns:** dict: 调用 API 返回的结果。
 
@@ -325,7 +385,7 @@ from bilibili_api import cheese
 
 
 
-### def set_epid()
+### async def set_epid()
 
 设置 epid
 
@@ -345,8 +405,8 @@ from bilibili_api import cheese
 
 | name | type | description |
 | - | - | - |
-| add_media_ids | Union[List[int], None] | 要添加到的收藏夹 ID. Defaults to []. |
-| del_media_ids | Union[List[int], None] | 要移出的收藏夹 ID. Defaults to []. |
+| add_media_ids | List[int], optional | 要添加到的收藏夹 ID. Defaults to []. |
+| del_media_ids | List[int], optional | 要移出的收藏夹 ID. Defaults to []. |
 
 **Returns:** dict: 调用 API 返回结果。
 

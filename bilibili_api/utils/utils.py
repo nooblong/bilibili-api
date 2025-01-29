@@ -9,6 +9,8 @@ import os
 import random
 from typing import List, TypeVar
 from ..exceptions import StatementException
+from datetime import datetime
+from urllib.parse import quote
 
 
 def get_api(field: str, *args) -> dict:
@@ -207,6 +209,39 @@ def get_deviceid(separator: str = "-", is_lowercase: bool = False) -> str:
     return res if is_lowercase else res.upper()
 
 
-def raise_for_statement(statement: bool, msg: str="未满足条件") -> None:
+def raise_for_statement(statement: bool, msg: str = "未满足条件") -> None:
     if not statement:
         raise StatementException(msg=msg)
+
+
+def to_form_urlencoded(data: dict) -> str:
+    temp = []
+    for [k, v] in data.items():
+        temp.append(f'{k}={quote(str(v)).replace("/", "%2F")}')
+
+    return "&".join(temp)
+
+
+def to_timestamps(time_start, time_end):
+    """
+    将两个日期字符串转换为整数时间戳 (int) 元组，并验证时间顺序。
+
+    Returns:
+        tuple: (int,int)
+    """
+    try:
+        # 将输入字符串解析为 datetime 对象
+        start_dt = datetime.strptime(time_start, "%Y-%m-%d")
+        end_dt = datetime.strptime(time_end, "%Y-%m-%d")
+
+        # 验证起始时间是否早于结束时间
+        if start_dt >= end_dt:
+            raise ValueError("起始时间必须早于结束时间。")
+
+        # 转换为时间戳并返回
+        return int(start_dt.timestamp()), int(end_dt.timestamp())
+    except ValueError as e:
+        # 捕获日期格式错误或自定义错误消息
+        raise ValueError(
+            f"输入错误: {e}. 请确保使用 'YYYY-MM-DD' 格式，并且起始时间早于结束时间。"
+        )

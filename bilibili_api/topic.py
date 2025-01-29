@@ -10,8 +10,7 @@ from typing import Union, Optional
 from . import dynamic
 from .user import get_self_info
 from .utils.utils import get_api
-from .utils.credential import Credential
-from .utils.network import Api
+from .utils.network import Api, Credential
 
 API = get_api("topic")
 
@@ -131,14 +130,13 @@ class Topic:
         params = {
             "topic_id": self.get_topic_id(),
             "page_size": ps,
-            "sort_by": sort_by.value
+            "sort_by": sort_by.value,
         }
         if offset:
             params.update({"offset": offset})
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
-
 
     async def like(self, status: bool = True) -> dict:
         """

@@ -3,14 +3,14 @@ bilibili_api.show
 
 展出相关
 """
+
 import json
 import random
 import time
 from dataclasses import dataclass, field
 from typing import List
 
-from .utils.credential import Credential
-from .utils.network import Api
+from .utils.network import Api, Credential
 from .utils.utils import get_api, get_deviceid
 
 API = get_api("show")
@@ -31,6 +31,7 @@ class Ticket:
 
     sale_end (str): 开售结束时间
     """
+
     id: int
     price: int
     desc: str
@@ -51,6 +52,7 @@ class Session:
 
     ticket_list (list[Ticket]): 存放Ticket对象的list
     """
+
     id: int
     start_time: int
     formatted_time: str
@@ -92,6 +94,7 @@ class BuyerInfo:
 
     isBuyerValid (bool): 默认为 True
     """
+
     id: int
     uid: int
     account_channel: str
@@ -136,7 +139,9 @@ async def get_available_sessions(project_id: int) -> List[Session]:
     rtn_list = []
     project_info = await get_project_info(project_id)
     for v in project_info["screen_list"]:
-        sess_obj = Session(id=v["id"], start_time=v["start_time"], formatted_time=v["name"])
+        sess_obj = Session(
+            id=v["id"], start_time=v["start_time"], formatted_time=v["name"]
+        )
         for t in v["ticket_list"]:
             sess_obj.ticket_list.append(
                 Ticket(
@@ -194,12 +199,7 @@ def generate_clickPosition() -> dict:
     origin_timestamp = int(time.time() * 1000)
     # 添加一些随机时间差 (5s ~ 10s)
     now_timestamp = origin_timestamp + random.randint(5000, 10000)
-    return {
-        "x": x,
-        "y": y,
-        "origin": origin_timestamp,
-        "now": now_timestamp
-    }
+    return {"x": x, "y": y, "origin": origin_timestamp, "now": now_timestamp}
 
 
 @dataclass
@@ -218,6 +218,7 @@ class OrderTicket:
 
         ticket (Ticket): Ticket 对象
     """
+
     credential: Credential
     target_buyer: BuyerInfo
     project_id: int
@@ -241,7 +242,7 @@ class OrderTicket:
             "sku_id": self.ticket.id,
             "timestamp": int(time.time() * 1000),
             "token": res["token"],
-            "deviceId": get_deviceid('', True),
+            "deviceId": get_deviceid("", True),
             "clickPosition": json.dumps(generate_clickPosition()),
         }
         info = await get_project_info(self.project_id)
@@ -253,14 +254,14 @@ class OrderTicket:
         for detail in info["details"]:
             content = detail["content"]
             if "一人一证" in content or "一单一证" in content:
-                header.update({
-                    "buyer_info": json.dumps([self.target_buyer.__dict__])
-                })
+                header.update({"buyer_info": json.dumps([self.target_buyer.__dict__])})
                 return header
-        header.update({
-            "buyer": self.target_buyer.name,
-            "tel": self.target_buyer.tel,
-        })
+        header.update(
+            {
+                "buyer": self.target_buyer.name,
+                "tel": self.target_buyer.tel,
+            }
+        )
         return header
 
     async def get_token(self):
@@ -277,9 +278,11 @@ class OrderTicket:
             "order_type": 1,
             "project_id": self.project_id,
             "screen_id": self.session.id,
-            "sku_id": self.ticket.id
+            "sku_id": self.ticket.id,
         }
-        return await Api(**api, credential=self.credential).update_data(**payload).result
+        return (
+            await Api(**api, credential=self.credential).update_data(**payload).result
+        )
 
     async def create_order(self):
         """
@@ -290,5 +293,9 @@ class OrderTicket:
         """
         payload = await self._get_create_order_payload()
         api = API["operate"]["order"]
-        return await Api(**api, credential=self.credential).update_params(project_id=self.project_id).update_data(
-            **payload).result
+        return (
+            await Api(**api, credential=self.credential)
+            .update_params(project_id=self.project_id)
+            .update_data(**payload)
+            .result
+        )

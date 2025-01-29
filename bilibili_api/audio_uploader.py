@@ -17,9 +17,8 @@ from .utils.upos import UposFile, UposFileUploader
 from .utils.utils import get_api, raise_for_statement
 from .utils.picture import Picture
 from .utils.AsyncEvent import AsyncEvent
-from .utils.credential import Credential
 from .exceptions.ApiException import ApiException
-from .utils.network import Api, get_session, HEADERS
+from .utils.network import Api, get_client, HEADERS, Credential
 from .exceptions.NetworkException import NetworkException
 
 from enum import Enum
@@ -31,6 +30,7 @@ class SongCategories:
     """
     歌曲分类
     """
+
     class ContentType(Enum):  # cr_type
         """
         内容类型
@@ -183,6 +183,7 @@ class CompilationCategories:
     """
     专辑分类
     """
+
     class SongType(Enum):
         """
         声音类型
@@ -481,7 +482,9 @@ class AudioUploader(AsyncEvent):
     def _check_meta(self):
         raise_for_statement(self.meta.content_type is not None)
         raise_for_statement(self.meta.song_type is not None)
-        raise_for_statement(self.meta.cover is not None and isinstance(self.meta.cover, str))
+        raise_for_statement(
+            self.meta.cover is not None and isinstance(self.meta.cover, str)
+        )
         if self.meta.content_type == SongCategories.ContentType.MUSIC:
             raise_for_statement(self.meta.creation_type is not None)
             raise_for_statement(self.meta.song_type is not None)
@@ -538,10 +541,11 @@ class AudioUploader(AsyncEvent):
         api = _API["preupload"]
 
         # 首先获取音频文件预检信息
-        session = get_session()
+        session = get_client()
 
-        resp = await session.get(
-            api["url"],
+        resp = await session.request(
+            method="GET",
+            url=api["url"],
             params={
                 "profile": "uga/bup",
                 "name": os.path.basename(self.path),
@@ -554,11 +558,11 @@ class AudioUploader(AsyncEvent):
             cookies=self.credential.get_cookies(),
             headers=HEADERS.copy(),
         )
-        if resp.status_code >= 400:
+        if resp.code >= 400:
             self.dispatch(
                 AudioUploaderEvents.PREUPLOAD_FAILED.value, {"song": self.meta}
             )
-            raise NetworkException(resp.status_code, resp.reason_phrase)
+            raise NetworkException(resp.code, "")
 
         preupload = resp.json()
 
@@ -573,8 +577,9 @@ class AudioUploader(AsyncEvent):
         headers["x-upos-auth"] = preupload["auth"]
 
         # 获取 upload_id
-        resp = await session.post(
-            url,
+        resp = await session.request(
+            method="POST",
+            url=url,
             headers=headers,
             params={
                 "uploads": "",
@@ -585,13 +590,13 @@ class AudioUploader(AsyncEvent):
                 "biz_id": preupload["biz_id"],
             },
         )
-        if resp.status_code >= 400:
+        if resp.code >= 400:
             self.dispatch(
                 AudioUploaderEvents.PREUPLOAD_FAILED.value, {"song": self.meta}
             )
             raise ApiException("获取 upload_id 错误")
 
-        data = json.loads(resp.text)
+        data = resp.json()
 
         if data["OK"] != 1:
             self.dispatch(
@@ -650,9 +655,9 @@ class AudioUploader(AsyncEvent):
             "avid": self.meta.aid if self.meta.aid else "",
             "tid": self.meta.tid if self.meta.tid else "",
             "cid": self.meta.cid if self.meta.cid else "",
-            "compilation_id": self.meta.compilation_id
-            if self.meta.compilation_id
-            else "",
+            "compilation_id": (
+                self.meta.compilation_id if self.meta.compilation_id else ""
+            ),
             "title": self.meta.title,
             "intro": self.meta.desc,
             "member_with_type": [
@@ -822,6 +827,8 @@ async def upload_cover(cover: Picture, credential: Credential) -> str:
     # 小于 3MB
     raise_for_statement(os.path.getsize(cover) < 1024 * 1024 * 3, "3MB size limit")
     # 宽高比 1:1
-    raise_for_statement(cover.width == cover.height, "width == height, 600 * 600 recommanded")
+    raise_for_statement(
+        cover.width == cover.height, "width == height, 600 * 600 recommanded"
+    )
     files = {"file": cover.content}
     return await Api(**api, credential=credential).update_files(**files).result

@@ -10,6 +10,15 @@ bilibili_api.video_tag
 from bilibili_api import video_tag
 ```
 
+- [class Tag()](#class-Tag)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def get\_similar\_tags()](#async-def-get\_similar\_tags)
+  - [async def get\_tag\_id()](#async-def-get\_tag\_id)
+  - [async def get\_tag\_info()](#async-def-get\_tag\_info)
+  - [async def get\_tag\_name()](#async-def-get\_tag\_name)
+  - [async def subscribe\_tag()](#async-def-subscribe\_tag)
+  - [async def unsubscribe\_tag()](#async-def-unsubscribe\_tag)
+
 ---
 
 ## class Tag()
@@ -19,15 +28,16 @@ from bilibili_api import video_tag
 
 
 
-### async def get_history_cards()
+### def \_\_init\_\_()
 
-获取标签下，指定dynamic_id的视频的后一个视频/动态作为起始的视频/动态
-
-
-
-**Returns:** dict: 调用 API 返回的结果
+注意：tag_name 和 tag_id 任选一个传入即可。tag_id 优先。
 
 
+| name | type | description |
+| - | - | - |
+| tag_name | str \| None | 标签名. Defaults to None. |
+| tag_id | int \| None | 标签 id. Defaults to None. |
+| credential | Credential | 凭据类. Defaults to None. |
 
 
 ### async def get_similar_tags()
@@ -41,7 +51,7 @@ from bilibili_api import video_tag
 
 
 
-### def get_tag_id()
+### async def get_tag_id()
 
 获取标签 id
 
@@ -59,6 +69,17 @@ from bilibili_api import video_tag
 
 
 **Returns:** dict: 调用 API 返回的结果
+
+
+
+
+### async def get_tag_name()
+
+获取标签名
+
+
+
+**Returns:** str: 标签名
 
 
 

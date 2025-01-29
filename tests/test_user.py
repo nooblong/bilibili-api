@@ -230,7 +230,7 @@ async def test_zk_get_reservation():
 
 
 async def test_zl_name2uid():
-    return await user.name2uid("田所こうじ")
+    return await user.name2uid("田所こうじ", credential=credential)
 
 
 # series_id = None
@@ -282,7 +282,7 @@ async def test_zw_get_self_jury_info():
     return await user.get_self_jury_info(credential)
 
 async def test_zx_get_relation():
-    return await u.get_relation(UID)
+    return await u.get_relation()
 
 async def test_zy_get_masterpiece():
     return await u.get_masterpiece()

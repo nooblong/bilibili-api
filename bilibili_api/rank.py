@@ -8,8 +8,7 @@ from enum import Enum
 from typing import Union
 
 from .utils.utils import get_api
-from .utils.credential import Credential
-from .utils.network import Api
+from .utils.network import Api, Credential
 
 API = get_api("rank")
 
@@ -259,7 +258,9 @@ async def get_vip_rank(type_: VIPRankType = VIPRankType.VIP) -> dict:
     return await Api(**api).update_params(**params).result
 
 
-async def get_manga_rank(type_: MangeRankType = MangeRankType.NEW, credential: Credential = None) -> dict:
+async def get_manga_rank(
+    type_: MangeRankType = MangeRankType.NEW, credential: Credential = None
+) -> dict:
     """
     获取漫画专属排行榜
 

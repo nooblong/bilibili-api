@@ -12,6 +12,18 @@ bilibili_api.music
 from bilibili_api import music
 ```
 
+- [class Music()](#class-Music)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def get\_info()](#async-def-get\_info)
+  - [def get\_music\_id()](#def-get\_music\_id)
+  - [async def get\_music\_videos()](#async-def-get\_music\_videos)
+- [class MusicIndexTags()](#class-MusicIndexTags)
+  - [class Genre()](#class-Genre)
+  - [class Lang()](#class-Lang)
+- [class MusicOrder()](#class-MusicOrder)
+- [async def get\_homepage\_recommend()](#async-def-get\_homepage\_recommend)
+- [async def get\_music\_index\_info()](#async-def-get\_music\_index\_info)
+
 ---
 
 ## class Music()
@@ -23,6 +35,14 @@ from bilibili_api import music
 其中音乐的 ID 为 `video.get_tags` 返回值数据中的 `music_id` 键值
 
 
+
+
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| music_id | str | 音乐 id，例如 MA436038343856245020 |
 
 
 ### async def get_info()

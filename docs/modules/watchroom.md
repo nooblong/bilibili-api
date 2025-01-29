@@ -12,11 +12,41 @@ bilibili_api.watchroom
 from bilibili_api import watchroom
 ```
 
+- [class Message()](#class-Message)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+- [class MessageSegment()](#class-MessageSegment)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+- [class MessageType()](#class-MessageType)
+- [class SeasonType()](#class-SeasonType)
+- [class WatchRoom()](#class-WatchRoom)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def close()](#async-def-close)
+  - [async def get\_episode\_id()](#async-def-get\_episode\_id)
+  - [async def get\_info()](#async-def-get\_info)
+  - [def get\_room\_id()](#def-get\_room\_id)
+  - [async def get\_season\_id()](#async-def-get\_season\_id)
+  - [async def join()](#async-def-join)
+  - [async def kickout()](#async-def-kickout)
+  - [async def open()](#async-def-open)
+  - [async def progress()](#async-def-progress)
+  - [async def send()](#async-def-send)
+  - [def set\_episode\_id()](#def-set\_episode\_id)
+  - [def set\_season\_id()](#def-set\_season\_id)
+  - [async def share()](#async-def-share)
+- [async def create()](#async-def-create)
+- [async def match()](#async-def-match)
+
 ---
 
 ## class Message()
 
 消息集合
+
+
+
+
+### def \_\_init\_\_()
+
 
 
 
@@ -32,6 +62,12 @@ from bilibili_api import watchroom
 | - | - | - |
 | msg | str | 信息 |
 | is_emoji | bool | 是否为表情包 |
+
+
+### def \_\_init\_\_()
+
+
+
 
 
 ---
@@ -75,6 +111,15 @@ from bilibili_api import watchroom
 
 
 
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| credential | Credential | 凭据类 (大部分用户操作都需要与之匹配的 buvid3 值，务必在 credential 传入) |
+| room_id | int | 放映室 id |
+
+
 ### async def close()
 
 关闭放映室
@@ -85,7 +130,7 @@ from bilibili_api import watchroom
 
 
 
-### def get_episode_id()
+### async def get_episode_id()
 
 获取番剧剧集 id
 
@@ -118,7 +163,7 @@ from bilibili_api import watchroom
 
 
 
-### def get_season_id()
+### async def get_season_id()
 
 获取番剧季度 id
 

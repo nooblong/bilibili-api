@@ -448,9 +448,7 @@ class MPlayer(object):
                                             continue
                                     cnt += 1
                                     lbl = ButtonLabel(self.win)
-                                    lbl.prep_text(
-                                        child["text"], pos_x, pos_y
-                                    )
+                                    lbl.prep_text(child["text"], pos_x, pos_y)
                                     lbl.show()
                                     self.choice_labels.append(lbl)
                                     continue
@@ -470,18 +468,14 @@ class MPlayer(object):
                                         # 生成 label
                                         cnt += 1
                                         lbl = ButtonLabel(self.win)
-                                        lbl.prep_text(
-                                            child["text"], pos_x, pos_y
-                                        )
+                                        lbl.prep_text(child["text"], pos_x, pos_y)
                                         lbl.show()
                                         self.choice_labels.append(lbl)
                                 else:
                                     # 生成 label
                                     cnt += 1
                                     lbl = ButtonLabel(self.win)
-                                    lbl.prep_text(
-                                        child["text"], pos_x, pos_y
-                                    )
+                                    lbl.prep_text(child["text"], pos_x, pos_y)
                                     lbl.show()
                                     self.choice_labels.append(lbl)
                                     pass
@@ -728,8 +722,9 @@ class MPlayer(object):
         self.stop_playing()
         self.pp.setText("Pause")
         self.has_end = False
-        self.mediaplayer = QtMultimedia.QMediaPlayer()  # Clear the multimedia source
-        self.mediaplayer.setAudioOutput(QtMultimedia.QAudioOutput())
+        if self.horizontalSlider.value() != 0: # I don't know why but without it the application will be blocked
+            self.mediaplayer = QtMultimedia.QMediaPlayer()  # Clear the multimedia source
+            self.mediaplayer.setAudioOutput(QtMultimedia.QAudioOutput())
         self.videoplayer = QtMultimedia.QMediaPlayer()
         self.videoplayer.setVideoOutput(self.player)
         self.volume_change_event()

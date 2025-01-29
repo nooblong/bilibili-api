@@ -10,8 +10,7 @@ from typing import List, Union, Optional
 from . import user
 from .video import Video
 from .utils.utils import join, get_api, raise_for_statement
-from .utils.credential import Credential
-from .utils.network import Api
+from .utils.network import Api, Credential
 from .exceptions.ArgsException import ArgsException
 
 API = get_api("favorite-list")
@@ -151,11 +150,19 @@ class FavoriteList:
         Returns:
             dict: 调用 API 返回的结果
         """
-        raise_for_statement(self.__type == FavoriteListType.VIDEO, "此函数仅在收藏夹为视频收藏家时可用")
+        raise_for_statement(
+            self.__type == FavoriteListType.VIDEO, "此函数仅在收藏夹为视频收藏家时可用"
+        )
         raise_for_statement(self.__media_id != None, "视频收藏夹需要 media_id")
 
         return await get_video_favorite_list_content(
-            self.__media_id, page=page, keyword=keyword, order=order, tid=tid, mode=mode, credential=self.credential
+            self.__media_id,
+            page=page,
+            keyword=keyword,
+            order=order,
+            tid=tid,
+            mode=mode,
+            credential=self.credential,
         )
 
     async def get_content(self, page: int = 1) -> dict:

@@ -5,9 +5,10 @@ bilibili_api.festival
 """
 
 from typing import Optional
-from .utils.credential import Credential
 from .utils.initial_state import get_initial_state
+from .utils.network import Credential
 from .video import Video
+
 
 class Festival:
     """
@@ -17,6 +18,7 @@ class Festival:
         fes_id     (str)       : 节日专门页编号
         credential (Credential): 凭证类
     """
+
     def __init__(self, fes_id: str, credential: Optional[Credential] = None) -> None:
         """
         Args:
@@ -33,7 +35,9 @@ class Festival:
         Returns:
             dict: 调用 API 返回的结果
         """
-        return (await get_initial_state(
-            f"https://www.bilibili.com/festival/{self.fes_id}",
-            credential=self.credential
-        ))[0]
+        return (
+            await get_initial_state(
+                f"https://www.bilibili.com/festival/{self.fes_id}",
+                credential=self.credential,
+            )
+        )[0]

@@ -16,13 +16,11 @@ import json
 import datetime
 from typing import Any, List, Union
 
-from . import settings
 from .utils.utils import get_api
 from .utils.danmaku import Danmaku
-from .utils.credential import Credential
 from .utils.BytesReader import BytesReader
 from .exceptions.ArgsException import ArgsException
-from .utils.network import Api, get_session
+from .utils.network import Api, Credential
 from .exceptions import NetworkException, ResponseException, DanmakuClosedException
 
 API = get_api("cheese")
@@ -62,14 +60,17 @@ class CheeseList:
         self.__season_id = season_id
         self.__ep_id = ep_id
         self.credential: Credential = credential if credential else Credential()
-        if self.__season_id == -1:
-            # self.season_id = str(sync(self.get_meta())["season_id"])
-            api = API["info"]["meta"]
-            params = {"season_id": self.__season_id, "ep_id": self.__ep_id}
-            meta = Api(**api, credential=self.credential).update_params(**params).result_sync
-            self.__season_id = int(meta["season_id"])
 
-    def set_season_id(self, season_id: int) -> None:
+    async def __fetch_season_id(self) -> None:
+        # self.season_id = str(sync(self.get_meta())["season_id"])
+        api = API["info"]["meta"]
+        params = {"ep_id": self.__ep_id}
+        meta = await (
+            Api(**api, credential=self.credential).update_params(**params).result
+        )
+        self.__season_id = int(meta["season_id"])
+
+    async def set_season_id(self, season_id: int) -> None:
         """
         设置季度 id
 
@@ -78,7 +79,7 @@ class CheeseList:
         """
         self.__init__(season_id=season_id)
 
-    def set_ep_id(self, ep_id: int) -> None:
+    async def set_ep_id(self, ep_id: int) -> None:
         """
         设置 epid 并通过 epid 找到课程
 
@@ -86,14 +87,17 @@ class CheeseList:
             ep_id (int): epid
         """
         self.__init__(ep_id=ep_id)
+        await self.__fetch_season_id()
 
-    def get_season_id(self) -> int:
+    async def get_season_id(self) -> int:
         """
         获取季度 id
 
         Returns:
             int: 季度 id
         """
+        if self.__season_id == -1:
+            await self.__fetch_season_id()
         return self.__season_id
 
     async def get_meta(self) -> dict:
@@ -104,7 +108,7 @@ class CheeseList:
             调用 API 所得的结果。
         """
         api = API["info"]["meta"]
-        params = {"season_id": self.__season_id, "ep_id": self.__ep_id}
+        params = {"season_id": await self.get_season_id()}
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
@@ -117,7 +121,7 @@ class CheeseList:
             dict: 调用 API 返回的结果
         """
         api = API["info"]["list"]
-        params = {"season_id": self.__season_id, "pn": 1, "ps": 1000}
+        params = {"season_id": await self.get_season_id(), "pn": 1, "ps": 1000}
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
@@ -131,13 +135,13 @@ class CheeseList:
         """
         global cheese_video_meta_cache
         api = API["info"]["list"]
-        params = {"season_id": self.__season_id, "pn": 1, "ps": 1000}
+        params = {"season_id": await self.get_season_id(), "pn": 1, "ps": 1000}
         lists = (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
         cheese_videos = []
         for c in lists["items"]:
-            c["ssid"] = self.get_season_id()
+            c["ssid"] = await self.get_season_id()
             cheese_video_meta_cache[c["id"]] = c
             cheese_videos.append(CheeseVideo(c["id"], self.credential))
         return cheese_videos
@@ -163,63 +167,74 @@ class CheeseVideo:
         """
         global cheese_video_meta_cache
         self.__epid = epid
+        self.cheese = None
+        self.__aid = None
+        self.__cid = None
+        self.__meta = None
         meta = cheese_video_meta_cache.get(epid)
-        if meta == None:
-            self.cheese = CheeseList(ep_id=self.__epid)
-        else:
+        if meta:
             self.cheese = CheeseList(season_id=meta["ssid"])
-        self.credential: Credential = credential if credential else Credential()
-        if meta == None:
-            api = API["info"]["meta"]
-            params = {"season_id": self.cheese.get_season_id(), "ep_id": self.__epid}
-            metadata = Api(**api).update_params(**params).result_sync
-            for v in metadata["episodes"]:
-                if v["id"] == epid:
-                    self.__aid = v["aid"]
-                    self.__cid = v["cid"]
-                    self.__meta = v
-        else:
             self.__meta = meta
             self.__aid = meta["aid"]
             self.__cid = meta["cid"]
+        self.credential: Credential = credential if credential else Credential()
 
-    def get_aid(self) -> int:
+    async def __fetch_meta(self) -> int:
+        api = API["info"]["meta"]
+        params = {"ep_id": self.__epid}
+        metadata = await Api(**api).update_params(**params).result
+        for v in metadata["episodes"]:
+            if v["id"] == self.__epid:
+                self.__aid = v["aid"]
+                self.__cid = v["cid"]
+                self.__meta = v
+                self.cheese = CheeseList(season_id=metadata["season_id"])
+
+    async def get_aid(self) -> int:
         """
         获取 aid
 
         Returns:
             int: aid
         """
+        if not self.__aid:
+            await self.__fetch_meta()
         return self.__aid
 
-    def get_cid(self) -> int:
+    async def get_cid(self) -> int:
         """
         获取 cid
 
         Returns:
             int: cid
         """
+        if not self.__cid:
+            await self.__fetch_meta()
         return self.__cid
 
-    def get_meta(self) -> dict:
+    async def get_meta(self) -> dict:
         """
         获取课程元数据
 
         Returns:
             dict: 视频元数据
         """
+        if not self.__meta:
+            await self.__fetch_meta()
         return self.__meta
 
-    def get_cheese(self) -> "CheeseList":
+    async def get_cheese(self) -> "CheeseList":
         """
         获取所属课程
 
         Returns:
             CheeseList: 所属课程
         """
+        if not self.cheese:
+            await self.__fetch_meta()
         return self.cheese
 
-    def set_epid(self, epid: int) -> None:
+    async def set_epid(self, epid: int) -> None:
         """
         设置 epid
 
@@ -227,6 +242,7 @@ class CheeseVideo:
             epid (int): epid
         """
         self.__init__(epid, self.credential)
+        await self.__fetch_meta()
 
     def get_epid(self) -> int:
         """
@@ -246,9 +262,9 @@ class CheeseVideo:
         """
         api = API["info"]["playurl"]
         params = {
-            "avid": self.get_aid(),
+            "avid": await self.get_aid(),
             "ep_id": self.get_epid(),
-            "cid": self.get_cid(),
+            "cid": await self.get_cid(),
             "qn": 127,
             "fnval": 4048,
             "fourk": 1,
@@ -265,7 +281,7 @@ class CheeseVideo:
             dict: 调用 API 返回的结果。
         """
         api = API_video["info"]["stat"]
-        params = {"aid": self.get_aid()}
+        params = {"aid": await self.get_aid()}
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
@@ -278,7 +294,7 @@ class CheeseVideo:
             dict: 调用 API 返回的结果。
         """
         api = API_video["info"]["pages"]
-        params = {"aid": self.get_aid()}
+        params = {"aid": await self.get_aid()}
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
@@ -290,25 +306,19 @@ class CheeseVideo:
         Returns:
             dict: 调用 API 返回的结果。
         """
-        cid = self.get_cid()
-        session = get_session()
+        cid = await self.get_cid()
         api = API_video["danmaku"]["view"]
-
-        config = {}
-        config["url"] = api["url"]
-        config["params"] = {"type": 1, "oid": cid, "pid": self.get_aid()}
-        config["cookies"] = self.credential.get_cookies()
-        config["headers"] = {
-            "Referer": "https://www.bilibili.com",
-            "User-Agent": "Mozilla/5.0",
-        }
+        params = {"type": 1, "oid": cid, "pid": await self.get_aid()}
 
         try:
-            resp = await session.get(**config)
+            resp_data = (
+                await Api(**api, credential=self.credential)
+                .update_params(**params)
+                .request(byte=True)
+            )
         except Exception as e:
             raise NetworkException(-1, str(e))
 
-        resp_data = resp.read()
         json_data = {}
         reader = BytesReader(resp_data)
         # 解析二进制数据流
@@ -486,65 +496,64 @@ class CheeseVideo:
                 continue
         return json_data
 
-    async def get_danmakus(self, date: Union[datetime.date, None] = None):
+    async def get_danmakus(
+        self,
+        date: Union[datetime.date, None] = None,
+        from_seg: Union[int, None] = None,
+        to_seg: Union[int, None] = None,
+    ) -> List[Danmaku]:
         """
         获取弹幕。
 
         Args:
-            date (datetime.Date | None, optional): 指定日期后为获取历史弹幕，精确到年月日。Defaults to None.
+            date       (datetime.Date | None, optional): 指定日期后为获取历史弹幕，精确到年月日。Defaults to None.
+
+            from_seg (int, optional): 从第几段开始(0 开始编号，None 为从第一段开始，一段 6 分钟). Defaults to None.
+
+            to_seg (int, optional): 到第几段结束(0 开始编号，None 为到最后一段，包含编号的段，一段 6 分钟). Defaults to None.
 
         Returns:
             List[Danmaku]: Danmaku 类的列表。
+
+        注意：
+            - 1. 段数可以通过视频时长计算。6分钟为一段。
+            - 2. `from_seg` 和 `to_seg` 仅对 `date == None` 的时候有效果。
+            - 3. 例：取前 `12` 分钟的弹幕：`from_seg=0, to_seg=1`
         """
         if date is not None:
             self.credential.raise_for_no_sessdata()
 
-        # self.credential.raise_for_no_sessdata()
-
-        session = get_session()
-        aid = self.get_aid()
-        params: dict[str, Any] = {"oid": self.get_cid(), "type": 1, "pid": aid}
+        cid = await self.get_cid()
+        aid = await self.get_aid()
+        params: dict[str, Any] = {"oid": cid, "type": 1, "pid": aid}
         if date is not None:
             # 获取历史弹幕
             api = API_video["danmaku"]["get_history_danmaku"]
             params["date"] = date.strftime("%Y-%m-%d")
             params["type"] = 1
-            all_seg = 1
+            from_seg = to_seg = 0
         else:
             api = API_video["danmaku"]["get_danmaku"]
-            view = await self.get_danmaku_view()
-            all_seg = view["dm_seg"]["total"]
+            if from_seg == None:
+                from_seg = 0
+            if to_seg == None:
+                to_seg = self.get_meta()["duration"] // 360 + 1
 
         danmakus = []
 
-        for seg in range(all_seg):
+        for seg in range(from_seg, to_seg + 1):
             if date is None:
                 # 仅当获取当前弹幕时需要该参数
                 params["segment_index"] = seg + 1
-
-            config = {}
-            config["url"] = api["url"]
-            config["params"] = params
-            config["headers"] = {
-                "Referer": "https://www.bilibili.com",
-                "User-Agent": "Mozilla/5.0",
-            }
-            config["cookies"] = self.credential.get_cookies()
-
             try:
-                req = await session.get(**config)
+                data = (
+                    await Api(**api, credential=self.credential)
+                    .update_params(**params)
+                    .request(byte=True)
+                )
             except Exception as e:
                 raise NetworkException(-1, str(e))
 
-            if "content-type" not in req.headers.keys():
-                break
-            else:
-                content_type = req.headers["content-type"]
-                if content_type != "application/octet-stream":
-                    raise ResponseException("返回数据类型错误：")
-
-            # 解析二进制流数据
-            data = req.read()
             if data == b"\x10\x01":
                 # 视频弹幕被关闭
                 raise DanmakuClosedException()
@@ -584,7 +593,12 @@ class CheeseVideo:
                     elif data_type == 4:
                         dm.font_size = dm_reader.varint()
                     elif data_type == 5:
-                        dm.color = hex(dm_reader.varint())[2:]
+                        color = dm_reader.varint()
+                        if color != 60001:
+                            color = hex(color)[2:]
+                        else:
+                            color = "special"
+                        dm.color = color
                     elif data_type == 6:
                         dm.crc32_id = dm_reader.string()
                     elif data_type == 7:
@@ -594,7 +608,7 @@ class CheeseVideo:
                     elif data_type == 9:
                         dm.weight = dm_reader.varint()
                     elif data_type == 10:
-                        dm.action = str(dm_reader.varint())
+                        dm.action = str(dm_reader.string())
                     elif data_type == 11:
                         dm.pool = dm_reader.varint()
                     elif data_type == 12:
@@ -609,32 +623,31 @@ class CheeseVideo:
                         dm_reader.bytes_string()
                     elif data_type == 21:
                         dm_reader.bytes_string()
+                    elif data_type == 22:
+                        dm_reader.bytes_string()
+                    elif data_type == 25:
+                        dm_reader.varint()
+                    elif data_type == 26:
+                        dm_reader.varint()
                     else:
                         break
                 danmakus.append(dm)
         return danmakus
 
-    async def get_pbp(self):
+    async def get_pbp(self) -> dict:
         """
         获取高能进度条
 
         Returns:
             调用 API 返回的结果
         """
-        cid = self.get_cid()
-
+        cid = await self.get_cid()
         api = API_video["info"]["pbp"]
-
         params = {"cid": cid}
-
-        session = get_session()
-
-        return json.loads(
-            (
-                await session.get(
-                    api["url"], params=params, cookies=self.credential.get_cookies()
-                )
-            ).text
+        return (
+            await Api(**api, credential=self.credential)
+            .update_params(**params)
+            .request(raw=True)
         )
 
     async def send_danmaku(self, danmaku: Union[Danmaku, None] = None):
@@ -661,9 +674,9 @@ class CheeseVideo:
             pool = 0
         data = {
             "type": 1,
-            "oid": self.get_cid(),
+            "oid": await self.get_cid(),
             "msg": danmaku.text,
-            "aid": self.get_aid(),
+            "aid": await self.get_aid(),
             "progress": int(danmaku.dm_time * 1000),
             "color": int(danmaku.color, 16),
             "fontsize": danmaku.font_size,
@@ -683,7 +696,7 @@ class CheeseVideo:
         self.credential.raise_for_no_sessdata()
 
         api = API_video["info"]["has_liked"]
-        params = {"aid": self.get_aid()}
+        params = {"aid": await self.get_aid()}
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
             == 1
@@ -699,7 +712,7 @@ class CheeseVideo:
         self.credential.raise_for_no_sessdata()
 
         api = API_video["info"]["get_pay_coins"]
-        params = {"aid": self.get_aid()}
+        params = {"aid": await self.get_aid()}
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )["multiply"]
@@ -714,7 +727,7 @@ class CheeseVideo:
         self.credential.raise_for_no_sessdata()
 
         api = API_video["info"]["has_favoured"]
-        params = {"aid": self.get_aid()}
+        params = {"aid": await self.get_aid()}
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )["favoured"]
@@ -733,7 +746,7 @@ class CheeseVideo:
         self.credential.raise_for_no_bili_jct()
 
         api = API_video["operate"]["like"]
-        data = {"aid": self.get_aid(), "like": 1 if status else 2}
+        data = {"aid": await self.get_aid(), "like": 1 if status else 2}
         return await Api(**api, credential=self.credential).update_data(**data).result
 
     async def pay_coin(self, num: int = 1, like: bool = False):
@@ -756,7 +769,7 @@ class CheeseVideo:
 
         api = API_video["operate"]["coin"]
         data = {
-            "aid": self.get_aid(),
+            "aid": await self.get_aid(),
             "multiply": num,
             "like": 1 if like else 0,
         }
@@ -777,32 +790,29 @@ class CheeseVideo:
             dict: 调用 API 返回结果。
         """
         if len(add_media_ids) + len(del_media_ids) == 0:
-            raise ArgsException("对收藏夹无修改。请至少提供 add_media_ids 和 del_media_ids 中的其中一个。")
+            raise ArgsException(
+                "对收藏夹无修改。请至少提供 add_media_ids 和 del_media_ids 中的其中一个。"
+            )
 
         self.credential.raise_for_no_sessdata()
         self.credential.raise_for_no_bili_jct()
 
         api = API_video["operate"]["favorite"]
         data = {
-            "rid": self.get_aid(),
+            "rid": await self.get_aid(),
             "type": 2,
             "add_media_ids": ",".join(map(lambda x: str(x), add_media_ids)),
             "del_media_ids": ",".join(map(lambda x: str(x), del_media_ids)),
         }
         return await Api(**api, credential=self.credential).update_data(**data).result
 
-    async def get_danmaku_xml(self):
+    async def get_danmaku_xml(self) -> str:
         """
-        获取弹幕(xml 源)
+        获取所有弹幕的 xml 源文件（非装填）
 
         Returns:
-            str: xml 文件源
+            str: 文件源
         """
-        url = f"https://comment.bilibili.com/{self.get_cid()}.xml"
-        sess = get_session()
-        config: dict[str, Any] = {"url": url}
-        # 代理
-        if settings.proxy:
-            config["proxies"] = {"all://", settings.proxy}
-        resp = await sess.get(**config)
-        return resp.content.decode("utf-8")
+        cid = await self.get_cid()
+        url = f"https://comment.bilibili.com/{cid}.xml"
+        return (await Api(url=url, method="GET").request(byte=True)).decode("utf-8")

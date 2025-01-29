@@ -10,6 +10,61 @@ bilibili_api.interactive_video
 from bilibili_api import interactive_video
 ```
 
+- [class InteractiveButton()](#class-InteractiveButton)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [def get\_align()](#def-get\_align)
+  - [def get\_pos()](#def-get\_pos)
+  - [def get\_text()](#def-get\_text)
+- [class InteractiveButtonAlign()](#class-InteractiveButtonAlign)
+- [class InteractiveGraph()](#class-InteractiveGraph)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def get\_children()](#async-def-get\_children)
+  - [async def get\_root\_node()](#async-def-get\_root\_node)
+  - [def get\_skin()](#def-get\_skin)
+  - [def get\_video()](#def-get\_video)
+- [class InteractiveJumpingCommand()](#class-InteractiveJumpingCommand)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [def run\_command()](#def-run\_command)
+- [class InteractiveJumpingCondition()](#class-InteractiveJumpingCondition)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [def get\_result()](#def-get\_result)
+- [class InteractiveNode()](#class-InteractiveNode)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def get\_children()](#async-def-get\_children)
+  - [def get\_cid()](#def-get\_cid)
+  - [async def get\_info()](#async-def-get\_info)
+  - [def get\_jumping\_condition()](#def-get\_jumping\_condition)
+  - [async def get\_jumping\_type()](#async-def-get\_jumping\_type)
+  - [def get\_node\_id()](#def-get\_node\_id)
+  - [def get\_self\_button()](#def-get\_self\_button)
+  - [async def get\_vars()](#async-def-get\_vars)
+  - [def get\_video()](#def-get\_video)
+  - [def is\_default()](#def-is\_default)
+- [class InteractiveNodeJumpingType()](#class-InteractiveNodeJumpingType)
+- [class InteractiveVariable()](#class-InteractiveVariable)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [def get\_id()](#def-get\_id)
+  - [def get\_name()](#def-get\_name)
+  - [def get\_value()](#def-get\_value)
+  - [def is\_random()](#def-is\_random)
+  - [def is\_show()](#def-is\_show)
+  - [def refresh\_value()](#def-refresh\_value)
+- [class InteractiveVideo()](#class-InteractiveVideo)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def get\_cid()](#async-def-get\_cid)
+  - [async def get\_edge\_info()](#async-def-get\_edge\_info)
+  - [async def get\_graph()](#async-def-get\_graph)
+  - [async def get\_graph\_version()](#async-def-get\_graph\_version)
+  - [async def mark\_score()](#async-def-mark\_score)
+  - [async def up\_get\_ivideo\_pages()](#async-def-up\_get\_ivideo\_pages)
+  - [async def up\_submit\_story\_tree()](#async-def-up\_submit\_story\_tree)
+- [class InteractiveVideoDownloader()](#class-InteractiveVideoDownloader)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def abort()](#async-def-abort)
+- [class InteractiveVideoDownloaderEvents()](#class-InteractiveVideoDownloaderEvents)
+- [class InteractiveVideoDownloaderMode()](#class-InteractiveVideoDownloaderMode)
+- [def get\_ivi\_file\_meta()](#def-get\_ivi\_file\_meta)
+
 ---
 
 ## class InteractiveButton()
@@ -17,6 +72,17 @@ from bilibili_api import interactive_video
 互动视频节点按钮类
 
 
+
+
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| text | str | 文字 |
+| x | int | x 轴 |
+| y | int | y 轴 |
+| align | InteractiveButtonAlign \| int | 按钮的文字在按钮中的位置 |
 
 
 ### def get_align()
@@ -93,6 +159,16 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| video | InteractiveVideo | 互动视频类 |
+| skin | Dict | 样式 |
+| root_cid | int | 根节点 CID |
+
+
 ### async def get_children()
 
 获取子节点
@@ -146,6 +222,15 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| var | List[InteractiveVariable] | 所有变量 |
+| command | str | 公式 |
+
+
 ### def run_command()
 
 执行操作
@@ -166,6 +251,15 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| var | List[InteractiveVariable] | 所有变量 |
+| condition | str | 公式 |
+
+
 ### def get_result()
 
 计算公式获得结果
@@ -184,6 +278,21 @@ o----|xxx| (TEXT_RIGHT)
 互动视频节点类
 
 
+
+
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| video | InteractiveVideo | 视频类 |
+| node_id | int | 节点 id |
+| cid | int | CID |
+| vars | List[InteractiveVariable] | 变量 |
+| button | InteractiveButton | 对应的按钮 |
+| condition | InteractiveJumpingCondition | 跳转公式 |
+| native_command | InteractiveJumpingCommand | 跳转时变量操作 |
+| is_default | bool | 是不是默认的跳转的节点 |
 
 
 ### async def get_children()
@@ -319,6 +428,18 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| name | str | 变量名 |
+| var_id | str | 变量 id |
+| var_value | int | 变量的值 |
+| show | bool | 是否显示 |
+| random | bool | 是否为随机值(1-100) |
+
+
 ### def get_id()
 
 获取变量 id
@@ -395,6 +516,12 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
+### def \_\_init\_\_()
+
+
+
+
+
 ### async def get_cid()
 
 获取稿件 cid
@@ -412,7 +539,7 @@ o----|xxx| (TEXT_RIGHT)
 
 | name | type | description |
 | - | - | - |
-| edge_id | Union[int, None] | 节点 ID，为 None 时获取根节点信息. Defaults to None. |
+| edge_id | int, optional | 节点 ID，为 None 时获取根节点信息. Defaults to None. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -491,6 +618,39 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
+### def \_\_init\_\_()
+
+`self_download_func` 函数应接受两个参数（第一个是下载 URL，第二个是输出地址（精确至文件名））
+
+为保证视频能被成功下载，请在请求的时候加入 `bilibili_api.HEADERS` 头部。
+
+`self_download_func` 例子：
+
+``` python
+async def download(url: str, path: str) -> None:
+sess = requests.AsyncSession()
+req = await sess.request(method="GET", url=url, headers=HEADERS, stream=True)
+tot = req.headers.get("content-length")
+cur = 0
+with open(path, "wb") as file:
+async for chunk in req.aiter_content():
+cur += file.write(chunk)
+print(f"{path} [{cur}/{tot}]", end="")
+print()
+await asyncio.sleep(1.0)  # give bilibili a rest
+```
+
+
+| name | type | description |
+| - | - | - |
+| video | InteractiveVideo | 互动视频类 |
+| out | str | 输出文件地址 (如果模式为 NODE_VIDEOS/NO_PACKAGING 则此参数表示所有节点视频的存放目录) |
+| self_download_func | Coroutine | 自定义下载函数（需 async 函数） |
+| downloader_mode | InteractiveVideoDownloaderMode | 下载模式 |
+| stream_detecting_params | Dict | `VideoDownloadURLDataDetecter` 提取最佳流时传入的参数，可控制视频及音频品质 |
+| fetching_nodes_retry_times | int | 获取节点时的最大重试次数 |
+
+
 ### async def abort()
 
 中断下载
@@ -509,18 +669,15 @@ o----|xxx| (TEXT_RIGHT)
 
 互动视频下载器事件枚举
 
-| event | meaning | IVI mode | NODE_VIDEOS mode | DOT_GRAPH mode | NO_PACKAGING mode | Is Built-In downloader event |
-| ----- | ------- | -------- | ---------------- | -------------- | ----------------- | ------------------------- |
-| START | 开始下载 | [x] | [x] | [x] | [x] | [ ] |
-| GET | 获取到节点信息 | [x] | [x] | [x] | [x] | [ ] |
-| PREPARE_DOWNLOAD | 准备下载单个节点 | [x] | [x] | [ ] | [x] | [ ] |
-| DOWNLOAD_START | 开始下载单个文件 | Unknown | Unknown | [ ] | Unknown | [x] |
-| DOWNLOAD_PART | 文件分块部分完成 | Unknown | Unknown | [ ] | Unknown | [x] |
-| DOWNLOAD_SUCCESS | 完成下载 | Unknown | Unknown | [ ] | Unknown | [x] |
-| PACKAGING | 正在打包 | [x] | [ ] | [ ] | [ ] | [ ] |
-| SUCCESS | 下载成功 | [x] | [x] | [x] | [x] | [ ] |
-| ABORTED | 用户暂停 | [x] | [x] | [x] | [x] | [ ] |
-| FAILED | 下载失败 | [x] | [x] | [x] | [x] | [ ] |
+| event | meaning | IVI mode | NODE_VIDEOS mode | DOT_GRAPH mode | NO_PACKAGING mode |
+| ----- | ------- | -------- | ---------------- | -------------- | ----------------- |
+| START | 开始下载 | [x] | [x] | [x] | [x] |
+| GET | 获取到节点信息 | [x] | [x] | [x] | [x] |
+| PREPARE_DOWNLOAD | 准备下载单个节点 | [x] | [x] | [ ] | [x] |
+| PACKAGING | 正在打包 | [x] | [ ] | [ ] | [ ] |
+| SUCCESS | 下载成功 | [x] | [x] | [x] | [x] |
+| ABORTED | 用户暂停 | [x] | [x] | [x] | [x] |
+| FAILED | 下载失败 | [x] | [x] | [x] | [x] |
 
 
 

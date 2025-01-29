@@ -10,6 +10,17 @@ bilibili_api.show
 from bilibili_api import show
 ```
 
+- [class BuyerInfo()](#class-BuyerInfo)
+- [class OrderTicket()](#class-OrderTicket)
+  - [async def create\_order()](#async-def-create\_order)
+  - [async def get\_token()](#async-def-get\_token)
+- [class Session()](#class-Session)
+- [class Ticket()](#class-Ticket)
+- [async def get\_all\_buyer\_info()](#async-def-get\_all\_buyer\_info)
+- [async def get\_all\_buyer\_info\_obj()](#async-def-get\_all\_buyer\_info\_obj)
+- [async def get\_available\_sessions()](#async-def-get\_available\_sessions)
+- [async def get\_project\_info()](#async-def-get\_project\_info)
+
 ---
 
 **@dataclasses.dataclass** 

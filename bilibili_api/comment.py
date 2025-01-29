@@ -5,19 +5,18 @@ bilibili_api.comment
 
 关于资源 ID（oid）的一些示例（{}部分为应该传入的参数）。
 
-+ 视频：AV 号：av{170001}。
-+ 专栏：cv{9762979}。
-+ 动态（画册类型）：{116859542}。
-+ 动态（纯文本）：{497080393649439253}。
-+ 课程：ep{5556}
-+ 小黑屋: ban/{2600321}
++ 视频：AV 号：av{170001} `get_aid() / await get_aid() # for Episode`。
++ 专栏：cv{9762979} `get_cvid()`。
++ 动态/图文：{116859542} `await get_rid()`。
++ 课程：ep{5556} `get_epid()`
++ 小黑屋: ban/{2600321} `get_id()`
 """
+
 from enum import Enum
 from typing import Union, Optional
 
 from .utils.utils import get_api
-from .utils.credential import Credential
-from .utils.network import Api
+from .utils.network import Api, Credential
 from .exceptions.ArgsException import ArgsException
 
 API = get_api("common")
@@ -29,7 +28,7 @@ class CommentResourceType(Enum):
 
     + VIDEO: 视频。
     + ARTICLE: 专栏。
-    + DYNAMIC_DRAW: 画册。
+    + DYNAMIC_DRAW: 画册（图文）。
     + DYNAMIC: 动态（画册也属于动态的一种，只不过画册还有一个专门的 ID）。
     + AUDIO：音频。
     + AUDIO_LIST：歌单。
@@ -294,6 +293,9 @@ class Comment:
 
             content (str, optional): 其他举报备注内容仅 reason=ReportReason.OTHER 可用且不能为 None.
 
+        Returns:
+            dict: 调用 API 返回的结果
+
         Error Code:
             0: 成功
             -101: 账号未登录
@@ -316,7 +318,9 @@ class Comment:
 
         api = API["comment"]["report"]
         if content is not None and report_reason != ReportReason.OTHER:
-            raise ArgsException("content 只能在 report_reason=ReportReason.OTHER 时使用")
+            raise ArgsException(
+                "content 只能在 report_reason=ReportReason.OTHER 时使用"
+            )
         elif content is None and report_reason == ReportReason.OTHER:
             raise ArgsException("report_reason=ReportReason.OTHER 时 content 不能为空")
         data = {
@@ -433,7 +437,7 @@ async def get_comments(
 async def get_comments_lazy(
     oid: int,
     type_: CommentResourceType,
-    offset: str = '',
+    offset: str = "",
     order: OrderType = OrderType.TIME,
     credential: Union[Credential, None] = None,
 ) -> dict:
@@ -447,7 +451,7 @@ async def get_comments_lazy(
 
         type_      (CommentsResourceType)        : 资源类枚举。
 
-        offset (str, optional)       : 偏移量。每次请求可获取下次请求对应的偏移量，类似单向链表。
+        offset (str, optional)       : 偏移量。每次请求可获取下次请求对应的偏移量，类似单向链表。对应返回结果的 `["cursor"]["pagination_reply"]["next_offset"]`
 
         order      (OrderType, optional) : 排序方式枚举. Defaults to OrderType.TIME.
 
@@ -458,11 +462,12 @@ async def get_comments_lazy(
     """
     offset = offset.replace('"', '\\"')
     offset = '{"offset":"' + offset + '"}'
+    old_to_new = {0: 2, 2: 3}
     api = API["comment"]["reply_by_session_id"]
     params = {
         "oid": oid,
         "type": type_.value,
-        "mode": order.value,
+        "mode": old_to_new[order.value],
         "pagination_str": offset,
         "web_location": "1315875",
     }

@@ -1,375 +1,1109 @@
-# Module bilibili_api
+# Module bilibili_api.py
 
-```python
-import bilibili_api
+
+bilibili_api
+
+哔哩哔哩的各种 API 调用便捷整合（视频、动态、直播等），另外附加一些常用的功能。
+
+ (默认已导入所有子模块，例如 `bilibili_api.video`, `bilibili_api.user`)
+
+
+``` python
+from bilibili_api import bilibili_api
 ```
 
-根模块 (默认已导入所有子模块，例如 `bilibili_api.video`, `bilibili_api.user`)
+- [class ApiException()](#class-ApiException)
+- [class ArgsException()](#class-ArgsException)
+- [class BiliAPIClient()](#class-BiliAPIClient)
+- [class BiliAPIFile()](#class-BiliAPIFile)
+- [class BiliAPIResponse()](#class-BiliAPIResponse)
+  - [def json()](#def-json)
+  - [def utf8\_text()](#def-utf8\_text)
+- [class BiliWsMsgType()](#class-BiliWsMsgType)
+- [class CookiesRefreshException()](#class-CookiesRefreshException)
+- [class Credential()](#class-Credential)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def check\_refresh()](#async-def-check\_refresh)
+  - [async def check\_valid()](#async-def-check\_valid)
+  - [def from\_cookies()](#def-from\_cookies)
+  - [def get\_cookies()](#def-get\_cookies)
+  - [def has\_ac\_time\_value()](#def-has\_ac\_time\_value)
+  - [def has\_bili\_jct()](#def-has\_bili\_jct)
+  - [def has\_buvid3()](#def-has\_buvid3)
+  - [def has\_dedeuserid()](#def-has\_dedeuserid)
+  - [def has\_sessdata()](#def-has\_sessdata)
+  - [def raise\_for\_no\_ac\_time\_value()](#def-raise\_for\_no\_ac\_time\_value)
+  - [def raise\_for\_no\_bili\_jct()](#def-raise\_for\_no\_bili\_jct)
+  - [def raise\_for\_no\_buvid3()](#def-raise\_for\_no\_buvid3)
+  - [def raise\_for\_no\_dedeuserid()](#def-raise\_for\_no\_dedeuserid)
+  - [def raise\_for\_no\_sessdata()](#def-raise\_for\_no\_sessdata)
+  - [async def refresh()](#async-def-refresh)
+- [class CredentialNoAcTimeValueException()](#class-CredentialNoAcTimeValueException)
+- [class CredentialNoBiliJctException()](#class-CredentialNoBiliJctException)
+- [class CredentialNoBuvid3Exception()](#class-CredentialNoBuvid3Exception)
+- [class CredentialNoDedeUserIDException()](#class-CredentialNoDedeUserIDException)
+- [class CredentialNoSessdataException()](#class-CredentialNoSessdataException)
+- [class Danmaku()](#class-Danmaku)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [def crack\_uid()](#def-crack\_uid)
+  - [def to\_xml()](#def-to\_xml)
+- [class DanmakuClosedException()](#class-DanmakuClosedException)
+- [class DmFontSize()](#class-DmFontSize)
+- [class DmMode()](#class-DmMode)
+- [class DynamicExceedImagesException()](#class-DynamicExceedImagesException)
+- [class ExClimbWuzhiException()](#class-ExClimbWuzhiException)
+- [class Geetest()](#class-Geetest)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [def close\_geetest\_server()](#def-close\_geetest\_server)
+  - [def complete\_test()](#def-complete\_test)
+  - [async def generate\_test()](#async-def-generate\_test)
+  - [def get\_geetest\_server\_url()](#def-get\_geetest\_server\_url)
+  - [def get\_info()](#def-get\_info)
+  - [def get\_result()](#def-get\_result)
+  - [def get\_test\_type()](#def-get\_test\_type)
+  - [def has\_done()](#def-has\_done)
+  - [def start\_geetest\_server()](#def-start\_geetest\_server)
+  - [def test\_generated()](#def-test\_generated)
+- [class GeetestException()](#class-GeetestException)
+- [class GeetestMeta()](#class-GeetestMeta)
+- [class GeetestType()](#class-GeetestType)
+- [var HEADERS](#var-HEADERS)
+- [class LiveException()](#class-LiveException)
+- [class LoginError()](#class-LoginError)
+- [class NetworkException()](#class-NetworkException)
+- [class Picture()](#class-Picture)
+  - [def convert\_format()](#def-convert\_format)
+  - [def from\_content()](#def-from\_content)
+  - [def from\_file()](#def-from\_file)
+  - [async def load\_url()](#async-def-load\_url)
+  - [def to\_file()](#def-to\_file)
+  - [async def upload()](#async-def-upload)
+  - [async def upload\_by\_note()](#async-def-upload\_by\_note)
+- [class ResourceType()](#class-ResourceType)
+- [class ResponseCodeException()](#class-ResponseCodeException)
+- [class ResponseException()](#class-ResponseException)
+- [class SpecialDanmaku()](#class-SpecialDanmaku)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+- [class StatementException()](#class-StatementException)
+- [class VideoUploadException()](#class-VideoUploadException)
+- [class WbiRetryTimesExceedException()](#class-WbiRetryTimesExceedException)
+- [def aid2bvid()](#def-aid2bvid)
+- [def bvid2aid()](#def-bvid2aid)
+- [def get\_client()](#def-get\_client)
+- [async def get\_real\_url()](#async-def-get\_real\_url)
+- [def get\_registered\_clients()](#def-get\_registered\_clients)
+- [def get\_selected\_client()](#def-get\_selected\_client)
+- [def get\_session()](#def-get\_session)
+- [async def parse\_link()](#async-def-parse\_link)
+- [def register\_client()](#def-register\_client)
+- [var request\_log](#var-request\_log)
+  - [def get\_ignore\_events()](#def-get\_ignore\_events)
+  - [def get\_on\_events()](#def-get\_on\_events)
+  - [def is\_on()](#def-is\_on)
+  - [def set\_ignore\_events()](#def-set\_ignore\_events)
+  - [def set\_on()](#def-set\_on)
+  - [def set\_on\_events()](#def-set\_on\_events)
+- [var request\_settings](#var-request\_settings)
+  - [def get\_proxy()](#def-get\_proxy)
+  - [def get\_timeout()](#def-get\_timeout)
+  - [def get\_trust\_env()](#def-get\_trust\_env)
+  - [def get\_verify\_ssl()](#def-get\_verify\_ssl)
+  - [def get\_wbi\_retry\_times()](#def-get\_wbi\_retry\_times)
+  - [def set\_proxy()](#def-set\_proxy)
+  - [def set\_timeout()](#def-set\_timeout)
+  - [def set\_trust\_env()](#def-set\_trust\_env)
+  - [def set\_verify\_ssl()](#def-set\_verify\_ssl)
+  - [def set\_wbi\_retry\_times()](#def-set\_wbi\_retry\_times)
+- [def select\_client()](#def-select\_client)
+- [def set\_session()](#def-set\_session)
+- [def sync()](#def-sync)
+- [def unregister\_client()](#def-unregister\_client)
 
 ---
 
-## Exceptions
+## class ApiException()
 
-- LoginError: 登陆问题
-- ApiException: 错误基类
-- ArgsException: 参数错误
-- LiveException: 直播错误
-- NetworkException: 网络错误
-- ResponseException: 响应错误
-- VideoUploadException: 视频上传错误
-- ResponseCodeException: 响应代码错误
-- DanmakuClosedException: 弹幕关闭错误
-- CredentialNoBuvid3Exception: 凭据未提供 buvid3
-- CredentialNoBiliJctException: 凭据未提供 bili_jct
-- DynamicExceedImagesException: 动态图片达到上限
-- CredentialNoSessdataException: 凭据未提供 SESSDATA
-- CredentialNoDedeUserIDException: 凭据未提供 DedeUserID
-- ExClimbWuzhiException: ExClimbWuzhi 封控处理错误
-- StatementException: 设定条件未满足抛出的错误，如公开笔记使用私有笔记获取信息的借口
-- CredentialNoAcTimeValueException: 凭据未提供 ac_time_value
+**Extend: builtins.Exception**
+
+API 基类异常。
+
+
+
 
 ---
 
-## const str BILIBILI_API_VERSION
+## class ArgsException()
 
-模块版本
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
 
----
+参数错误。
 
-## const dict HEADERS
 
-访问 bilibili 视频下载链接等内部网址用的 HEADERS
 
----
-
-## def set_session()
-
-| name    | type                  | description                |
-| ------- | --------------------- | -------------------------- |
-| session | httpx.AsyncClient | httpx.AsyncClient 实例 |
-
-用户手动设置 Session
-
-**Returns:** None
 
 ---
 
-## def get_session()
+## class BiliAPIClient()
 
-获取当前模块的 httpx.AsyncClient 对象，用于自定义请求
+**Extend: abc.ABC**
 
-**Returns:** httpx.AsyncClient
+
+请求客户端抽象类。通过对第三方模块请求客户端的封装令模块可对其进行调用。
+
+``` python
+class BiliAPIClient(ABC):
+    """
+    请求客户端抽象类。通过对第三方模块请求客户端的封装令模块可对其进行调用。
+    """
+
+    @abstractmethod
+    def __init__(
+        self,
+        proxy: str = "",
+        timeout: float = 0.0,
+        verify_ssl: bool = True,
+        trust_env: bool = True,
+        session: Optional[object] = None,
+    ) -> None:
+        """
+        Args:
+            proxy (str, optional): 代理地址. Defaults to "".
+            timeout (float, optional): 请求超时时间. Defaults to 0.0.
+            verify_ssl (bool, optional): 是否验证 SSL. Defaults to True.
+            trust_env (bool, optional): `trust_env`. Defaults to True.
+            session (object, optional): 会话对象. Defaults to None.
+
+        Note: 仅当用户只提供 `session` 参数且用户中途未调用 `set_xxx` 函数才使用用户提供的 `session`。
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_wrapped_session(self) -> object:
+        """
+        获取封装的第三方会话对象
+
+        Returns:
+            object: 第三方会话对象
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_timeout(self, timeout: float = 0.0) -> None:
+        """
+        设置请求超时时间
+
+        Args:
+            timeout (float, optional): 请求超时时间. Defaults to 0.0.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_proxy(self, proxy: str = "") -> None:
+        """
+        设置代理地址
+
+        Args:
+            proxy (str, optional): 代理地址. Defaults to "".
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_verify_ssl(self, verify_ssl: bool = True) -> None:
+        """
+        设置是否验证 SSL
+
+        Args:
+            verify_ssl (bool, optional): 是否验证 SSL. Defaults to True.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_trust_env(self, trust_env: bool = True) -> None:
+        """
+        设置 `trust_env`
+
+        Args:
+            trust_env (bool, optional): `trust_env`. Defaults to True.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def request(
+        self,
+        method: str = "",
+        url: str = "",
+        params: dict = {},
+        data: Union[dict, str, bytes] = {},
+        files: Dict[str, BiliAPIFile] = {},
+        headers: dict = {},
+        cookies: dict = {},
+        allow_redirects: bool = False,
+    ) -> BiliAPIResponse:
+        """
+        进行 HTTP 请求
+
+        Args:
+            method (str, optional): 请求方法. Defaults to "".
+            url (str, optional): 请求地址. Defaults to "".
+            params (dict, optional): 请求参数. Defaults to {}.
+            data (Union[dict, str, bytes], optional): 请求数据. Defaults to {}.
+            files (Dict[str, BiliAPIFile], optional): 请求文件. Defaults to {}.
+            headers (dict, optional): 请求头. Defaults to {}.
+            cookies (dict, optional): 请求 Cookies. Defaults to {}.
+            allow_redirects (bool, optional): 是否允许重定向. Defaults to False.
+
+        Returns:
+            BiliAPIResponse: 响应对象
+
+        Note: 无需实现 data 为 str 且 files 不为空的情况。
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def ws_create(
+        self, url: str = "", params: dict = {}, headers: dict = {}
+    ) -> int:
+        """
+        创建 WebSocket 连接
+
+        Args:
+            url (str, optional): WebSocket 地址. Defaults to "".
+            params (dict, optional): WebSocket 参数. Defaults to {}.
+            headers (dict, optional): WebSocket 头. Defaults to {}.
+
+        Returns:
+            int: WebSocket 连接编号，用于后续操作。
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def ws_send(self, cnt: int, data: bytes) -> None:
+        """
+        发送 WebSocket 数据
+
+        Args:
+            cnt (int): WebSocket 连接编号
+            data (bytes): WebSocket 数据
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def ws_recv(self, cnt: int) -> Tuple[bytes, BiliWsMsgType]:
+        """
+        接受 WebSocket 数据
+
+        Args:
+            cnt (int): WebSocket 连接编号
+
+        Returns:
+            Tuple[bytes, BiliWsMsgType]: WebSocket 数据和状态
+
+        Note: 建议实现此函数时支持其他线程关闭不阻塞，除基础状态同时实现 CLOSING, CLOSED。
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def ws_close(self, cnt: int) -> None:
+        """
+        关闭 WebSocket 连接
+
+        Args:
+            cnt (int): WebSocket 连接编号
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def close(self):
+        """
+        关闭请求客户端，即关闭封装的第三方会话对象
+        """
+        raise NotImplementedError
+```
+
+
 
 ---
 
-## def set_aiohttp_session()
+**@dataclasses.dataclass** 
 
-| name    | type                  | description                |
-| ------- | --------------------- | -------------------------- |
-| session | aiohttp.ClientSession | aiohttp.ClientSession 实例 |
+## class BiliAPIFile()
 
-用户手动设置 Session
+上传文件类。
 
-**Returns:** None
-
----
-
-## def get_aiohttp_session()
-
-获取当前模块的 aiohttp.ClientSession 对象，用于自定义请求
-
-**Returns:** aiohttp.ClientSession
-
----
-
-## def set_httpx_sync_session()
-
-| name    | type                  | description                |
-| ------- | --------------------- | -------------------------- |
-| session | httpx.Client | httpx.Client 实例 |
-
-用户手动设置 Session
-
-**Returns:** None
-
----
-
-## def get_httpx_sync_session()
-
-获取当前模块的 httpx.Client 对象，用于自定义请求
-
-**Returns:** httpx.Client
-
----
-
-## class Credential
-
-凭据类，用于各种请求操作的验证。
-
-### Functions
-
-#### def \_\_init\_\_()
-
-| name     | type          | description                         |
-| -------- | ------------- | ----------------------------------- |
-| sessdata | str, optional | 浏览器 Cookies 中的 SESSDATA 字段值 |
-| bili_jct | str, optional | 浏览器 Cookies 中的 bili_jct 字段值 |
-| buvid3   | str, optional | 浏览器 Cookies 中的 BUVID3 字段值   |
-| dedeuserid | str, optional | 浏览器 Cookies 中的 DedeUserID 字段值 |
-| ac_time_value | str | 浏览器 Cookies 中的 ac_time 字段值 |
-
-各字段获取方式查看：https://nemo2011.github.io/bilibili-api/#/get-credential.md
-
-#### def get_cookies()
-
-获取请求 Cookies 字典
-
-**Returns:** dict: 请求 Cookies 字典
-
-#### def has_sessdata()
-
-是否提供 sessdata。
-
-**Returns:** bool
-
-#### def has_bili_jct()
-
-是否提供 bili_jct。
-
-**Returns:** bool
-
-#### def has_buvid3()
-
-是否提供 buvid3。
-
-**Returns:** bool
-
-#### def has_dedeuserid()
-
-是否提供 dedeuserid。
-
-**Returns:** bool
-
-#### def has_ac_time_value()
-
-是否提供 ac_time_value。
-
-**Returns:** bool
-
-#### def raise_for_no_sessdata()
-
-没有提供 sessdata 则抛出异常。
-
-**Returns:** None
-
-#### def raise_for_no_bili_jct()
-
-没有提供 bili_jct 则抛出异常。
-
-**Returns:** None
-
-#### def raise_for_no_buvid3()
-
-没有提供 buvid3 则抛出异常。
-
-**Returns:** None
-
-#### def raise_for_no_dedeuserid()
-
-没有提供 dedeuserid 则抛出异常。
-
-**Returns:** None
-
-#### def raise_for_no_ac_time_value()
-
-没有提供 ac_time_value 则抛出异常。
-
-**Returns:** None
-
-#### async def check_valid()
-
-检查 cookies 是否有效
-
-**Returns:** bool: cookies 是否有效
-
-#### async def refresh()
-
-刷新 cookies
-
-**Returns:** None
-
-#### def check_refresh()
-
-检查 cookies 是否需要刷新
-
-**Returns:** bool: cookies 是否需要刷新
-
-**@staticmethod**
-#### def from_cookies()
-
-| name | type | description |
-| ---- | ---- | ----------- |
-| cookies | dict | Cookies. Defaults to {}. |
-
-从 Cookies 中新建 Credential
-
-**Returns:** Credential: 凭据类
-
----
-
-**@dataclasses.dataclass**
-## class Picture()
-
-图片类，包含图片链接、尺寸以及下载操作。
-
-Args:
-    height    (int)  : 高度           
-    imageType (str)  : 格式，例如: png
-    size      (Any)  : 尺寸           
-    url       (str)  : 图片链接        
-    width     (int)  : 宽度           
-    content   (bytes): 图片内容   
-
-可以不实例化，用 `from_url` 或 `from_file` 或 `from_content` 加载。
-
-### Functions
-
-**@staticmethod**
-#### def from_url
-
-| name | type | description |
-| ---- | ---- | ----------- |
-| url  | str  | 图片链接。   |
-
-加载网络图片。
-
-**Returns:** Picture: 加载后的图片对象。
-
-**@staticmethod**
-#### def from_file
-
-| name | type | description |
-| ---- | ---- | ----------- |
-| path | str  | 图片地址。   |
-
-加载本地图片。
-
-**@staticmethod**
-#### def from_content
-
-| name | type | description |
-| ---- | ---- | ----------- |
-| content | bytes | 图片内容 |
-| format | str | 图片后缀名，如 `webp`, `jpg`, `ico` |
-
-**Returns:** Picture: 加载后的图片对象。
-
-#### async def upload_file()
-
-| name | type | description |
-| ---- | ---- | ----------- |
-| credential | Credential | 凭据类。 |
-
-上传图片至 B 站。
-
-**Returns:** Picture: `self`
-
-#### def convert_format()
-
-| name | type | description |
-| ---- | ---- | ----------- |
-| new_format | str | 新的格式。例：`png`, `ico`, `webp`. |
-
-将图片转换为另一种格式。
-
-**Returns:** Picture: `self`
-
-#### async def download()
-
-| name | type | description |
-| ---- | ---- | ----------- |
-| path | str  | 下载地址。    |
-
-下载图片至本地。
-
-**Returns:** Picture: `self`
-
-#### def upload_file_sync()
-
-| name | type | description |
-| ---- | ---- | ----------- |
-| credential | Credential | 凭据类。 |
-
-上传图片至 B 站。
-
-**Returns:** Picture: `self`
-
-#### def download_sync()
-
-| name | type | description |
-| ---- | ---- | ----------- |
-| path | str  | 下载地址。    |
-
-下载图片至本地。
-
-**Returns:** Picture: `self`
-
----
-
-## def sync()
-
-| name      | type      | description |
-| --------- | --------- | ----------- |
-| coroutine | Coroutine | 异步函数    |
-
-同步执行异步函数，使用可参考 [同步执行异步代码](https://nemo2011.github.io/bilibili-api/#/sync-executor)
-
-**Returns:** 该异步函数的返回值
-
----
-
-## def aid2bvid()
-
-| name | type | description |
-| ---- | ---- | ----------- |
-| aid  | int  | AV 号       |
-
-AV 号转 BV 号。
-
-**Returns:** str: BV 号。
-
----
-
-## def bvid2aid()
-
-| name | type | description |
-| ---- | ---- | ----------- |
-| bvid | str  | BV 号。     |
-
-BV 号转 AV 号。
-
-**Returns:** int: AV 号。
-
----
-
-## async def get_real_url()
 
 | name | type | description |
 | - | - | - |
-| short_url | str | 短链接 |
-| credential | Optional[Credential] | 凭据类. |
+| path | str | 文件地址 |
+| mime_type | str | 文件类型 |
 
-获取短链接对应的真实链接。
 
-**注意：** 这个函数可以用于获取一个跳转`url`的目标。
+---
 
-**Returns:** 目标链接（如果不是有效的链接会报错）
+**@dataclasses.dataclass** 
+
+## class BiliAPIResponse()
+
+响应对象类。
+
+
+| name | type | description |
+| - | - | - |
+| code | int | 响应码 |
+| headers | Dict | 响应头 |
+| cookies | Dict | 当前状态的 cookies |
+| raw | bytes | 响应数据 |
+| url | str | 当前 url |
+
+
+### def json()
+
+解析 json
+
+
+
+**Returns:** object: 解析后的 json
+
+
+
+
+### def utf8_text()
+
+转为 utf8 文字
+
+
+
+**Returns:** str: utf8 文字
+
+
+
+
+---
+
+## class BiliWsMsgType()
+
+**Extend: enum.Enum**
+
+WebSocket 状态枚举
+
+- CONTINUATION: 延续
+- TEXT: 文字
+- BINARY: 字节
+- PING: ping
+- PONG: pong
+- CLOSE: 关闭
+
+- CLOSING: 正在关闭
+- CLOSED: 已关闭
+
+
+
+
+---
+
+## class CookiesRefreshException()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+Cookies 刷新错误。
+
+
+
+
+---
+
+## class Credential()
+
+凭据类，用于各种请求操作的验证。
+
+
+
+
+### def \_\_init\_\_()
+
+各字段获取方式查看：https://nemo2011.github.io/bilibili-api/#/get-credential.md
+
+
+| name | type | description |
+| - | - | - |
+| sessdata | str \| None, optional | 浏览器 Cookies 中的 SESSDATA 字段值. Defaults to None. |
+| bili_jct | str \| None, optional | 浏览器 Cookies 中的 bili_jct 字段值. Defaults to None. |
+| buvid3 | str \| None, optional | 浏览器 Cookies 中的 BUVID3 字段值. Defaults to None. |
+| dedeuserid | str \| None, optional | 浏览器 Cookies 中的 DedeUserID 字段值. Defaults to None. |
+| ac_time_value | str \| None, optional | 浏览器 Cookies 中的 ac_time_value 字段值. Defaults to None. |
+
+
+### async def check_refresh()
+
+检查是否需要刷新 cookies
+
+
+
+**Returns:** bool: cookies 是否需要刷新
+
+
+
+
+### async def check_valid()
+
+检查 cookies 是否有效
+
+
+
+**Returns:** bool: cookies 是否有效
+
+
+
+
+**@staticmethod** 
+
+### def from_cookies()
+
+从 cookies 新建 Credential
+
+
+| name | type | description |
+| - | - | - |
+| cookies | Dict, optional | Cookies. Defaults to {}. |
+
+**Returns:** Credential: 凭据类
+
+
+
+
+### def get_cookies()
+
+获取请求 Cookies 字典
+
+
+
+**Returns:** dict: 请求 Cookies 字典
+
+
+
+
+### def has_ac_time_value()
+
+是否提供 ac_time_value
+
+
+
+**Returns:** bool.
+
+
+
+
+### def has_bili_jct()
+
+是否提供 bili_jct。
+
+
+
+**Returns:** bool。
+
+
+
+
+### def has_buvid3()
+
+是否提供 buvid3
+
+
+
+**Returns:** bool.
+
+
+
+
+### def has_dedeuserid()
+
+是否提供 dedeuserid。
+
+
+
+**Returns:** bool。
+
+
+
+
+### def has_sessdata()
+
+是否提供 sessdata。
+
+
+
+**Returns:** bool。
+
+
+
+
+### def raise_for_no_ac_time_value()
+
+没有提供 ac_time_value 时抛出异常。
+
+
+
+**Returns:** None
+
+
+
+### def raise_for_no_bili_jct()
+
+没有提供 bili_jct 则抛出异常。
+
+
+
+**Returns:** None
+
+
+
+### def raise_for_no_buvid3()
+
+没有提供 buvid3 时抛出异常。
+
+
+
+**Returns:** None
+
+
+
+### def raise_for_no_dedeuserid()
+
+没有提供 DedeUserID 时抛出异常。
+
+
+
+**Returns:** None
+
+
+
+### def raise_for_no_sessdata()
+
+没有提供 sessdata 则抛出异常。
+
+
+
+**Returns:** None
+
+
+
+### async def refresh()
+
+刷新 cookies
+
+
+
+**Returns:** None
+
+
+
+---
+
+## class CredentialNoAcTimeValueException()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+Credential 类未提供 ac_time_value 时的异常。
+
+
+
+
+---
+
+## class CredentialNoBiliJctException()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+Credential 类未提供 bili_jct 时的异常。
+
+
+
+
+---
+
+## class CredentialNoBuvid3Exception()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+Credential 类未提供 bili_jct 时的异常。
+
+
+
+
+---
+
+## class CredentialNoDedeUserIDException()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+Credential 类未提供 DedeUserID 时的异常。
+
+
+
+
+---
+
+## class CredentialNoSessdataException()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+Credential 类未提供 sessdata 时的异常。
+
+
+
+
+---
+
+## class Danmaku()
+
+弹幕类。
+
+
+
+
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| text | str | 弹幕文本。 |
+| dm_time | float, optional | 弹幕在视频中的位置，单位为秒。Defaults to 0.0. |
+| send_time | float, optional | 弹幕发送的时间。Defaults to time.time(). |
+| crc32_id | str, optional | 弹幕发送者 UID 经 CRC32 算法取摘要后的值。Defaults to "". |
+| color | str, optional | 弹幕十六进制颜色。Defaults to "ffffff" (如果为大会员专属的颜色则为"special"). |
+| weight | int, optional | 弹幕在弹幕列表显示的权重。Defaults to -1. |
+| id_ | int, optional | 弹幕 ID。Defaults to -1. |
+| id_str | str, optional | 弹幕字符串 ID。Defaults to "". |
+| action | str, optional | 暂不清楚。Defaults to "". |
+| mode | Union[DmMode, int], optional | 弹幕模式。Defaults to Mode.FLY. |
+| font_size | Union[DmFontSize, int], optional | 弹幕字体大小。Defaults to FontSize.NORMAL. |
+| is_sub | bool, optional | 是否为字幕弹幕。Defaults to False. |
+| pool | int, optional | 池。Defaults to 0. |
+| attr | int, optional | 暂不清楚。 Defaults to -1. |
+| uid | int, optional | 弹幕发送者 UID。Defaults to -1. |
+| 大会员专属颜色文字填充：http://i0.hdslb.com/bfs/dm/9dcd329e617035b45d2041ac889c49cb5edd3e44.png |  | //i0.hdslb.com/bfs/dm/9dcd329e617035b45d2041ac889c49cb5edd3e44.png |
+| 大会员专属颜色背景填充：http://i0.hdslb.com/bfs/dm/ba8e32ae03a0a3f70f4e51975a965a9ddce39d50.png |  | //i0.hdslb.com/bfs/dm/ba8e32ae03a0a3f70f4e51975a965a9ddce39d50.png |
+
+
+**@staticmethod** 
+
+### def crack_uid()
+
+(@staticmethod)
+
+暴力破解 UID，可能存在误差，请慎重使用。
+
+精确至 UID 小于 10000000 的破解。
+
+
+| name | type | description |
+| - | - | - |
+| crc32_id | str | crc32 id |
+
+**Returns:** int: 真实 UID。
+
+
+
+
+### def to_xml()
+
+将弹幕转换为 xml 格式弹幕
+
+
+
+**Returns:** None
+
+
+
+---
+
+## class DanmakuClosedException()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+视频弹幕被关闭错误。
+
+
+
+
+---
+
+## class DmFontSize()
+
+**Extend: enum.Enum**
+
+字体大小枚举。
+
+
+
+
+---
+
+## class DmMode()
+
+**Extend: enum.Enum**
+
+弹幕模式枚举。
+
+
+
+
+---
+
+## class DynamicExceedImagesException()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+动态上传图片数量超过限制
+
+
+
+
+---
+
+## class ExClimbWuzhiException()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+ExClimbWuzhi 失败异常
+
+
+
+
+---
+
+## class Geetest()
+
+极验验证类
+
+
+
+
+### def \_\_init\_\_()
+
+
+
+
+
+### def close_geetest_server()
+
+关闭本地极验验证码服务
+
+
+
+**Returns:** None
+
+
+
+### def complete_test()
+
+作答测试
+
+
+| name | type | description |
+| - | - | - |
+| validate | str | 作答结果的 validate |
+| seccode | str | 作答结果的 seccode |
+
+**Returns:** None
+
+
+
+### async def generate_test()
+
+创建验证码
+
+
+| name | type | description |
+| - | - | - |
+| type_ | GeetestType | 极验验证码类型。登录为 LOGIN，登录验证为 VERIFY. Defaults to GeetestType.LOGIN. |
+
+**Returns:** None
+
+
+
+### def get_geetest_server_url()
+
+获取本地极验验证码服务链接
+
+
+
+**Returns:** str: 链接
+
+
+
+
+### def get_info()
+
+获取验证码信息
+
+
+
+**Returns:** GeetestMeta: 验证码信息
+
+
+
+
+### def get_result()
+
+获取结果
+
+
+
+**Returns:** GeetestMeta: 验证结果
+
+
+
+
+### def get_test_type()
+
+获取测试类型
+
+
+
+**Returns:** GeetestType: 测试类型
+
+
+
+
+### def has_done()
+
+是否完成
+
+
+
+**Returns:** bool: 是否完成
+
+
+
+
+### def start_geetest_server()
+
+开启本地极验验证码服务
+
+
+
+**Returns:** None
+
+
+
+### def test_generated()
+
+当前是否有创建的测试
+
+
+
+**Returns:** bool: 是否有创建的测试
+
+
+
+
+---
+
+## class GeetestException()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+未找到验证码服务器
+
+
+
+
+---
+
+**@dataclasses.dataclass** 
+
+## class GeetestMeta()
+
+极验验证码完成信息
+
+NOTE: `gt`, `challenge`, `token` 为验证码基本字段。`seccode`, `validate` 为完成验证码后可得字段。
+
+
+
+
+---
+
+## class GeetestType()
+
+**Extend: enum.Enum**
+
+极验验证码类型
+
+- LOGIN: 登录
+- VERIFY: 登录验证
+
+
+
+
+---
+
+## var HEADERS
+
+---
+
+## class LiveException()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+
+
+
+
+---
+
+## class LoginError()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+参数错误。
+
+
+
+
+---
+
+## class NetworkException()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+网络错误。
+
+
+
+
+---
+
+**@dataclasses.dataclass** 
+
+## class Picture()
+
+(@dataclasses.dataclass)
+
+图片类，包含图片链接、尺寸以及下载操作。
+
+可以不实例化，用 `load_url`, `from_content` 或 `from_file` 加载图片。
+
+
+| name | type | description |
+| - | - | - |
+| height | int | 高度 |
+| imageType | str | 格式，例如 |
+| size | Any | 尺寸 |
+| url | str | 图片链接 |
+| width | int | 宽度 |
+| content | bytes | 图片内容 |
+
+
+### def convert_format()
+
+将图片转换为另一种格式。
+
+
+| name | type | description |
+| - | - | - |
+| new_format | str | 新的格式。例：`png`, `ico`, `webp`. |
+
+**Returns:** Picture: `self`
+
+
+
+
+**@staticmethod** 
+
+### def from_content()
+
+加载字节数据
+
+
+| name | type | description |
+| - | - | - |
+| content | str | 图片内容 |
+| format | str | 图片后缀名，如 `webp`, `jpg`, `ico` |
+
+**Returns:** Picture: 加载后的图片对象
+
+
+
+
+**@staticmethod** 
+
+### def from_file()
+
+加载本地图片。
+
+
+| name | type | description |
+| - | - | - |
+| path | str | 图片地址 |
+
+**Returns:** Picture: 加载后的图片对象
+
+
+
+
+**@staticmethod** 
+
+### async def load_url()
+
+加载网络图片。(async 方法)
+
+
+| name | type | description |
+| - | - | - |
+| url | str | 图片链接 |
+
+**Returns:** Picture: 加载后的图片对象
+
+
+
+
+### def to_file()
+
+下载图片至本地。
+
+
+| name | type | description |
+| - | - | - |
+| path | str | 下载地址。 |
+
+**Returns:** Picture: `self`
+
+
+
+
+### async def upload()
+
+上传图片至 B 站。
+
+
+| name | type | description |
+| - | - | - |
+| credential | Credential | 凭据类。 |
+
+**Returns:** Picture: `self`
+
+
+
+
+### async def upload_by_note()
+
+通过笔记接口上传图片至 B 站。
+
+
+| name | type | description |
+| - | - | - |
+| credential | Credential | 凭据类。 |
+
+**Returns:** Picture: `self`
+
+
+
 
 ---
 
 ## class ResourceType()
 
-### Extends: enum.Enum
+**Extend: enum.Enum**
 
 链接类型类。
 
@@ -385,184 +1119,532 @@ BV 号转 AV 号。
 + USER: 用户
 + LIVE: 直播间
 + CHANNEL_SERIES: 合集与列表
++ BLACK_ROOM: 小黑屋
++ GAME: 游戏
++ TOPIC: 话题
++ MANGA: 漫画
++ NOTE: 笔记
++ FAILED: 错误
+
+
+
 
 ---
 
-## <span id="parse">async def parse_link()</span>
+## class ResponseCodeException()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+API 返回 code 错误。
+
+
+
+
+---
+
+## class ResponseException()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+API 响应异常。
+
+
+
+
+---
+
+## class SpecialDanmaku()
+
+
+
+
+
+### def \_\_init\_\_()
+
+
+| name | type | description |
+| - | - | - |
+| content | str | 弹幕内容 |
+| id_ | int | 弹幕 id. Defaults to -1. |
+| id_str | str | 弹幕 id (string 类型). Defaults to "". |
+| mode | Union[DmMode, int] | 弹幕类型. Defaults to DmMode.SPECIAL. |
+| pool | int | 弹幕池. Defaults to 2. |
+
+
+---
+
+## class StatementException()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+条件异常。
+
+
+
+
+---
+
+## class VideoUploadException()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+视频上传错误。
+
+
+
+
+---
+
+## class WbiRetryTimesExceedException()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+Wbi 重试达到最大次数
+
+
+
+
+---
+
+## def aid2bvid()
+
+AV 号转 BV 号。
+
+| name | type | description |
+| - | - | - |
+| aid | int | AV 号。 |
+
+**Returns:** str: BV 号。
+
+
+
+
+---
+
+## def bvid2aid()
+
+BV 号转 AV 号。
+
+| name | type | description |
+| - | - | - |
+| bvid | str | BV 号。 |
+
+**Returns:** int: AV 号。
+
+
+
+
+---
+
+## def get_client()
+
+在当前事件循环下获取模块正在使用的请求客户端
+
+
+
+**Returns:** BiliAPIClient: 请求客户端
+
+
+
+
+---
+
+## async def get_real_url()
+
+获取短链接跳转目标，以进行操作。
+
+
+| name | type | description |
+| - | - | - |
+| short_url | str | 短链接。 |
+| credential | Credential \| None | 凭据类。 |
+
+**Returns:** 目标链接（如果不是有效的链接会报错）
+
+
+返回值为原 url 类型
+
+
+
+---
+
+## def get_registered_clients()
+
+获取所有注册过的 BiliAPIClient
+
+
+
+**Returns:** Dict[str, Type[BiliAPIClient]]: 注册过的 BiliAPIClient
+
+
+
+
+---
+
+## def get_selected_client()
+
+获取用户选择的请求客户端名称和对应的类
+
+
+
+**Returns:** Tuple[str, Type[BiliAPIClient]]: 第 0 项为客户端名称，第 1 项为对应的类
+
+
+**Note**: 模块默认使用 `curl_cffi` 库作为请求客户端。
+
+
+
+---
+
+## def get_session()
+
+在当前事件循环下获取请求客户端的会话对象。
+
+
+
+**Returns:** object: 会话对象
+
+
+
+
+---
+
+## async def parse_link()
+
+调用 yarl 解析 bilibili url 的函数。
+
 
 | name | type | description |
 | - | - | - |
 | url | str | 链接 |
 | credential | Credential | 凭据类 |
 
-获取链接对应的对象。举个例子：如果有一个视频链接，想要获取对应的 `Video` 类需要读取 `bvid` 或 `aid`，然后初始化 `Video` 类。
-但是 `parse_link` 可以自动读取 `bvid` 或 `aid` 并生成对应的对象。
+**Returns:** Tuple[obj, ResourceType]: (对象，类型) 或 -1,-1 表示出错
 
-**注意：** `parse_link` 会读取可跳转链接的目标链接！
 
-**Returns:** `Tuple[obj, ResourceType]`: 第一项为返回对象，第二项为对象类型。
 
-**元组第一项是资源对象，第二项是资源类型**
 
 ---
 
-## class DmMode
+## def register_client()
 
-弹幕模式
+注册请求客户端，可用于用户自定义请求客户端。
 
-+ FLY: 飞行弹幕
-+ TOP: 顶部弹幕
-+ BOTTOM: 底部弹幕
-+ REVERSE: 反向弹幕
+
+| name | type | description |
+| - | - | - |
+| name | str | 请求客户端类型名称，用户自定义命名。 |
+| cls | type | 基于 BiliAPIClient 重写后的请求客户端类。 |
+
+**Returns:** None
+
+**Note**: 模块默认使用 `curl_cffi` 库作为请求客户端。
+
+
 
 ---
 
-## class DmFontSize
+## var request_log
 
-弹幕字体大小
+**Extend: AsyncEvent**
 
-+ EXTREME_SMALL: 最小
-+ SUPER_SMALL: 非常小
-+ SMALL: 小
-+ NORMAL: 中等
-+ BIG: 大
-+ SUPER_BIG: 非常大
-+ EXTREME_BIG: 最大
+
+请求日志支持，默认支持输出到指定 I/O 对象。
+
+可以添加更多监听器达到更多效果。
+
+Logger: RequestLog().logger
+
+Extends: AsyncEvent
+
+Events:
+
+- (模块自带 BiliAPIClient)
+- REQUEST:   HTTP 请求。
+- RESPONSE:  HTTP 响应。
+- WS_CREATE: 新建的 Websocket 请求。
+- WS_RECV:   获得到 WebSocket 请求。
+- WS_SEND:   发送了 WebSocket 请求。
+- WS_CLOSE:  关闭 WebSocket 请求。
+- (Api)
+- API_REQUEST: Api 请求。
+- API_RESPONSE: Api 响应。
+- ANTI_SPIDER: 反爬虫相关信息。
+
+CallbackData: 描述 (str) 数据 (dict)
+
+``` python
+@request_log.on("__ALL__")
+async def handle(desc: str, data: dict) -> None:
+    print(desc, data)
+```
+
+默认启用 Api 和 Anti-Spider 相关信息。
+
+
+
+### def get_ignore_events()
+
+获取日志输出排除的事件类型
+
+
+
+**Returns:** dict: 日志输出排除的事件类型
+
+
+
+
+### def get_on_events()
+
+获取日志输出支持的事件类型
+
+
+
+**Returns:** dict: 日志输出支持的事件类型
+
+
+
+
+### def is_on()
+
+获取日志输出是否启用
+
+
+
+**Returns:** bool: 是否启用
+
+
+
+
+### def set_ignore_events()
+
+设置日志输出排除的事件类型
+
+
+| name | type | description |
+| - | - | - |
+| events | Dict | 日志输出排除的事件类型 |
+
+**Returns:** None
+
+
+
+### def set_on()
+
+设置日志输出是否启用
+
+
+| name | type | description |
+| - | - | - |
+| status | bool | 是否启用 |
+
+**Returns:** None
+
+
+
+### def set_on_events()
+
+设置日志输出支持的事件类型
+
+
+| name | type | description |
+| - | - | - |
+| events | Dict | 日志输出支持的事件类型 |
+
+**Returns:** None
+
+
 
 ---
 
-## class Danmaku
+## var request_settings
 
-弹幕类
+请求参数设置
 
-### Attributes
 
-| name      | type               | description                                                 |
-| --------- | ------------------ | ----------------------------------------------------------- |
-| text      | str                  | 弹幕文本。                                                  |
-| dm_time   | float, optional      | 弹幕在视频中的位置，单位为秒。Defaults to 0.0.              |
-| send_time | float, optional      | 弹幕发送的时间。Defaults to time.time().                    |
-| crc32_id  | str, optional        | 弹幕发送者 UID 经 CRC32 算法取摘要后的值。Defaults to None. |
-| color     | str, optional        | 弹幕十六进制颜色。Defaults to "ffffff".                     |
-| weight    | int, optional        | 弹幕在弹幕列表显示的权重。Defaults to -1.                   |
-| id_       | int, optional        | 弹幕 ID。Defaults to -1.                                    |
-| id_str    | str, optional        | 弹幕字符串 ID。Defaults to "".                              |
-| action    | str, optional        | 暂不清楚。Defaults to "".                                   |
-| mode      | DmMode, optional     | 弹幕模式。Defaults to DmMode.FLY.                             |
-| font_size | DmFontSize, optional | 弹幕字体大小。Defaults to DmFontSize.NORMAL.                  |
-| is_sub    | bool, optional       | 是否为字幕弹幕。Defaults to False.                          |
-| pool      | int, optional        | 暂不清楚。Defaults to -1.                                   |
-| attr      | int, optional        | 暂不清楚。 Defaults to -1.                                  |
 
-### Functions
+### def get_proxy()
 
-#### def \_\_init\_\_()
+获取设置的代理
 
-| name      | type               | description                                                 |
-| --------- | ------------------ | ----------------------------------------------------------- |
-| text      | str                  | 弹幕文本。                                                  |
-| dm_time   | float, optional      | 弹幕在视频中的位置，单位为秒。Defaults to 0.0.              |
-| send_time | float, optional      | 弹幕发送的时间。Defaults to time.time().                    |
-| crc32_id  | str, optional        | 弹幕发送者 UID 经 CRC32 算法取摘要后的值。Defaults to "". |
-| color     | str, optional        | 弹幕十六进制颜色。Defaults to "ffffff".                     |
-| weight    | int, optional        | 弹幕在弹幕列表显示的权重。Defaults to -1.                   |
-| id_       | int, optional        | 弹幕 ID。Defaults to -1.                                    |
-| id_str    | str, optional        | 弹幕字符串 ID。Defaults to "".                              |
-| action    | str, optional        | 暂不清楚。Defaults to "".                                   |
-| mode      | DmMode, optional     | 弹幕模式。Defaults to DmMode.FLY.                             |
-| font_size | DmFontSize, optional | 弹幕字体大小。Defaults to DmFontSize.NORMAL.                  |
-| is_sub    | bool, optional       | 是否为字幕弹幕。Defaults to False.                          |
-| pool      | int, optional        | 暂不清楚。Defaults to -1.                                   |
-| attr      | int, optional        | 暂不清楚。 Defaults to -1.                                  |
 
-#### def crack_uid()
 
-暴力破解 UID，可能存在误差，请慎重使用。
+**Returns:** str: 代理地址. Defaults to "".
 
-**Returns:** int: 真实 UID。
 
-#### def to_xml()
 
-将弹幕转换为 xml 格式弹幕
 
-**Returns:** str: xml 格式弹幕
+### def get_timeout()
+
+获取设置的 web 请求超时时间
+
+
+
+**Returns:** float: 超时时间. Defaults to 5.0.
+
+
+
+
+### def get_trust_env()
+
+获取设置的 `trust_env`
+
+
+
+**Returns:** bool: `trust_env`. Defaults to True.
+
+
+
+
+### def get_verify_ssl()
+
+获取设置的是否验证 SSL
+
+
+
+**Returns:** bool: 是否验证 SSL. Defaults to True.
+
+
+
+
+### def get_wbi_retry_times()
+
+获取设置的 wbi 重试次数
+
+
+
+**Returns:** int: wbi 重试次数. Defaults to 3.
+
+
+
+
+### def set_proxy()
+
+修改设置的代理
+
+
+| name | type | description |
+| - | - | - |
+| proxy | str | 代理地址 |
+
+**Returns:** None
+
+
+
+### def set_timeout()
+
+修改设置的 web 请求超时时间
+
+
+| name | type | description |
+| - | - | - |
+| timeout | float | 超时时间 |
+
+**Returns:** None
+
+
+
+### def set_trust_env()
+
+修改设置的 `trust_env`
+
+
+| name | type | description |
+| - | - | - |
+| verify_ssl | bool | `trust_env` |
+
+**Returns:** None
+
+
+
+### def set_verify_ssl()
+
+修改设置的是否验证 SSL
+
+
+| name | type | description |
+| - | - | - |
+| verify_ssl | bool | 是否验证 SSL |
+
+**Returns:** None
+
+
+
+### def set_wbi_retry_times()
+
+修改设置的 wbi 重试次数
+
+
+| name | type | description |
+| - | - | - |
+| wbi_retry_times | int | wbi 重试次数. |
+
+**Returns:** None
+
+
 
 ---
 
-## class SpecialDanmaku
+## def select_client()
 
-### Attributes
+选择模块使用的注册过的请求客户端，可用于用户自定义请求客户端。
 
-| name | type | description |
-| - | - | - |
-| content | str | 弹幕内容 |
-| id_ | int | 弹幕 ID |
-| id_str | str | 弹幕字符串 ID |
-| mode | DmMode | int | 弹幕模式 |
-| pool | int | 池 |
-
-### Functions
-
-#### def \_\_init\_\_()
 
 | name | type | description |
 | - | - | - |
-| content | str | 弹幕内容 |
-| id_ | int | 弹幕 ID |
-| id_str | str | 弹幕字符串 ID |
-| mode | DmMode \| int | 弹幕模式 |
-| pool | int | 池 |
+| name | str | 请求客户端类型名称，用户自定义命名。 |
+
+**Returns:** None
+
+**Note**: 模块默认使用 `curl_cffi` 库作为请求客户端。
+
+
 
 ---
 
-## class AsyncEvent
+## def set_session()
 
-发布-订阅模式异步事件类支持。
+在当前事件循环下设置请求客户端的会话对象。
 
-特殊事件：\_\_ALL\_\_ 所有事件均触发
-
-### Functions
-
-#### def add_event_listener()
 
 | name | type | description |
 | - | - | - |
-| name | str |           事件名。 |
-| handler | Coroutine |   回调异步函数。 |
+| session | object | 会话对象 |
 
-注册事件监听器。
+**Returns:** None
 
-#### def on()
 
-装饰器注册事件监听器。
 
-| name | type | description |
-| - | - | - |
-| event_name | str | 事件名。 |
+---
 
-#### def remove_all_event_listener()
+## def sync()
 
-移除所有事件监听函数
+同步执行异步函数，使用可参考 [同步执行异步代码](https://nemo2011.github.io/bilibili-api/#/sync-executor)
 
-#### def remove_event_listener()
-
-移除事件监听函数。
 
 | name | type | description |
 | - | - | - |
-| name | str |            事件名 |
-| handler | Coroutine |   要移除的函数 |
+| obj | Coroutine \| Future | 异步函数 |
 
-**Returns:** bool, 是否移除成功。
+**Returns:** 该异步函数的返回值
 
-#### def ignore_event()
 
-忽略指定事件
+
+
+---
+
+## def unregister_client()
+
+取消注册请求客户端，可用于用户自定义请求客户端。
+
 
 | name | type | description |
 | - | - | - |
-| name | str | 事件名 |
+| name | str | 请求客户端类型名称，用户自定义命名。 |
 
-#### def remove_ignore_events()
+**Returns:** None
 
-移除所有忽略事件
+**Note**: 模块默认使用 `curl_cffi` 库作为请求客户端。
+
+
+

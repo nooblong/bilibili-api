@@ -4,20 +4,35 @@ bilibili_api.manga
 漫画相关操作
 """
 
+import base64
 import datetime
 from enum import Enum
 from urllib.parse import urlparse
 from typing import Dict, List, Union, Optional
 
-import httpx
-
 from bilibili_api.utils.utils import get_api
-from bilibili_api.errors import ArgsException
+from bilibili_api.exceptions import ArgsException
 from bilibili_api.utils.picture import Picture
-from bilibili_api.utils.credential import Credential
-from bilibili_api.utils.network import HEADERS, Api
+from bilibili_api.utils.network import HEADERS, Api, Credential
+
+from Cryptodome.PublicKey import ECC
 
 API = get_api("manga")
+
+
+class MangaOrderType(Enum):
+    """
+    漫画排序方式
+
+    - FOLLOW: 追漫顺序
+    - UPDATE: 更新时间
+    - READING: 最近阅读
+    - FREE: 等免
+    """
+    FOLLOW = {"order": 1, "wait_free": 0}
+    UPDATE = {"order": 2, "wait_free": 0}
+    READING = {"order": 3, "wait_free": 0}
+    FREE = {"order": 3, "wait_free": 1}
 
 
 class MangaIndexFilter:
@@ -154,225 +169,208 @@ class Manga:
         """
         return self.__manga_id
 
-    async def get_info(self) -> dict:
-        """
-        获取漫画信息
+    # async def get_info(self) -> dict:
+    #     """
+    #     # 此函数已失效 2025-01-04
+    #     获取漫画信息
 
-        Returns:
-            dict: 调用 API 返回的结果
-        """
-        api = API["info"]["detail"]
-        params = {"comic_id": self.__manga_id}
-        return (
-            await Api(
-                **api,
-                credential=self.credential,
-                no_csrf=(
-                    False
-                    if (
-                        self.credential.has_sessdata()
-                        and self.credential.has_bili_jct()
-                    )
-                    else True
-                ),
-            )
-            .update_params(**params)
-            .result
-        )
+    #     Returns:
+    #         dict: 调用 API 返回的结果
+    #     """
+    #     api = API["info"]["detail"]
+    #     params = {"device": "pc", "platform": "web", "nov": 25}
+    #     data = {"comic_id": self.get_manga_id()}
+    #     return (
+    #         await Api(**api, credential=self.credential, no_csrf=True, json_body=True)
+    #         .update_params(**params)
+    #         .update_data(**data)
+    #         .result
+    #     )
 
-    async def __get_info_cached(self) -> dict:
-        """
-        获取漫画信息，如果有缓存则使用缓存。
-        """
-        if self.__info == None:
-            self.__info = await self.get_info()
-        return self.__info
+    # async def __get_info_cached(self) -> dict:
+    #     """
+    #     # 此函数已失效 2025-01-04
+    #     获取漫画信息，如果有缓存则使用缓存。
+    #     """
+    #     if self.__info == None:
+    #         self.__info = await self.get_info()
+    #     return self.__info
 
-    async def get_episode_info(
-        self,
-        episode_count: Optional[Union[int, float]] = None,
-        episode_id: Optional[int] = None,
-    ) -> dict:
-        """
-        获取某一话的详细信息
+    # async def get_episode_info(
+    #     self,
+    #     episode_count: Optional[Union[int, float]] = None,
+    #     episode_id: Optional[int] = None,
+    # ) -> dict:
+    #     """
+    #     # 此函数已失效 2025-01-04
+    #     获取某一话信息
 
-        Args:
-            episode_count (int | float | None): 第几话.
+    #     Args:
+    #         episode_count (int | float | None): 第几话.
 
-            episode_id    (int | None)        : 对应的话的 id. 可以通过 `get_episode_id` 获取。
+    #         episode_id    (int | None)        : 对应的话的 id. 可以通过 `get_episode_id` 获取。
 
-        Returns:
-            dict: 对应的话的详细信息
+    #     Returns:
+    #         dict: 对应的话信息
 
-        **注意：episode_count 和 episode_id 中必须提供一个参数。**
-        """
-        info = await self.__get_info_cached()
-        for ep in info["ep_list"]:
-            if episode_count == None:
-                if ep["id"] == episode_id:
-                    return ep
-            elif episode_id == None:
-                if ep["ord"] == episode_count:
-                    return ep
-            else:
-                raise ArgsException("episode_count 和 episode_id 中必须提供一个参数。")
-        raise ArgsException("未找到对应的话")
+    #     **注意：episode_count 和 episode_id 中必须提供一个参数。**
+    #     """
+    #     info = await self.__get_info_cached()
+    #     for ep in info["ep_list"]:
+    #         if episode_count == None:
+    #             if ep["id"] == episode_id:
+    #                 return ep
+    #         elif episode_id == None:
+    #             if ep["ord"] == episode_count:
+    #                 return ep
+    #         else:
+    #             raise ArgsException("episode_count 和 episode_id 中必须提供一个参数。")
+    #     raise ArgsException("未找到对应的话")
 
-    async def get_episode_id(
-        self, episode_count: Optional[Union[int, float]] = None
-    ) -> int:
-        """
-        获取某一话的 id
+    # async def get_episode_id(
+    #     self, episode_count: Optional[Union[int, float]] = None
+    # ) -> int:
+    #     """
+    #     # 此函数已失效 2025-01-04
+    #     获取某一话的 id
 
-        Args:
-            episode_count (int | float | None): 第几话.
+    #     Args:
+    #         episode_count (int | float | None): 第几话.
 
-        Returns:
-            int: 对应的话的 id
-        """
-        return (await self.get_episode_info(episode_count=episode_count))["id"]
+    #     Returns:
+    #         int: 对应的话的 id
+    #     """
+    #     return (await self.get_episode_info(episode_count=episode_count))["id"]
 
-    async def get_images_url(
-        self,
-        episode_count: Optional[Union[int, float]] = None,
-        episode_id: Optional[int] = None,
-    ) -> dict:
-        """
-        获取某一话的图片链接。(未经过处理，所有的链接无法直接访问)
+    # async def get_images_url(
+    #     self,
+    #     episode_count: Optional[Union[int, float]] = None,
+    #     episode_id: Optional[int] = None,
+    # ) -> dict:
+    #     """
+    #     # 此函数已失效 2025-01-04
+    #     获取某一话的图片链接。(未经过处理，所有的链接无法直接访问)
 
-        获取的图片 url 请传入 `manga.manga_image_url_turn_to_Picture` 函数以转换为 `Picture` 类。
+    #     获取的图片 url 请传入 `manga.manga_image_url_turn_to_Picture` 函数以转换为 `Picture` 类。
 
-        Args:
-            episode_count (int | float | None): 第几话.
+    #     Args:
+    #         episode_count (int | float | None): 第几话.
 
-            episode_id    (int | None)        : 对应的话的 id. 可以通过 `get_episode_id` 获取。
+    #         episode_id    (int | None)        : 对应的话的 id. 可以通过 `get_episode_id` 获取。
 
-        Returns:
-            dict: 调用 API 返回的结果
+    #     Returns:
+    #         dict: 调用 API 返回的结果
 
-        **注意：episode_count 和 episode_id 中必须提供一个参数。**
-        """
-        if episode_id == None:
-            if episode_count == None:
-                raise ArgsException("episode_count 和 episode_id 中必须提供一个参数。")
-            episode_id = await self.get_episode_id(episode_count)
-        api = API["info"]["episode_images"]
-        params = {"ep_id": episode_id}
-        return (
-            await Api(
-                **api,
-                credential=self.credential,
-                no_csrf=(
-                    False
-                    if (
-                        self.credential.has_sessdata()
-                        and self.credential.has_bili_jct()
-                    )
-                    else True
-                ),
-            )
-            .update_params(**params)
-            .result
-        )
+    #     **注意：episode_count 和 episode_id 中必须提供一个参数。**
+    #     """
+    #     if episode_id == None:
+    #         if episode_count == None:
+    #             raise ArgsException("episode_count 和 episode_id 中必须提供一个参数。")
+    #         episode_id = await self.get_episode_id(episode_count)
+    #     api = API["info"]["episode_images"]
+    #     params = {"device": "pc", "platform": "web", "nov": 25}
+    #     data = {"ep_id": episode_id}
+    #     return (
+    #         await Api(**api, credential=self.credential, no_csrf=True)
+    #         .update_params(**params)
+    #         .update_data(**data)
+    #         .result
+    #     )
 
-    async def get_images(
-        self,
-        episode_count: Optional[Union[int, float]] = None,
-        episode_id: Optional[int] = None,
-    ) -> List[Dict]:
-        """
-        获取某一话的所有图片
+    # async def get_images(
+    #     self,
+    #     episode_count: Optional[Union[int, float]] = None,
+    #     episode_id: Optional[int] = None,
+    # ) -> List[Dict]:
+    #     """
+    #     # 此函数已失效 2025-01-04
+    #     获取某一话的所有图片
 
-        Args:
-            episode_count (int | float | None): 第几话.
+    #     Args:
+    #         episode_count (int | float | None): 第几话.
 
-            episode_id    (int | None)        : 对应的话的 id. 可以通过 `get_episode_id` 获取。
+    #         episode_id    (int | None)        : 对应的话的 id. 可以通过 `get_episode_id` 获取。
 
-        Returns:
-            List[Picture]: 所有的图片
+    #     Returns:
+    #         List[Picture]: 所有的图片
 
-        **注意：episode_count 和 episode_id 中必须提供一个参数。**
+    #     **注意：episode_count 和 episode_id 中必须提供一个参数。**
 
-        注意事项：此函数速度非常慢并且失败率高
-        """
-        data = await self.get_images_url(
-            episode_count=episode_count, episode_id=episode_id
-        )
-        pictures: List[Dict] = []
+    #     注意事项：此函数速度非常慢并且失败率高
+    #     """
+    #     data = await self.get_images_url(
+    #         episode_count=episode_count, episode_id=episode_id
+    #     )
+    #     pictures: List[Dict] = []
 
-        async def get_real_image_url(url: str) -> str:
-            token_api = API["info"]["image_token"]
-            datas = {"urls": f'["{url}"]'}
-            token_data = (
-                await Api(
-                    **token_api,
-                    credential=self.credential,
-                    no_csrf=(
-                        False
-                        if (
-                            self.credential.has_sessdata()
-                            and self.credential.has_bili_jct()
-                        )
-                        else True
-                    ),
-                )
-                .update_data(**datas)
-                .result
-            )
-            return token_data[0]["url"] + "?token=" + token_data[0]["token"]
+    #     async def get_real_image_url(url: str) -> str:
+    #         token_api = API["info"]["image_token"]
+    #         params = {"device": "pc", "platform": "web", "nov": 25}
+    #         datas = {"urls": f'["{url}"]'}
+    #         token_data = (
+    #             await Api(
+    #                 **token_api,
+    #                 credential=self.credential,
+    #                 no_csrf=True,
+    #             )
+    #             .update_params(**params)
+    #             .update_data(**datas)
+    #             .result
+    #         )
+    #         return token_data[0]["url"] + "?token=" + token_data[0]["token"]
 
-        for img in data["images"]:
-            url = await get_real_image_url(img["path"])
-            pictures.append(
-                {
-                    "x": img["x"],
-                    "y": img["y"],
-                    "picture": Picture.from_content(
-                        (await httpx.AsyncClient().get(url, headers=HEADERS)).content,
-                        "jpg",
-                    ),
-                }
-            )
-        return pictures
+    #     for img in data["images"]:
+    #         url = await get_real_image_url(img["path"])
+    #         pictures.append(
+    #             {
+    #                 "x": img["x"],
+    #                 "y": img["y"],
+    #                 "picture": Picture.from_content(
+    #                     (await httpx.AsyncClient().get(url, headers=HEADERS)).content,
+    #                     "jpg",
+    #                 ),
+    #             }
+    #         )
+    #     return pictures
 
 
-async def manga_image_url_turn_to_Picture(
-    url: str, credential: Optional[Credential] = None
-) -> Picture:
-    """
-    将 Manga.get_images_url 函数获得的图片 url 转换为 Picture 类。
+# async def manga_image_url_turn_to_Picture(
+#     url: str, credential: Optional[Credential] = None
+# ) -> Picture:
+#     """
+#     # 此函数已失效 2025-01-04
+#     将 Manga.get_images_url 函数获得的图片 url 转换为 Picture 类。
 
-    Args:
-        url        (str)               : 未经处理的漫画图片链接。
+#     Args:
+#         url        (str)               : 未经处理的漫画图片链接。
 
-        credential (Credential | None): 凭据类. Defaults to None.
+#         credential (Credential | None): 凭据类. Defaults to None.
 
-    Returns:
-        Picture: 图片类。
-    """
-    url = urlparse(url).path
-    credential = credential if credential else Credential()
+#     Returns:
+#         Picture: 图片类。
+#     """
+#     url = urlparse(url).path
+#     credential = credential if credential else Credential()
 
-    async def get_real_image_url(url: str) -> str:
-        token_api = API["info"]["image_token"]
-        datas = {"urls": f'["{url}"]'}
-        token_data = (
-            await Api(
-                **token_api,
-                credential=credential,
-                no_csrf=(
-                    False
-                    if (credential.has_sessdata() and credential.has_bili_jct())
-                    else True
-                ),
-            )
-            .update_data(**datas)
-            .result
-        )
-        return f'{token_data[0]["url"]}?token={token_data[0]["token"]}'
+#     def get_m1():
+#         key = ECC.generate(curve="P-256")
+#         pubKey = key.public_key().export_key(format="raw")
+#         return base64.b64encode(pubKey).decode("ascii")
 
-    url = await get_real_image_url(url)
-    return await Picture.async_load_url(url)
+#     async def get_real_image_url(url: str) -> str:
+#         token_api = API["info"]["image_token"]
+#         params = {"device": "pc", "platform": "web", "nov": 25}
+#         datas = {"urls": f'["{url}@1100w.avif"]', "m1": get_m1()}
+#         token_data = (
+#             await Api(**token_api, credential=credential, no_csrf=True, json_body=True)
+#             .update_params(**params)
+#             .update_data(**datas)
+#             .result
+#         )
+#         return token_data[0]["complete_url"]
+
+#     url = await get_real_image_url(url)
+#     return await Picture.async_load_url(url)
 
 
 async def set_follow_manga(
@@ -399,55 +397,38 @@ async def set_follow_manga(
         api = API["operate"]["add_favorite"]
     else:
         api = API["operate"]["del_favorite"]
+
+    params = {"device": "pc", "platform": "web", "nov": 25}
     data = {"comic_ids": str(manga.get_manga_id())}
-    return await Api(**api, credential=credential).update_data(**data).result
+    return (
+        await Api(**api, credential=credential)
+        .update_params(**params)
+        .update_data(**data)
+        .result
+    )
 
 
-async def get_raw_manga_index(
-    area: MangaIndexFilter.Area = MangaIndexFilter.Area.ALL,
-    order: MangaIndexFilter.Order = MangaIndexFilter.Order.HOT,
-    status: MangaIndexFilter.Status = MangaIndexFilter.Status.ALL,
-    payment: MangaIndexFilter.Payment = MangaIndexFilter.Payment.ALL,
-    style: MangaIndexFilter.Style = MangaIndexFilter.Style.ALL,
-    pn: int = 1,
-    ps: int = 18,
-    credential: Credential = None,
-) -> list:
+async def get_followed_manga(
+    pn: int = 1, ps: int = 15, order: MangaOrderType = MangaOrderType.FOLLOW, credential: Optional[Credential] = None
+) -> List[Manga]:
     """
-    获取漫画索引
+    获取追漫列表
 
     Args:
-        area    (MangaIndexFilter.Area)   : 地区。Defaults to MangaIndexFilter.Area.ALL.
-
-        order   (MangaIndexFilter.Order)  : 排序。Defaults to MangaIndexFilter.Order.HOT.
-
-        status  (MangaIndexFilter.Status) : 状态。Defaults to MangaIndexFilter.Status.ALL.
-
-        payment (MangaIndexFilter.Payment): 支付。Defaults to MangaIndexFilter.Payment.ALL.
-
-        style   (MangaIndexFilter.Style)  : 风格。Defaults to MangaIndexFilter.Style.ALL.
-
-        pn      (int)                     : 页码。Defaults to 1.
-
-        ps      (int)                     : 每页数量。Defaults to 18.
-
-        credential (Credential)           : 凭据类. Defaults to None.
+        pn         (int)           : 页码。Defaults to 1.
+        ps         (int)           : 每页数量。Defaults to 18.
+        order      (MangaOrderType): 排序方式。Defaults to MangaOrderType.FOLLOW.
+        credential (Credential)    : 凭据类.
 
     Returns:
-        list: 调用 API 返回的结果
+        List[Manga]: 追漫列表
     """
     credential = credential if credential else Credential()
-    api = API["info"]["index"]
-    params = {"device": "pc", "platform": "web"}
-    data = {
-        "area_id": area.value,
-        "order": order.value,
-        "is_finish": status.value,
-        "is_free": payment.value,
-        "style_id": style.value,
-        "page_num": pn,
-        "page_size": ps,
-    }
+    credential.raise_for_no_sessdata()
+    api = API["info"]["followed_manga"]
+    params = {"device": "pc", "platform": "web", "nov": 25}
+    data = {"page_num": pn, "page_size": ps}
+    data.update(order.value)
     return (
         await Api(**api, credential=credential, no_csrf=True)
         .update_data(**data)
@@ -456,44 +437,99 @@ async def get_raw_manga_index(
     )
 
 
-async def get_manga_index(
-    area: MangaIndexFilter.Area = MangaIndexFilter.Area.ALL,
-    order: MangaIndexFilter.Order = MangaIndexFilter.Order.HOT,
-    status: MangaIndexFilter.Status = MangaIndexFilter.Status.ALL,
-    payment: MangaIndexFilter.Payment = MangaIndexFilter.Payment.ALL,
-    style: MangaIndexFilter.Style = MangaIndexFilter.Style.ALL,
-    pn: int = 1,
-    ps: int = 18,
-    credential: Credential = None,
-) -> List[Manga]:
-    """
-    获取漫画索引
+# async def get_raw_manga_index(
+#     area: MangaIndexFilter.Area = MangaIndexFilter.Area.ALL,
+#     order: MangaIndexFilter.Order = MangaIndexFilter.Order.HOT,
+#     status: MangaIndexFilter.Status = MangaIndexFilter.Status.ALL,
+#     payment: MangaIndexFilter.Payment = MangaIndexFilter.Payment.ALL,
+#     style: MangaIndexFilter.Style = MangaIndexFilter.Style.ALL,
+#     pn: int = 1,
+#     ps: int = 18,
+#     credential: Credential = None,
+# ) -> list:
+#     """
+#     # 失效 2025-01-27
+#     获取漫画索引
 
-    Args:
+#     Args:
+#         area    (MangaIndexFilter.Area)   : 地区。Defaults to MangaIndexFilter.Area.ALL.
 
-        area    (MangaIndexFilter.Area)   : 地区。Defaults to MangaIndexFilter.Area.ALL.
+#         order   (MangaIndexFilter.Order)  : 排序。Defaults to MangaIndexFilter.Order.HOT.
 
-        order   (MangaIndexFilter.Order)  : 排序。Defaults to MangaIndexFilter.Order.HOT.
+#         status  (MangaIndexFilter.Status) : 状态。Defaults to MangaIndexFilter.Status.ALL.
 
-        status  (MangaIndexFilter.Status) : 状态。Defaults to MangaIndexFilter.Status.ALL.
+#         payment (MangaIndexFilter.Payment): 支付。Defaults to MangaIndexFilter.Payment.ALL.
 
-        payment (MangaIndexFilter.Payment): 支付。Defaults to MangaIndexFilter.Payment.ALL.
+#         style   (MangaIndexFilter.Style)  : 风格。Defaults to MangaIndexFilter.Style.ALL.
 
-        style   (MangaIndexFilter.Style)  : 风格。Defaults to MangaIndexFilter.Style.ALL.
+#         pn      (int)                     : 页码。Defaults to 1.
 
-        pn      (int)                     : 页码。Defaults to 1.
+#         ps      (int)                     : 每页数量。Defaults to 18.
 
-        ps      (int)                     : 每页数量。Defaults to 18.
+#         credential (Credential)           : 凭据类. Defaults to None.
 
-        credential (Credential)           : 凭据类. Defaults to None.
+#     Returns:
+#         list: 调用 API 返回的结果
+#     """
+#     credential = credential if credential else Credential()
+#     api = API["info"]["index"]
+#     params = {"device": "pc", "platform": "web", "nov": 25}
+#     data = {
+#         "area_id": area.value,
+#         "order": order.value,
+#         "is_finish": status.value,
+#         "is_free": payment.value,
+#         "style_id": style.value,
+#         "page_num": pn,
+#         "page_size": ps,
+#     }
+#     return (
+#         await Api(**api, credential=credential, no_csrf=True)
+#         .update_data(**data)
+#         .update_params(**params)
+#         .result
+#     )
 
-    Returns:
-        List[Manga]: 漫画索引
-    """
-    data = await get_raw_manga_index(
-        area, order, status, payment, style, pn, ps, credential
-    )
-    return [Manga(manga_data["season_id"]) for manga_data in data]
+
+# async def get_manga_index(
+#     area: MangaIndexFilter.Area = MangaIndexFilter.Area.ALL,
+#     order: MangaIndexFilter.Order = MangaIndexFilter.Order.HOT,
+#     status: MangaIndexFilter.Status = MangaIndexFilter.Status.ALL,
+#     payment: MangaIndexFilter.Payment = MangaIndexFilter.Payment.ALL,
+#     style: MangaIndexFilter.Style = MangaIndexFilter.Style.ALL,
+#     pn: int = 1,
+#     ps: int = 18,
+#     credential: Credential = None,
+# ) -> List[Manga]:
+#     """
+#     # 失效 2025-01-27
+#     获取漫画索引
+
+#     Args:
+
+#         area    (MangaIndexFilter.Area)   : 地区。Defaults to MangaIndexFilter.Area.ALL.
+
+#         order   (MangaIndexFilter.Order)  : 排序。Defaults to MangaIndexFilter.Order.HOT.
+
+#         status  (MangaIndexFilter.Status) : 状态。Defaults to MangaIndexFilter.Status.ALL.
+
+#         payment (MangaIndexFilter.Payment): 支付。Defaults to MangaIndexFilter.Payment.ALL.
+
+#         style   (MangaIndexFilter.Style)  : 风格。Defaults to MangaIndexFilter.Style.ALL.
+
+#         pn      (int)                     : 页码。Defaults to 1.
+
+#         ps      (int)                     : 每页数量。Defaults to 18.
+
+#         credential (Credential)           : 凭据类. Defaults to None.
+
+#     Returns:
+#         List[Manga]: 漫画索引
+#     """
+#     data = await get_raw_manga_index(
+#         area, order, status, payment, style, pn, ps, credential
+#     )
+#     return [Manga(manga_data["season_id"]) for manga_data in data]
 
 
 async def get_manga_update(
@@ -519,7 +555,7 @@ async def get_manga_update(
     """
     credential = credential if credential else Credential()
     api = API["info"]["update"]
-    params = {"device": "pc", "platform": "web"}
+    params = {"device": "pc", "platform": "web", "nov": 25}
     if isinstance(date, datetime.datetime):
         date = date.strftime("%Y-%m-%d")
     data = {"date": date, "page_num": pn, "page_size": ps}
@@ -550,7 +586,7 @@ async def get_manga_home_recommend(
     """
     credential = credential if credential else Credential()
     api = API["info"]["home_recommend"]
-    params = {"device": "pc", "platform": "web"}
+    params = {"device": "pc", "platform": "web", "nov": 25}
     data = {"page_num": pn, "seed": seed}
     manga_data = (
         await Api(**api, credential=credential, no_csrf=True)

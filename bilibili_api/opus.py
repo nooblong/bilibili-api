@@ -4,31 +4,18 @@ bilibili_api.opus
 图文相关
 """
 
-import enum
 import yaml
 from typing import Optional
 from . import article
 from . import dynamic
-from . import note
-from .utils.credential import Credential
-from .utils.network import Api
-from .utils.utils import get_api, raise_for_statement
+from .utils.network import Api, Credential
+from .utils.utils import get_api
 from .utils import cache_pool
+from .exceptions import ArgsException
+import html
 
 
 API = get_api("opus")
-
-
-class OpusType(enum.Enum):
-    """
-    图文类型
-
-    + ARTICLE: 专栏
-    + DYNAMIC: 动态
-    """
-
-    ARTICLE = 1
-    DYNAMIC = 0
 
 
 class Opus:
@@ -41,25 +28,8 @@ class Opus:
 
     def __init__(self, opus_id: int, credential: Optional[Credential] = None):
         self.__id = opus_id
-        self.__is_note = False
         self.__info = None
         self.credential: Credential = credential if credential else Credential()
-
-        if cache_pool.opus_type.get(self.__id):
-            self.__is_note = cache_pool.opus_is_note[self.__id]
-            self.__type = OpusType(cache_pool.opus_type[self.__id])
-        else:
-            api = API["info"]["detail"]
-            params = {"timezone_offset": -480, "id": self.__id}
-            self.__info = (
-                Api(**api, credential=self.credential)
-                .update_params(**params)
-                .result_sync
-            )["item"]
-            self.__type = OpusType(self.__info["type"])
-            self.__is_note = bool(self.__info["modules"][0].get("module_top"))
-            cache_pool.opus_is_note[self.__id] = self.__is_note
-            cache_pool.opus_type[self.__id] = self.__type.value
 
     def get_opus_id(self) -> int:
         """
@@ -70,55 +40,47 @@ class Opus:
         """
         return self.__id
 
-    def get_type(self):
+    async def is_article(self) -> bool:
         """
-        获取图文类型(专栏/动态)
+        获取图文是否同时为专栏
+
+        如果是，则专栏/图文/动态数据共享，可以投币
 
         Returns:
-            OpusType: 图文类型
+            bool: 是否同时为专栏
         """
-        return self.__type
+        if cache_pool.dynamic_is_article.get(self.__id) is None:
+            await self.get_info()
+        return cache_pool.dynamic_is_article[self.__id]
 
-    def turn_to_article(self) -> "article.Article":
+    async def turn_to_article(self) -> "article.Article":
         """
-        对专栏图文，转换为专栏
+        对专栏图文，转换为专栏（评论、点赞等数据专栏/动态/图文共享）
+
+        如图文无对应专栏将报错。
+
+        Returns:
+            article.Article: 专栏类
         """
-        raise_for_statement(self.__type == OpusType.ARTICLE, "仅支持专栏图文")
-        if self.__info:
-            cvid = int(self.__info["basic"]["rid_str"])
-        else:
-            cvid = cache_pool.opus_cvid[self.__id]
-        cache_pool.article_is_opus[cvid] = 1
-        cache_pool.article_dyn_id[cvid] = self.__id
-        cache_pool.article_is_note[cvid] = self.is_note()
-        return article.Article(cvid=cvid, credential=self.credential)
+        # 此处建议先阅读 dynamic.turn_to_article 注释再尝试理解
+        if cache_pool.dynamic2article.get(self.__id) is None:
+            await self.get_info()
+            if not await self.is_article():
+                raise ArgsException("提供的动态无对应专栏")
+        return article.Article(
+            cvid=cache_pool.dynamic2article[self.__id], credential=self.credential
+        )
 
     def turn_to_dynamic(self) -> "dynamic.Dynamic":
         """
         转为动态
+
+        图文完全包含于动态，且图文与专栏 id 数值上一致，因此此函数绝对成功。
+
+        Returns:
+            dynamic.Dynamic: 对应的动态类
         """
-        cache_pool.dynamic_is_opus[self.__id] = 1
         return dynamic.Dynamic(dynamic_id=self.__id, credential=self.credential)
-
-    def is_note(self) -> bool:
-        """
-        是否为笔记
-        """
-        return self.__is_note
-
-    def turn_to_note(self) -> "note.Note":
-        """
-        转为笔记
-        """
-        raise_for_statement(self.is_note(), "仅支持笔记")
-        if self.__info:
-            cvid = int(self.__info["basic"]["rid_str"])
-        else:
-            cvid = cache_pool.opus_cvid[self.__id]
-        cache_pool.article_is_opus[cvid] = 1
-        cache_pool.article_dyn_id[cvid] = self.__id
-        cache_pool.article_is_note[cvid] = self.is_note()
-        return note.Note(cvid=cvid, credential=self.credential)
 
     async def get_info(self):
         """
@@ -127,22 +89,50 @@ class Opus:
         Returns:
             dict: 调用 API 返回的结果
         """
-        api = API["info"]["detail"]
-        params = {"timezone_offset": -480, "id": self.__id}
-        return (
-            await Api(**api, credential=self.credential).update_params(**params).result
+        if self.__info is None:
+            api = API["info"]["detail"]
+            params = {
+                "timezone_offset": -480,
+                "id": self.__id,
+                "features": "onlyfansVote,onlyfansAssetsV2,decorationCard,htmlNewStyle,ugcDelete,editable,opusPrivateVisible",
+            }
+            self.__info = (
+                await Api(**api, credential=self.credential)
+                .update_params(**params)
+                .result
+            )
+        if self.__info.get("fallback"):
+            raise ArgsException("传入的 opus_id 不正确")
+        cache_pool.dynamic_is_article[self.__id] = (
+            self.__info["item"]["basic"]["comment_type"] == 12
         )
+        if cache_pool.dynamic_is_article[self.__id]:
+            cache_pool.dynamic2article[self.__id] = int(
+                self.__info["item"]["basic"]["rid_str"]
+            )
+            cache_pool.article2dynamic[cache_pool.dynamic2article[self.__id]] = (
+                self.__id
+            )
+        cache_pool.dynamic_is_opus[self.__id] = True
+        return self.__info
 
-    def markdown(self) -> str:
+    async def markdown(self) -> str:
         """
         将图文转为 markdown
 
         Returns:
             str: markdown 内容
         """
-        if self.is_note():
-            top, title, author, content = self.__info["modules"][:4]
-        title, author, content = self.__info["modules"][:3]
+        await self.get_info()
+
+        title = {"module_title": {"text": ""}}
+        content = {"module_content": {"paragraphs": []}}
+
+        for module in self.__info["item"]["modules"]:
+            if module.get("module_title"):
+                title = module
+            if module.get("module_content"):
+                content = module
 
         markdown = f'# {title["module_title"]["text"]}\n\n'
 
@@ -150,17 +140,93 @@ class Opus:
             para_raw = ""
             if para["para_type"] == 1:
                 for node in para["text"]["nodes"]:
-                    raw = node["word"]["words"]
-                    if node["word"].get("style"):
-                        if node["word"]["style"].get("bold"):
-                            if node["word"]["style"]["bold"]:
-                                raw = f" **{raw}**"
-                    para_raw += raw
-            else:
+                    if node.get("rich"):
+                        url = node["rich"].get("jump_url")
+                        if url is None:
+                            url = ""
+                        if node["rich"].get("emoji"):
+                            url = node["rich"]["emoji"]["icon_url"]
+                        text = node["rich"]["text"]
+                        if url.startswith("//"):
+                            url = "https:" + url
+                        if node["rich"].get("emoji"):
+                            raw = f"<img width=50px height=50px src={url}> "
+                        else:
+                            raw = f"[{text}]({url})"
+                    elif node.get("word"):
+                        raw = node["word"]["words"]
+                        if node["word"].get("style"):
+                            if node["word"]["style"].get("bold"):
+                                if node["word"]["style"]["bold"]:
+                                    raw = f"**{raw}**"
+                    para_raw += raw + " "
+            elif para["para_type"] == 2:
                 for pic in para["pic"]["pics"]:
-                    para_raw += f'![]({pic["url"]})\n'
+                    url = pic["url"]
+                    width = pic["width"]
+                    height = pic["height"]
+                    para_raw += f"![]({url}) \n"
+            elif para["para_type"] == 7:
+                lang = para["code"]["lang"].lstrip("language-")
+                content = para["code"]["content"]
+                content = html.unescape(content)
+                para_raw = f"``` {lang}\n{content}\n```\n\n"
             markdown += f"{para_raw}\n\n"
 
         meta_yaml = yaml.safe_dump(self.__info, allow_unicode=True)
         content = f"---\n{meta_yaml}\n---\n\n{markdown}"
         return content
+
+    async def set_like(self, status: bool) -> dict:
+        """
+        设置图文点赞状态
+
+        Args:
+            status (bool, optional): 点赞状态. Defaults to True.
+
+        Returns:
+            dict: 调用 API 返回的结果
+        """
+        return await self.turn_to_dynamic().set_like(status)
+
+    async def set_favorite(self, status: bool = True) -> dict:
+        """
+        设置图文收藏状态
+
+        Args:
+            status (bool, optional): 收藏状态. Defaults to True
+
+        Returns:
+            dict: 调用 API 返回的结果
+        """
+        return await self.turn_to_dynamic().set_favorite(status)
+
+    async def add_coins(self) -> dict:
+        """
+        给专栏投币，目前只能投一个
+
+        Returns:
+            dict: 调用 API 返回的结果
+        """
+        return await (await self.turn_to_article()).add_coins()
+
+    async def get_reaction(self, offset: str = "") -> dict:
+        """
+        获取点赞、转发
+
+        Args:
+            offset (str, optional): 偏移值（下一页的第一个动态 ID，为该请求结果中的 offset 键对应的值），类似单向链表. Defaults to ""
+
+        Returns:
+            dict: 调用 API 返回的结果
+        """
+        return await self.turn_to_dynamic().get_reaction(offset=offset)
+
+    async def get_rid(self) -> int:
+        """
+        获取 rid，以传入 `comment.get_comments_lazy` 等函数 oid 参数对评论区进行操作
+
+        Returns:
+            int: rid
+        """
+        return int((await self.get_info())["item"]["basic"]["rid_str"])

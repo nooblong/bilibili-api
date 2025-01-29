@@ -54,7 +54,7 @@ async def test_j_get_danmu_info():
 
 async def test_k_ban_user():
     try:
-        return await l.ban_user(1)
+        return await l.ban_user(1, 1)
     except ResponseCodeException as e:
         if e.code == 1200000:
             return e.raw
@@ -188,3 +188,10 @@ async def test_zf_get_get_popular_ticket_num():
 async def test_zg_popular_rank_free_score_incr():
     return await l.send_popular_ticket()
 
+
+async def test_zh_get_emoticons():
+    return await l.get_emoticons()
+
+
+async def test_zi_send_emoticon():
+    return await l.send_danmaku(Danmaku("official_147"))

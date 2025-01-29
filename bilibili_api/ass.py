@@ -3,7 +3,9 @@ bilibili_api.ass
 
 有关 ASS 文件的操作
 """
+
 import os
+import json
 from tempfile import gettempdir
 from typing import Union, Optional
 
@@ -11,11 +13,36 @@ from .video import Video
 from .bangumi import Episode
 from .cheese import CheeseVideo
 from .utils.srt2ass import srt2ass
-from .utils.json2srt import json2srt
-from .utils.credential import Credential
 from .utils.danmaku2ass import Danmaku2ASS
-from .utils.network import get_session
+from .utils.network import Api, Credential
 from .exceptions.ArgsException import ArgsException
+
+
+def json2srt(input_path: str, output_path: str):
+    data = json.load(open(input_path, "r"))
+    with open(output_path, "w+") as file:
+        for cnt, comment in enumerate(data["body"]):
+            file.write(
+                "{}\n{}:{}:{},{} --> {}:{}:{},{}\n{}\n\n".format(
+                    cnt + 1,
+                    str(int(comment["from"]) // 3600).zfill(2),
+                    str(int(comment["from"]) // 60 % 60).zfill(2),
+                    str(int(comment["from"]) % 60).zfill(2),
+                    str(
+                        int(round(comment["from"] - int(comment["from"]), 2) * 100)
+                    ).zfill(2),
+                    str(int(comment["to"] - 0.01) // 3600).zfill(2),
+                    str(int(comment["to"] - 0.01) // 60 % 60).zfill(2),
+                    str(int(comment["to"] - 0.01) % 60).zfill(2),
+                    str(
+                        int(
+                            round(comment["to"] - 0.01 - int(comment["to"] - 0.01), 2)
+                            * 100
+                        )
+                    ).zfill(2),
+                    comment["content"],
+                )
+            )
 
 
 def export_ass_from_xml(
@@ -116,7 +143,7 @@ async def make_ass_file_subtitle(
     if credential.has_sessdata():
         obj.credential = credential
     elif not obj.credential.has_sessdata():
-        raise credential.raise_for_no_sessdata()
+        credential.raise_for_no_sessdata()
 
     if isinstance(obj, Episode):
         info = await obj.get_player_info(cid=await obj.get_cid(), epid=obj.get_epid())
@@ -132,10 +159,10 @@ async def make_ass_file_subtitle(
             url = subtitle["subtitle_url"]
             if isinstance(obj, Episode) or "https:" not in url:
                 url = "https:" + url
-            req = await get_session().request("GET", url)
+            req = await Api(url=url, method="GET").request(raw=True)
             file_dir = gettempdir() + "/" + "subtitle.json"
-            with open(file_dir, "wb") as f:
-                f.write(req.content)
+            with open(file_dir, "w+") as f:
+                f.write(json.dumps(req))
             export_ass_from_json(file_dir, out)
             return
     raise ValueError("没有找到指定字幕")
