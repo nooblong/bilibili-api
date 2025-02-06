@@ -11,9 +11,9 @@ from ..utils.network import (
     BiliWsMsgType,
     request_log,
 )
-from curl_cffi import requests
-import curl_cffi
-from typing import Optional, Dict, Union, Tuple
+from curl_cffi import requests # pylint: disable=E0401
+import curl_cffi # pylint: disable=E0401
+from typing import Optional, Dict, Union, Tuple, AsyncGenerator
 import asyncio
 
 
@@ -46,6 +46,8 @@ class CurlCFFIClient(BiliAPIClient):
         self.__ws_cnt: int = 0
         self.__ws_need_close: Dict[int, bool] = {}
         self.__ws_is_closed: Dict[int, bool] = {}
+        self.__downloads: Dict[int, requests.Response] = {}
+        self.__download_cnt: int = 0
 
     def get_wrapped_session(self) -> requests.AsyncSession:
         return self.__session
@@ -140,6 +142,40 @@ class CurlCFFIClient(BiliAPIClient):
         )
         return bili_api_resp
 
+    async def download_create(
+        self,
+        url: str = "",
+        headers: dict = {},
+    ) -> int:
+        self.__download_cnt += 1
+        request_log.dispatch(
+            "DWN_CREATE",
+            "开始下载",
+            {
+                "id": self.__download_cnt,
+                "url": url,
+                "headers": headers,
+            },
+        )
+        self.__downloads[self.__download_cnt] = await self.__session.get(
+            url=url, headers=headers, stream=True
+        )
+        return self.__download_cnt
+
+    async def download_chunk(self, cnt: int) -> bytes:
+        resp = self.__downloads[cnt]
+        data = await anext(resp.aiter_content())
+        request_log.dispatch(
+            "DWN_PART",
+            "收到部分下载数据",
+            {"id": cnt, "data": data},
+        )
+        return data
+
+    def download_content_length(self, cnt: int) -> int:
+        resp = self.__downloads[cnt]
+        return int(resp.headers.get("content-length", "0"))
+
     async def ws_create(
         self, url: str = "", params: dict = {}, headers: dict = {}
     ) -> int:
@@ -229,6 +265,9 @@ class CurlCFFIClient(BiliAPIClient):
     set_verify_ssl.__doc__ = BiliAPIClient.set_verify_ssl.__doc__
     set_trust_env.__doc__ = BiliAPIClient.set_trust_env.__doc__
     request.__doc__ = BiliAPIClient.request.__doc__
+    download_create.__doc__ = BiliAPIClient.download_create.__doc__
+    download_chunk.__doc__ = BiliAPIClient.download_chunk.__doc__
+    download_content_length.__doc__ = BiliAPIClient.download_content_length.__doc__
     ws_create.__doc__ = BiliAPIClient.ws_create.__doc__
     ws_recv.__doc__ = BiliAPIClient.ws_recv.__doc__
     ws_send.__doc__ = BiliAPIClient.ws_send.__doc__

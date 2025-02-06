@@ -11,8 +11,8 @@ from ..utils.network import (
     request_log,
 )
 from ..exceptions import ApiException
-import httpx
-from typing import Optional, Dict, Union
+import httpx # pylint: disable=E0401
+from typing import AsyncGenerator, Optional, Dict, Union
 
 
 class HTTPXClient(BiliAPIClient):
@@ -41,6 +41,9 @@ class HTTPXClient(BiliAPIClient):
                 verify=self.__verify_ssl,
                 trust_env=self.__trust_env,
             )
+        self.__downloads: Dict[int, httpx.Response] = {}
+        self.__download_iter: Dict[int, AsyncGenerator] = {}
+        self.__download_cnt: int = 0
 
     def get_wrapped_session(self) -> httpx.AsyncClient:
         return self.__session
@@ -108,7 +111,7 @@ class HTTPXClient(BiliAPIClient):
             files=files,
             headers=headers,
             cookies=cookies,
-            follow_redirects=allow_redirects
+            follow_redirects=allow_redirects,
         )
         resp_header_items = resp.headers.multi_items()
         resp_headers = {}
@@ -136,6 +139,44 @@ class HTTPXClient(BiliAPIClient):
             },
         )
         return bili_api_resp
+
+    async def download_create(
+        self,
+        url: str = "",
+        headers: dict = {},
+    ) -> int:
+        self.__download_cnt += 1
+        request_log.dispatch(
+            "DWN_CREATE",
+            "开始下载",
+            {
+                "id": self.__download_cnt,
+                "url": url,
+                "headers": headers,
+            },
+        )
+        req = self.__session.build_request(method="GET", url=url, headers=headers)
+        self.__downloads[self.__download_cnt] = await self.__session.send(
+            req, stream=True
+        )
+        self.__download_iter[self.__download_cnt] = self.__downloads[
+            self.__download_cnt
+        ].aiter_bytes(4096)
+        return self.__download_cnt
+
+    async def download_chunk(self, cnt: int) -> bytes:
+        iter = self.__download_iter[cnt]
+        data = await anext(iter)
+        request_log.dispatch(
+            "DWN_PART",
+            "收到部分下载数据",
+            {"id": cnt, "data": data},
+        )
+        return data
+
+    def download_content_length(self, cnt: int) -> int:
+        resp = self.__downloads[cnt]
+        return int(resp.headers.get("content-length", "0"))
 
     async def ws_create(self, *args, **kwargs) -> None:
         """
@@ -179,4 +220,7 @@ class HTTPXClient(BiliAPIClient):
     set_verify_ssl.__doc__ = BiliAPIClient.set_verify_ssl.__doc__
     set_trust_env.__doc__ = BiliAPIClient.set_trust_env.__doc__
     request.__doc__ = BiliAPIClient.request.__doc__
+    download_create.__doc__ = BiliAPIClient.download_create.__doc__
+    download_chunk.__doc__ = BiliAPIClient.download_chunk.__doc__
+    download_content_length.__doc__ = BiliAPIClient.download_content_length.__doc__
     close.__doc__ = BiliAPIClient.close.__doc__

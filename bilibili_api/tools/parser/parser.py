@@ -36,7 +36,7 @@ class Parser:
             obj, err = await self.parse(val)
             if err is None:
                 if isinstance(obj, bilibili_api.Credential):
-                    self.valid = await bilibili_api.check_valid(obj)
+                    self.valid = await obj.check_valid()
                 self.params[key] = obj
         return self
 
@@ -54,6 +54,8 @@ class Parser:
         Returns:
             Any: 装换结果
         """
+        if var == ":none":
+            return None
         for key, fn in OPS.items():
             if var.endswith(key):
                 return fn(var.replace(key, ""))

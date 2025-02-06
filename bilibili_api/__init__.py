@@ -35,6 +35,7 @@ from .utils.network import (
     # api
     HEADERS,
 )
+from .utils.AsyncEvent import AsyncEvent
 from .utils.geetest import Geetest, GeetestMeta, GeetestType
 from .exceptions import (
     ApiException,
@@ -102,7 +103,7 @@ from . import (
 )
 
 
-BILIBILI_API_VERSION = "17.0.0"
+BILIBILI_API_VERSION = "17.1.0"
 
 
 def __register_all_clients():
@@ -123,7 +124,6 @@ def __register_all_clients():
         )
         client_class = eval(f"client_module.{client}")
         register_client(module, client_class)
-        select_client(module)
 
 
 __register_all_clients()
@@ -131,6 +131,7 @@ __register_all_clients()
 
 __all__ = [
     "ApiException",
+    "AsyncEvent",
     "ArgsException",
     "BILIBILI_API_VERSION",
     "BiliAPIClient",

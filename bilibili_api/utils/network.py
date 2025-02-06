@@ -28,13 +28,18 @@ from Cryptodome.Cipher import PKCS1_OAEP
 from Cryptodome.Hash import SHA256
 from Cryptodome.PublicKey import RSA
 
-from ..exceptions import (ArgsException, CookiesRefreshException,
-                          CredentialNoAcTimeValueException,
-                          CredentialNoBiliJctException,
-                          CredentialNoBuvid3Exception,
-                          CredentialNoDedeUserIDException,
-                          CredentialNoSessdataException, ExClimbWuzhiException,
-                          ResponseCodeException, WbiRetryTimesExceedException)
+from ..exceptions import (
+    ArgsException,
+    CookiesRefreshException,
+    CredentialNoAcTimeValueException,
+    CredentialNoBiliJctException,
+    CredentialNoBuvid3Exception,
+    CredentialNoDedeUserIDException,
+    CredentialNoSessdataException,
+    ExClimbWuzhiException,
+    ResponseCodeException,
+    WbiRetryTimesExceedException,
+)
 from .AsyncEvent import AsyncEvent
 from .utils import get_api, raise_for_statement
 
@@ -121,7 +126,7 @@ class RequestLog(AsyncEvent):
         """
         self.__on = status
 
-    async def __handle_events(self, data: dict) -> None:
+    def __handle_events(self, data: dict) -> None:
         evt = data["name"]
         desc, real_data = data["data"]
         if (
@@ -130,7 +135,11 @@ class RequestLog(AsyncEvent):
             and not evt in self.get_ignore_events()
         ):
             if evt.startswith("WS_"):
-                self.logger.info(f"WS #{real_data['id']} {desc}: {real_data}")
+                ws_id = real_data.pop("id")
+                self.logger.info(f"WS #{ws_id} {desc}: {real_data}")
+            elif evt.startswith("DWN_"):
+                dwn_id = real_data.pop("id")
+                self.logger.info(f"DWN #{dwn_id} {desc}: {real_data}")
             elif evt == "ANTI_SPIDER":
                 self.logger.info(f"{real_data['msg']}")
             else:
@@ -143,22 +152,25 @@ request_log = RequestLog()
 
 可以添加更多监听器达到更多效果。
 
-Logger: RequestLog().logger
+Logger: request_log.logger
 
 Extends: AsyncEvent
 
 Events:
 
 - (模块自带 BiliAPIClient)
-- REQUEST:   HTTP 请求。
-- RESPONSE:  HTTP 响应。
-- WS_CREATE: 新建的 Websocket 请求。
-- WS_RECV:   获得到 WebSocket 请求。
-- WS_SEND:   发送了 WebSocket 请求。
-- WS_CLOSE:  关闭 WebSocket 请求。
+- REQUEST:     HTTP 请求。
+- RESPONSE:    HTTP 响应。
+- WS_CREATE:   新建的 Websocket 请求。
+- WS_RECV:     获得到 WebSocket 请求。
+- WS_SEND:     发送了 WebSocket 请求。
+- WS_CLOSE:    关闭 WebSocket 请求。
+- DWN_CREATE:  新建下载。
+- DWN_PART:    部分下载。
 - (Api)
 - API_REQUEST: Api 请求。
 - API_RESPONSE: Api 响应。
+- (反爬虫)
 - ANTI_SPIDER: 反爬虫相关信息。
 
 CallbackData: 描述 (str) 数据 (dict)
@@ -176,22 +188,25 @@ request_log.__doc__ = """
 
 可以添加更多监听器达到更多效果。
 
-Logger: RequestLog().logger
+Logger: request_log.logger
 
 Extends: AsyncEvent
 
 Events:
 
 - (模块自带 BiliAPIClient)
-- REQUEST:   HTTP 请求。
-- RESPONSE:  HTTP 响应。
-- WS_CREATE: 新建的 Websocket 请求。
-- WS_RECV:   获得到 WebSocket 请求。
-- WS_SEND:   发送了 WebSocket 请求。
-- WS_CLOSE:  关闭 WebSocket 请求。
+- REQUEST:     HTTP 请求。
+- RESPONSE:    HTTP 响应。
+- WS_CREATE:   新建的 Websocket 请求。
+- WS_RECV:     获得到 WebSocket 请求。
+- WS_SEND:     发送了 WebSocket 请求。
+- WS_CLOSE:    关闭 WebSocket 请求。
+- DWN_CREATE:  新建下载。
+- DWN_PART:    部分下载。
 - (Api)
 - API_REQUEST: Api 请求。
 - API_RESPONSE: Api 响应。
+- (反爬虫)
 - ANTI_SPIDER: 反爬虫相关信息。
 
 CallbackData: 描述 (str) 数据 (dict)
@@ -528,6 +543,50 @@ class BiliAPIClient(ABC):
             raise NotImplementedError
 
         @abstractmethod
+        async def download_create(
+            self,
+            url: str = "",
+            headers: dict = {},
+        ) -> int:
+            """
+            开始下载文件
+
+            Args:
+                url     (str, optional) : 请求地址. Defaults to "".
+                headers (dict, optional): 请求头. Defaults to {}.
+
+            Returns:
+                int: 下载编号，用于后续操作。
+            """
+            raise NotImplementedError
+
+        @abstractmethod
+        async def download_chunk(self, cnt: int) -> bytes:
+            """
+            下载部分文件
+
+            Args:
+                cnt    (int): 下载编号
+
+            Returns:
+                bytes: 字节
+            """
+            raise NotImplementedError
+
+        @abstractmethod
+        def download_content_length(self, cnt: int) -> int:
+            """
+            获取下载总字节数
+
+            Args:
+                cnt    (int): 下载编号
+
+            Returns:
+                int: 下载总字节数
+            """
+            raise NotImplementedError
+
+        @abstractmethod
         async def ws_create(
             self, url: str = "", params: dict = {}, headers: dict = {}
         ) -> int:
@@ -693,6 +752,50 @@ class BiliAPIClient(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def download_create(
+        self,
+        url: str = "",
+        headers: dict = {},
+    ) -> int:
+        """
+        开始下载文件
+
+        Args:
+            url     (str, optional) : 请求地址. Defaults to "".
+            headers (dict, optional): 请求头. Defaults to {}.
+
+        Returns:
+            int: 下载编号，用于后续操作。
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def download_chunk(self, cnt: int) -> bytes:
+        """
+        下载部分文件
+
+        Args:
+            cnt    (int): 下载编号
+
+        Returns:
+            bytes: 字节
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def download_content_length(self, cnt: int) -> int:
+        """
+        获取下载总字节数
+
+        Args:
+            cnt    (int): 下载编号
+
+        Returns:
+            int: 下载总字节数
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     async def ws_create(
         self, url: str = "", params: dict = {}, headers: dict = {}
     ) -> int:
@@ -755,15 +858,11 @@ class BiliAPIClient(ABC):
 
 def register_client(name: str, cls: type) -> None:
     """
-    注册请求客户端，可用于用户自定义请求客户端。
+    注册请求客户端并切换，可用于用户自定义请求客户端。
 
     Args:
         name (str): 请求客户端类型名称，用户自定义命名。
         cls  (type): 基于 BiliAPIClient 重写后的请求客户端类。
-
-    Returns: None
-
-    **Note**: 模块默认使用 `curl_cffi` 库作为请求客户端。
     """
     global sessions, session_pool
     raise_for_statement(
@@ -771,6 +870,7 @@ def register_client(name: str, cls: type) -> None:
     )
     sessions[name] = cls
     session_pool[name] = {}
+    select_client(name)
 
 
 def unregister_client(name: str) -> None:
@@ -779,10 +879,6 @@ def unregister_client(name: str) -> None:
 
     Args:
         name (str): 请求客户端类型名称，用户自定义命名。
-
-    Returns: None
-
-    **Note**: 模块默认使用 `curl_cffi` 库作为请求客户端。
     """
     global sessions, session_pool
     try:
@@ -798,11 +894,9 @@ def select_client(name: str) -> None:
 
     Args:
         name (str): 请求客户端类型名称，用户自定义命名。
-
-    Returns: None
-
-    **Note**: 模块默认使用 `curl_cffi` 库作为请求客户端。
     """
+    if not sessions.get(name):
+        raise ArgsException(f"未注册过 {name}。")
     global selected_client
     selected_client = name
 
@@ -813,8 +907,6 @@ def get_selected_client() -> Tuple[str, Type[BiliAPIClient]]:
 
     Returns:
         Tuple[str, Type[BiliAPIClient]]: 第 0 项为客户端名称，第 1 项为对应的类
-
-    **Note**: 模块默认使用 `curl_cffi` 库作为请求客户端。
     """
     return selected_client, sessions[selected_client]
 
@@ -826,6 +918,10 @@ def get_client() -> BiliAPIClient:
     Returns:
         BiliAPIClient: 请求客户端
     """
+    if selected_client == "":
+        raise ArgsException(
+            "尚未安装第三方请求库或未注册自定义第三方请求库。\n$ pip3 install (curl_cffi==0.8.1b9|httpx|aiohttp)"
+        )
     global session_pool
     pool = session_pool.get(selected_client)
     if pool is None:
@@ -880,7 +976,6 @@ def get_registered_clients() -> Dict[str, Type[BiliAPIClient]]:
 
 @atexit.register
 def __clean() -> None:
-
     """
     程序退出清理操作。
     """

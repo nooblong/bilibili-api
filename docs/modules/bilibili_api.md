@@ -14,6 +14,15 @@ from bilibili_api import bilibili_api
 
 - [class ApiException()](#class-ApiException)
 - [class ArgsException()](#class-ArgsException)
+- [class AsyncEvent()](#class-AsyncEvent)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [def add\_event\_listener()](#def-add\_event\_listener)
+  - [def dispatch()](#def-dispatch)
+  - [def ignore\_event()](#def-ignore\_event)
+  - [def on()](#def-on)
+  - [def remove\_all\_event\_listener()](#def-remove\_all\_event\_listener)
+  - [def remove\_event\_listener()](#def-remove\_event\_listener)
+  - [def remove\_ignore\_events()](#def-remove\_ignore\_events)
 - [class BiliAPIClient()](#class-BiliAPIClient)
 - [class BiliAPIFile()](#class-BiliAPIFile)
 - [class BiliAPIResponse()](#class-BiliAPIResponse)
@@ -143,6 +152,112 @@ API 基类异常。
 
 ---
 
+## class AsyncEvent()
+
+发布-订阅模式异步事件类支持。
+
+特殊事件：__ALL__ 所有事件均触发
+
+
+
+
+### def \_\_init\_\_()
+
+
+
+
+
+### def add_event_listener()
+
+注册事件监听器。
+
+
+| name | type | description |
+| - | - | - |
+| name | str | 事件名。 |
+| handler | Union[Callable, Coroutine] | 回调函数。 |
+
+**Returns:** None
+
+
+
+### def dispatch()
+
+异步发布事件。
+
+
+| name | type | description |
+| - | - | - |
+| name | str | 事件名。 |
+| *args, **kwargs:  要传递给函数的参数。 |  | 要传递给函数的参数。 |
+
+**Returns:** None
+
+
+
+### def ignore_event()
+
+忽略指定事件
+
+
+| name | type | description |
+| - | - | - |
+| name | str | 事件名。 |
+
+**Returns:** None
+
+
+
+### def on()
+
+装饰器注册事件监听器。
+
+
+| name | type | description |
+| - | - | - |
+| event_name | str | 事件名。 |
+
+**Returns:** None
+
+
+
+### def remove_all_event_listener()
+
+移除所有事件监听函数
+
+
+
+**Returns:** None
+
+
+
+### def remove_event_listener()
+
+移除事件监听函数。
+
+
+| name | type | description |
+| - | - | - |
+| name | str | 事件名。 |
+| handler | Union[Callable, Coroutine] | 要移除的函数。 |
+
+**Returns:** bool, 是否移除成功。
+
+
+
+
+### def remove_ignore_events()
+
+移除所有忽略事件
+
+
+
+**Returns:** None
+
+
+
+---
+
 ## class BiliAPIClient()
 
 **Extend: abc.ABC**
@@ -256,6 +371,50 @@ class BiliAPIClient(ABC):
             BiliAPIResponse: 响应对象
 
         Note: 无需实现 data 为 str 且 files 不为空的情况。
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def download_create(
+        self,
+        url: str = "",
+        headers: dict = {},
+    ) -> int:
+        """
+        开始下载文件
+
+        Args:
+            url     (str, optional) : 请求地址. Defaults to "".
+            headers (dict, optional): 请求头. Defaults to {}.
+
+        Returns:
+            int: 下载编号，用于后续操作。
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def download_chunk(self, cnt: int) -> bytes:
+        """
+        下载部分文件
+
+        Args:
+            cnt    (int): 下载编号
+
+        Returns:
+            bytes: 字节
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def download_content_length(self, cnt: int) -> int:
+        """
+        获取下载总字节数
+
+        Args:
+            cnt    (int): 下载编号
+
+        Returns:
+            int: 下载总字节数
         """
         raise NotImplementedError
 
@@ -1290,8 +1449,6 @@ BV 号转 AV 号。
 **Returns:** Tuple[str, Type[BiliAPIClient]]: 第 0 项为客户端名称，第 1 项为对应的类
 
 
-**Note**: 模块默认使用 `curl_cffi` 库作为请求客户端。
-
 
 
 ---
@@ -1328,7 +1485,7 @@ BV 号转 AV 号。
 
 ## def register_client()
 
-注册请求客户端，可用于用户自定义请求客户端。
+注册请求客户端并切换，可用于用户自定义请求客户端。
 
 
 | name | type | description |
@@ -1337,8 +1494,6 @@ BV 号转 AV 号。
 | cls | type | 基于 BiliAPIClient 重写后的请求客户端类。 |
 
 **Returns:** None
-
-**Note**: 模块默认使用 `curl_cffi` 库作为请求客户端。
 
 
 
@@ -1353,22 +1508,25 @@ BV 号转 AV 号。
 
 可以添加更多监听器达到更多效果。
 
-Logger: RequestLog().logger
+Logger: request_log.logger
 
 Extends: AsyncEvent
 
 Events:
 
 - (模块自带 BiliAPIClient)
-- REQUEST:   HTTP 请求。
-- RESPONSE:  HTTP 响应。
-- WS_CREATE: 新建的 Websocket 请求。
-- WS_RECV:   获得到 WebSocket 请求。
-- WS_SEND:   发送了 WebSocket 请求。
-- WS_CLOSE:  关闭 WebSocket 请求。
+- REQUEST:     HTTP 请求。
+- RESPONSE:    HTTP 响应。
+- WS_CREATE:   新建的 Websocket 请求。
+- WS_RECV:     获得到 WebSocket 请求。
+- WS_SEND:     发送了 WebSocket 请求。
+- WS_CLOSE:    关闭 WebSocket 请求。
+- DWN_CREATE:  新建下载。
+- DWN_PART:    部分下载。
 - (Api)
 - API_REQUEST: Api 请求。
 - API_RESPONSE: Api 响应。
+- (反爬虫)
 - ANTI_SPIDER: 反爬虫相关信息。
 
 CallbackData: 描述 (str) 数据 (dict)
@@ -1596,8 +1754,6 @@ async def handle(desc: str, data: dict) -> None:
 
 **Returns:** None
 
-**Note**: 模块默认使用 `curl_cffi` 库作为请求客户端。
-
 
 
 ---
@@ -1643,8 +1799,6 @@ async def handle(desc: str, data: dict) -> None:
 | name | str | 请求客户端类型名称，用户自定义命名。 |
 
 **Returns:** None
-
-**Note**: 模块默认使用 `curl_cffi` 库作为请求客户端。
 
 
 
