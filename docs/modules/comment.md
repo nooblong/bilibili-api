@@ -7,17 +7,34 @@ bilibili_api.comment
 
 关于资源 ID（oid）的一些示例（{}部分为应该传入的参数）。
 
-+ 视频：AV 号：av{170001}。
-+ 专栏：cv{9762979}。
-+ 动态（画册类型）：{116859542}。
-+ 动态（纯文本）：{497080393649439253}。
-+ 课程：ep{5556}
-+ 小黑屋: ban/{2600321}
++ 视频：AV 号：av{170001} `get_aid() / await get_aid() # for Episode`。
++ 专栏：cv{9762979} `get_cvid()`。
++ 动态/图文：{116859542} `await get_rid()`。
++ 课程：ep{5556} `get_epid()`
++ 小黑屋: ban/{2600321} `get_id()`
 
 
 ``` python
 from bilibili_api import comment
 ```
+
+- [class Comment()](#class-Comment)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def delete()](#async-def-delete)
+  - [def get\_oid()](#def-get\_oid)
+  - [def get\_rpid()](#def-get\_rpid)
+  - [async def get\_sub\_comments()](#async-def-get\_sub\_comments)
+  - [def get\_type()](#def-get\_type)
+  - [async def hate()](#async-def-hate)
+  - [async def like()](#async-def-like)
+  - [async def pin()](#async-def-pin)
+  - [async def report()](#async-def-report)
+- [class CommentResourceType()](#class-CommentResourceType)
+- [class OrderType()](#class-OrderType)
+- [class ReportReason()](#class-ReportReason)
+- [async def get\_comments()](#async-def-get\_comments)
+- [async def get\_comments\_lazy()](#async-def-get\_comments\_lazy)
+- [async def send\_comment()](#async-def-send\_comment)
 
 ---
 
@@ -82,8 +99,8 @@ from bilibili_api import comment
 
 | name | type | description |
 | - | - | - |
-| page_index | Union[int, None] | 页码索引，从 1 开始。Defaults to 1. |
-| page_size | Union[int, None] | 每页评论数。设置大于20的数值不会起作用。Defaults to 10. |
+| page_index | int, optional | 页码索引，从 1 开始。Defaults to 1. |
+| page_size | int, optional | 每页评论数。设置大于20的数值不会起作用。Defaults to 10. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -108,7 +125,7 @@ from bilibili_api import comment
 
 | name | type | description |
 | - | - | - |
-| status | Union[bool, None] | 状态, Defaults to True. |
+| status | bool, optional | 状态, Defaults to True. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -122,7 +139,7 @@ from bilibili_api import comment
 
 | name | type | description |
 | - | - | - |
-| status | Union[bool, None] | 状态, Defaults to True. |
+| status | bool, optional | 状态, Defaults to True. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -136,7 +153,7 @@ from bilibili_api import comment
 
 | name | type | description |
 | - | - | - |
-| status | Union[bool, None] | 状态, Defaults to True. |
+| status | bool, optional | 状态, Defaults to True. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -151,25 +168,27 @@ from bilibili_api import comment
 | name | type | description |
 | - | - | - |
 | report_reason | ReportReason | 举报类型枚举 |
-| content | Union[str, None] | 其他举报备注内容仅 reason=ReportReason.OTHER 可用且不能为 None. |
-| Error Code: |  |  |
-| 0: 成功 |  | 成功 |
-| -101: 账号未登录 |  | 账号未登录 |
-| -102: 账号被封停 |  | 账号被封停 |
-| -111: csrf校验失败 |  | csrf校验失败 |
-| -400: 请求错误 |  | 请求错误 |
-| -403: 权限不足 |  | 权限不足 |
-| -404: 无此项 |  | 无此项 |
-| -500: 服务器错误 |  | 服务器错误 |
-| -509: 请求过于频繁 |  | 请求过于频繁 |
-| 12002: 评论区已关闭 |  | 评论区已关闭 |
-| 12006: 没有该评论 |  | 没有该评论 |
-| 12008: 已经举报过了 |  | 已经举报过了 |
-| 12009: 评论主体的type不合法 |  | 评论主体的type不合法 |
-| 12019: 举报过于频繁 |  | 举报过于频繁 |
-| 12077: 举报理由过长或过短 |  | 举报理由过长或过短 |
+| content | str, optional | 其他举报备注内容仅 reason=ReportReason.OTHER 可用且不能为 None. |
 
-**Returns:** None
+**Returns:** dict: 调用 API 返回的结果
+
+
+Error Code:
+0: 成功
+-101: 账号未登录
+-102: 账号被封停
+-111: csrf校验失败
+-400: 请求错误
+-403: 权限不足
+-404: 无此项
+-500: 服务器错误
+-509: 请求过于频繁
+12002: 评论区已关闭
+12006: 没有该评论
+12008: 已经举报过了
+12009: 评论主体的type不合法
+12019: 举报过于频繁
+12077: 举报理由过长或过短
 
 
 
@@ -183,7 +202,7 @@ from bilibili_api import comment
 
 + VIDEO: 视频。
 + ARTICLE: 专栏。
-+ DYNAMIC_DRAW: 画册。
++ DYNAMIC_DRAW: 画册（图文）。
 + DYNAMIC: 动态（画册也属于动态的一种，只不过画册还有一个专门的 ID）。
 + AUDIO：音频。
 + AUDIO_LIST：歌单。
@@ -251,9 +270,9 @@ from bilibili_api import comment
 | - | - | - |
 | oid | int | 资源 ID。 |
 | type_ | CommentsResourceType | 资源类枚举。 |
-| page_index | Union[int, None] | 页码. Defaults to 1. |
-| order | Union[OrderType, None] | 排序方式枚举. Defaults to OrderType.TIME. |
-| credential | Union[Credential, None] | 凭据。Defaults to None. |
+| page_index | int, optional | 页码. Defaults to 1. |
+| order | OrderType, optional | 排序方式枚举. Defaults to OrderType.TIME. |
+| credential | Credential, optional | 凭据。Defaults to None. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -273,9 +292,9 @@ from bilibili_api import comment
 | - | - | - |
 | oid | int | 资源 ID。 |
 | type_ | CommentsResourceType | 资源类枚举。 |
-| offset | Union[str, None] | 偏移量。每次请求可获取下次请求对应的偏移量，类似单向链表。 |
-| order | Union[OrderType, None] | 排序方式枚举. Defaults to OrderType.TIME. |
-| credential | Union[Credential, None] | 凭据。Defaults to None. |
+| offset | str, optional | 偏移量。每次请求可获取下次请求对应的偏移量，类似单向链表。对应返回结果的 `["cursor"]["pagination_reply"]["next_offset"]` |
+| order | OrderType, optional | 排序方式枚举. Defaults to OrderType.TIME. |
+| credential | Credential, optional | 凭据。Defaults to None. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -302,8 +321,8 @@ from bilibili_api import comment
 | text | str | 评论内容。 |
 | oid | str | 资源 ID。 |
 | type_ | CommentsResourceType | 资源类型枚举。 |
-| root | Union[int, None] | 根评论 ID, Defaults to None. |
-| parent | Union[int, None] | 父评论 ID, Defaults to None. |
+| root | int, optional | 根评论 ID, Defaults to None. |
+| parent | int, optional | 父评论 ID, Defaults to None. |
 | credential | Credential | 凭据 |
 
 **Returns:** dict: 调用 API 返回的结果

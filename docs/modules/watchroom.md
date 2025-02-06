@@ -12,6 +12,30 @@ bilibili_api.watchroom
 from bilibili_api import watchroom
 ```
 
+- [class Message()](#class-Message)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+- [class MessageSegment()](#class-MessageSegment)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+- [class MessageType()](#class-MessageType)
+- [class SeasonType()](#class-SeasonType)
+- [class WatchRoom()](#class-WatchRoom)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def close()](#async-def-close)
+  - [async def get\_episode\_id()](#async-def-get\_episode\_id)
+  - [async def get\_info()](#async-def-get\_info)
+  - [def get\_room\_id()](#def-get\_room\_id)
+  - [async def get\_season\_id()](#async-def-get\_season\_id)
+  - [async def join()](#async-def-join)
+  - [async def kickout()](#async-def-kickout)
+  - [async def open()](#async-def-open)
+  - [async def progress()](#async-def-progress)
+  - [async def send()](#async-def-send)
+  - [def set\_episode\_id()](#def-set\_episode\_id)
+  - [def set\_season\_id()](#def-set\_season\_id)
+  - [async def share()](#async-def-share)
+- [async def create()](#async-def-create)
+- [async def match()](#async-def-match)
+
 ---
 
 ## class Message()
@@ -106,7 +130,7 @@ from bilibili_api import watchroom
 
 
 
-### def get_episode_id()
+### async def get_episode_id()
 
 获取番剧剧集 id
 
@@ -139,7 +163,7 @@ from bilibili_api import watchroom
 
 
 
-### def get_season_id()
+### async def get_season_id()
 
 获取番剧季度 id
 

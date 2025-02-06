@@ -5,20 +5,18 @@ bilibili_api.comment
 
 关于资源 ID（oid）的一些示例（{}部分为应该传入的参数）。
 
-+ 视频：AV 号：av{170001}。
-+ 专栏：cv{9762979}。
-+ 动态（画册类型）：{116859542}。
-+ 动态（纯文本）：{497080393649439253}。
-+ 课程：ep{5556}
-+ 小黑屋: ban/{2600321}
++ 视频：AV 号：av{170001} `get_aid() / await get_aid() # for Episode`。
++ 专栏：cv{9762979} `get_cvid()`。
++ 动态/图文：{116859542} `await get_rid()`。
++ 课程：ep{5556} `get_epid()`
++ 小黑屋: ban/{2600321} `get_id()`
 """
 
 from enum import Enum
 from typing import Union, Optional
 
 from .utils.utils import get_api
-from .utils.credential import Credential
-from .utils.network import Api
+from .utils.network import Api, Credential
 from .exceptions.ArgsException import ArgsException
 
 API = get_api("common")
@@ -30,7 +28,7 @@ class CommentResourceType(Enum):
 
     + VIDEO: 视频。
     + ARTICLE: 专栏。
-    + DYNAMIC_DRAW: 画册。
+    + DYNAMIC_DRAW: 画册（图文）。
     + DYNAMIC: 动态（画册也属于动态的一种，只不过画册还有一个专门的 ID）。
     + AUDIO：音频。
     + AUDIO_LIST：歌单。
@@ -294,6 +292,9 @@ class Comment:
             report_reason (ReportReason): 举报类型枚举
 
             content (str, optional): 其他举报备注内容仅 reason=ReportReason.OTHER 可用且不能为 None.
+
+        Returns:
+            dict: 调用 API 返回的结果
 
         Error Code:
             0: 成功

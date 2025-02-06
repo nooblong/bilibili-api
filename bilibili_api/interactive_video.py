@@ -16,18 +16,14 @@ import zipfile
 from urllib import parse
 from random import randint as rand
 from asyncio import CancelledError, create_task
-from typing import List, Tuple, Union, Callable, Coroutine
+from typing import List, Tuple, Union, Coroutine
 
-import httpx
+from .exceptions import ApiException
 
-from bilibili_api.exceptions import ApiException
-
-from . import settings
 from .video import Video, VideoDownloadURLDataDetecter
 from .utils.utils import get_api
 from .utils.AsyncEvent import AsyncEvent
-from .utils.credential import Credential
-from .utils.network import Api, get_session, get_buvid3
+from .utils.network import HEADERS, Api, get_client, get_buvid, Credential
 
 API = get_api("interactive_video")
 
@@ -603,7 +599,7 @@ class InteractiveVideo(Video):
         api = API["operate"]["savestory"]
         form_data = {"preview": "0", "data": story_tree, "csrf": credential.bili_jct}
         headers = {
-            "User-Agent": "Mozilla/5.0",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
             "Referer": "https://member.bilibili.com",
             "Content-Encoding": "gzip, deflate, br",
             "Content-Type": "application/x-www-form-urlencoded",
@@ -661,7 +657,7 @@ class InteractiveVideo(Video):
             "screen": 0,
             "platform": "pc",
             "choices": "",
-            "buvid": await get_buvid3(),
+            "buvid": (await get_buvid())[0],
         }
         if edge_id is not None:
             params["edge_id"] = edge_id
@@ -757,8 +753,8 @@ class InteractiveVideoDownloader(AsyncEvent):
     def __init__(
         self,
         video: InteractiveVideo,
-        out: str = "",
-        self_download_func: Union[Coroutine, None] = None,
+        out: str,
+        self_download_func: Coroutine = None,
         downloader_mode: InteractiveVideoDownloaderMode = InteractiveVideoDownloaderMode.IVI,
         stream_detecting_params: dict = {},
         fetching_nodes_retry_times: int = 3,
@@ -769,7 +765,7 @@ class InteractiveVideoDownloader(AsyncEvent):
 
             out                (str)                           : 输出文件地址 (如果模式为 NODE_VIDEOS/NO_PACKAGING 则此参数表示所有节点视频的存放目录)
 
-            self_download_func (Coroutine | None)              : 自定义下载函数（需 async 函数）
+            self_download_func (Coroutine)                     : 自定义下载函数（需 async 函数）. Defaults to None.
 
             downloader_mode    (InteractiveVideoDownloaderMode): 下载模式
 
@@ -778,13 +774,12 @@ class InteractiveVideoDownloader(AsyncEvent):
             fetching_nodes_retry_times (int)                   : 获取节点时的最大重试次数
 
         `self_download_func` 函数应接受两个参数（第一个是下载 URL，第二个是输出地址（精确至文件名））
+
+        为保证视频能被成功下载，请在自定义下载函数请求的时候加入 `bilibili_api.HEADERS` 头部。
         """
         super().__init__()
         self.__video = video
-        if self_download_func == None:
-            self.__download_func = self.__download
-        else:
-            self.__download_func = self_download_func
+        self.__download_func = self_download_func if self_download_func else self.__download
         self.__task = None
         self.__out = out
         self.__mode = downloader_mode
@@ -792,45 +787,36 @@ class InteractiveVideoDownloader(AsyncEvent):
         self.__fetching_nodes_retry_times = fetching_nodes_retry_times
 
     async def __download(self, url: str, out: str) -> None:
-        sess = get_session()
-        async with sess.stream(
-            "GET",
-            url,
-            headers={
-                "User-Agent": "Mozilla/5.0",
-                "Referer": "https://www.bilibili.com",
-            },
-        ) as resp:
-            resp.raise_for_status()
+        dwn_id = await get_client().download_create(url=url, headers=HEADERS)
 
-            if os.path.exists(out):
-                os.remove(out)
+        if os.path.exists(out):
+            os.remove(out)
 
-            parent = os.path.dirname(out)
-            if not os.path.exists(parent):
-                os.mkdir(parent)
+        parent = os.path.dirname(out)
+        if not os.path.exists(parent):
+            os.mkdir(parent)
 
-            self.dispatch("DOWNLOAD_START", {"url": url, "out": out})
+        self.dispatch("DOWNLOAD_START", {"url": url, "out": out})
 
-            all_length = int(resp.headers["Content-Length"])
-            parts = all_length // 1024 + (1 if all_length % 1024 != 0 else 0)
-            cnt = 0
-            start_time = time.perf_counter()
+        bts = 0
+        tot = get_client().download_content_length(dwn_id)
+        start_time = time.perf_counter()
 
-            with open(out, "wb") as f:
-                async for chunk in resp.aiter_bytes(1024):
-                    cnt += 1
-                    self.dispatch(
-                        "DOWNLOAD_PART",
-                        {
-                            "done": cnt,
-                            "total": parts,
-                            "time": int(time.perf_counter() - start_time),
-                        },
-                    )
-                    f.write(chunk)
+        with open(out, "wb") as f:
+            while True:
+                bts += f.write(await get_client().download_chunk(dwn_id))
+                self.dispatch(
+                    "DOWNLOAD_PART",
+                    {
+                        "done": bts,
+                        "total": tot,
+                        "time": int(time.perf_counter() - start_time),
+                    },
+                )
+                if bts == tot:
+                    break
 
-            self.dispatch("DOWNLOAD_SUCCESS")
+        self.dispatch("DOWNLOAD_SUCCESS")
 
     async def __main(self) -> None:
         # 初始化
@@ -910,10 +896,6 @@ class InteractiveVideoDownloader(AsyncEvent):
                     break
                 except Exception as e:
                     retry -= 1
-                    if settings.request_log:
-                        settings.logger.info(
-                            "第 %d 次重试", self.__fetching_nodes_retry_times - retry
-                        )
                     if retry < 0:
                         raise ApiException("重试达到最大次数")
 
@@ -1070,10 +1052,6 @@ class InteractiveVideoDownloader(AsyncEvent):
                     break
                 except Exception as e:
                     retry -= 1
-                    if settings.request_log:
-                        settings.logger.info(
-                            "第 %d 次重试", self.__fetching_nodes_retry_times - retry
-                        )
                     if retry < 0:
                         raise ApiException("重试达到最大次数")
 
@@ -1294,10 +1272,6 @@ class InteractiveVideoDownloader(AsyncEvent):
                     break
                 except Exception as e:
                     retry -= 1
-                    if settings.request_log:
-                        settings.logger.info(
-                            "第 %d 次重试", self.__fetching_nodes_retry_times - retry
-                        )
                     if retry < 0:
                         raise ApiException("重试达到最大次数")
 

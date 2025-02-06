@@ -10,6 +10,10 @@ bilibili_api.festival
 from bilibili_api import festival
 ```
 
+- [class Festival()](#class-Festival)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def get\_info()](#async-def-get\_info)
+
 ---
 
 ## class Festival()
@@ -29,7 +33,7 @@ from bilibili_api import festival
 | name | type | description |
 | - | - | - |
 | fes_id | str | 节日专门页编号 |
-| credential | Union[Credential, None] | 凭据类. Defaults to None. |
+| credential | Credential, optional | 凭据类. Defaults to None. |
 
 
 ### async def get_info()

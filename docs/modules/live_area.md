@@ -10,6 +10,14 @@ bilibili_api.live_area
 from bilibili_api import live_area
 ```
 
+- [class LiveRoomOrder()](#class-LiveRoomOrder)
+- [async def fetch\_live\_area\_data()](#async-def-fetch\_live\_area\_data)
+- [def get\_area\_info\_by\_id()](#def-get\_area\_info\_by\_id)
+- [def get\_area\_info\_by\_name()](#def-get\_area\_info\_by\_name)
+- [def get\_area\_list()](#def-get\_area\_list)
+- [def get\_area\_list\_sub()](#def-get\_area\_list\_sub)
+- [async def get\_list\_by\_area()](#async-def-get\_list\_by\_area)
+
 ---
 
 ## class LiveRoomOrder()
@@ -21,6 +29,22 @@ from bilibili_api import live_area
 - RECOMMEND: 综合
 - NEW: 最新
 
+
+
+
+---
+
+## async def fetch_live_area_data()
+
+抓取直播分区数据
+
+因为直播分区容易出现变动，故不像视频分区一样直接使用文件保存，而是每次查询时先抓取一遍。
+
+一次运行整个程序仅需执行一次此函数即可，无需多次调用。
+
+
+
+**Returns:** None
 
 
 

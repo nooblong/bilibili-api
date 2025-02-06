@@ -13,10 +13,9 @@ from typing import List, Union, Tuple
 import jwt
 
 from .utils.utils import get_api, join, raise_for_statement
-from .utils.credential import Credential
 from .utils.user_render_data import get_user_dynamic_render_data
 from .exceptions import ResponseCodeException
-from .utils.network import get_session, Api, HEADERS
+from .utils.network import Api, HEADERS, Credential
 from .channel_series import ChannelOrder, ChannelSeries, ChannelSeriesType
 
 API = get_api("user")
@@ -609,7 +608,7 @@ class User:
             await Api(**api, credential=self.credential).update_params(**params).result
         )
         # card 字段自动转换成 JSON。
-        if "cards" in data:
+        if data.get("cards"):
             for card in data["cards"]:
                 card["card"] = json.loads(card["card"])
                 card["extend_json"] = json.loads(card["extend_json"])
@@ -714,17 +713,7 @@ class User:
         """
         api = API["info"]["all_followings"]
         params = {"mid": self.__uid}
-        sess = get_session()
-        data = json.loads(
-            (
-                await sess.get(
-                    url=api["url"],
-                    params=params,
-                    cookies=self.credential.get_cookies(),
-                    headers=HEADERS,
-                )
-            ).text
-        )
+        data = await Api(**api).update_params(**params).request(raw=True)
         return data["card"]["attentions"]
 
     async def get_followers(
@@ -928,7 +917,6 @@ class User:
             .result
         )
         items = res["items_lists"]["page"]["total"]
-        time.sleep(0.5)
         if items == 0:
             items = 1
         params["page_size"] = items
@@ -1028,6 +1016,9 @@ class User:
     async def get_access_id(self) -> str:
         """
         获取用户 access_id 如未过期直接从本地获取 防止重复请求
+
+        Returns:
+            str: access_id
         """
         if self.__access_id is not None:
             if not await self.is_access_id_expired():
@@ -1041,6 +1032,9 @@ class User:
     async def is_access_id_expired(self) -> bool:
         """
         判断用户 access_id 是否过期 access_id 为 JWT 解析 Payload 内容判断是否有效
+
+        Returns:
+            bool: 是否有效
         """
         if self.__access_id is None:
             return False

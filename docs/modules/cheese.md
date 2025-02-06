@@ -18,6 +18,37 @@ bilibili_api.cheese
 from bilibili_api import cheese
 ```
 
+- [class CheeseList()](#class-CheeseList)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def get\_list()](#async-def-get\_list)
+  - [async def get\_list\_raw()](#async-def-get\_list\_raw)
+  - [async def get\_meta()](#async-def-get\_meta)
+  - [async def get\_season\_id()](#async-def-get\_season\_id)
+  - [async def set\_ep\_id()](#async-def-set\_ep\_id)
+  - [async def set\_season\_id()](#async-def-set\_season\_id)
+- [class CheeseVideo()](#class-CheeseVideo)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def get\_aid()](#async-def-get\_aid)
+  - [async def get\_cheese()](#async-def-get\_cheese)
+  - [async def get\_cid()](#async-def-get\_cid)
+  - [async def get\_danmaku\_view()](#async-def-get\_danmaku\_view)
+  - [async def get\_danmaku\_xml()](#async-def-get\_danmaku\_xml)
+  - [async def get\_danmakus()](#async-def-get\_danmakus)
+  - [async def get\_download\_url()](#async-def-get\_download\_url)
+  - [def get\_epid()](#def-get\_epid)
+  - [async def get\_meta()](#async-def-get\_meta)
+  - [async def get\_pages()](#async-def-get\_pages)
+  - [async def get\_pay\_coins()](#async-def-get\_pay\_coins)
+  - [async def get\_pbp()](#async-def-get\_pbp)
+  - [async def get\_stat()](#async-def-get\_stat)
+  - [async def has\_favoured()](#async-def-has\_favoured)
+  - [async def has\_liked()](#async-def-has\_liked)
+  - [async def like()](#async-def-like)
+  - [async def pay\_coin()](#async-def-pay\_coin)
+  - [async def send\_danmaku()](#async-def-send\_danmaku)
+  - [async def set\_epid()](#async-def-set\_epid)
+  - [async def set\_favorite()](#async-def-set\_favorite)
+
 ---
 
 ## class CheeseList()
@@ -198,9 +229,9 @@ from bilibili_api import cheese
 
 | name | type | description |
 | - | - | - |
-| date | Union[datetime.Date, None] | 指定日期后为获取历史弹幕，精确到年月日。Defaults to None. |
-| from_seg | Union[int, None] | 从第几段开始(0 开始编号，None 为从第一段开始，一段 6 分钟). Defaults to None. |
-| to_seg | Union[int, None] | 到第几段结束(0 开始编号，None 为到最后一段，包含编号的段，一段 6 分钟). Defaults to None. |
+| date | datetime.Date \| None, optional | 指定日期后为获取历史弹幕，精确到年月日。Defaults to None. |
+| from_seg | int, optional | 从第几段开始(0 开始编号，None 为从第一段开始，一段 6 分钟). Defaults to None. |
+| to_seg | int, optional | 到第几段结束(0 开始编号，None 为到最后一段，包含编号的段，一段 6 分钟). Defaults to None. |
 
 **Returns:** List[Danmaku]: Danmaku 类的列表。
 
@@ -318,7 +349,7 @@ from bilibili_api import cheese
 
 | name | type | description |
 | - | - | - |
-| status | Union[bool, None] | 点赞状态。Defaults to True. |
+| status | bool, optional | 点赞状态。Defaults to True. |
 
 **Returns:** dict: 调用 API 返回的结果。
 
@@ -332,8 +363,8 @@ from bilibili_api import cheese
 
 | name | type | description |
 | - | - | - |
-| num | Union[int, None] | 硬币数量，为 1 ~ 2 个。Defaults to 1. |
-| like | Union[bool, None] | 是否同时点赞。Defaults to False. |
+| num | int, optional | 硬币数量，为 1 ~ 2 个。Defaults to 1. |
+| like | bool, optional | 是否同时点赞。Defaults to False. |
 
 **Returns:** dict: 调用 API 返回的结果。
 
@@ -374,8 +405,8 @@ from bilibili_api import cheese
 
 | name | type | description |
 | - | - | - |
-| add_media_ids | Union[List[int], None] | 要添加到的收藏夹 ID. Defaults to []. |
-| del_media_ids | Union[List[int], None] | 要移出的收藏夹 ID. Defaults to []. |
+| add_media_ids | List[int], optional | 要添加到的收藏夹 ID. Defaults to []. |
+| del_media_ids | List[int], optional | 要移出的收藏夹 ID. Defaults to []. |
 
 **Returns:** dict: 调用 API 返回结果。
 

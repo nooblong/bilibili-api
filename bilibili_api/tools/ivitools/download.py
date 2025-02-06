@@ -4,17 +4,19 @@ ivitools.download
 下载互动视频
 """
 
+import asyncio
 import os
 
 from colorama import Fore
 
-from bilibili_api import sync, interactive_video, video
-
+from bilibili_api import HEADERS, interactive_video, sync, video
 
 def download_interactive_video(bvid: str, out: str):
     ivideo = interactive_video.InteractiveVideo(bvid)
     downloader = interactive_video.InteractiveVideoDownloader(
-        ivideo, out, stream_detecting_params={"codecs": [video.VideoCodecs.AVC]}
+        ivideo,
+        out,
+        stream_detecting_params={"codecs": [video.VideoCodecs.AVC]},
     )
 
     @downloader.on("START")
@@ -28,6 +30,14 @@ def download_interactive_video(bvid: str, out: str):
     @downloader.on("PREPARE_DOWNLOAD")
     async def on_prepare_download(data):
         print(f'Start download the video for cid {data["cid"]}')
+
+    @downloader.on("DOWNLOAD_PART")
+    async def on_download_part(data):
+        print(f'{data["done"]} / {data["total"]}', end="\r")
+
+    @downloader.on("DOWNLOAD_SUCCESS")
+    async def on_download_success(adta):
+        print()
 
     @downloader.on("PACKAGING")
     async def on_packaing(data):

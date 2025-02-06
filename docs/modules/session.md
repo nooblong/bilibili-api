@@ -10,6 +10,28 @@ bilibili_api.session
 from bilibili_api import session
 ```
 
+- [class Event()](#class-Event)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+- [class EventType()](#class-EventType)
+- [class Session()](#class-Session)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [def close()](#def-close)
+  - [def get\_status()](#def-get\_status)
+  - [def on()](#def-on)
+  - [async def reply()](#async-def-reply)
+  - [async def run()](#async-def-run)
+- [async def fetch\_session\_msgs()](#async-def-fetch\_session\_msgs)
+- [async def get\_at()](#async-def-get\_at)
+- [async def get\_likes()](#async-def-get\_likes)
+- [async def get\_replies()](#async-def-get\_replies)
+- [async def get\_session\_detail()](#async-def-get\_session\_detail)
+- [async def get\_session\_settings()](#async-def-get\_session\_settings)
+- [async def get\_sessions()](#async-def-get\_sessions)
+- [async def get\_system\_messages()](#async-def-get\_system\_messages)
+- [async def get\_unread\_messages()](#async-def-get\_unread\_messages)
+- [async def new\_sessions()](#async-def-new\_sessions)
+- [async def send\_msg()](#async-def-send\_msg)
+
 ---
 
 ## class Event()
@@ -166,8 +188,8 @@ from bilibili_api import session
 | name | type | description |
 | - | - | - |
 | credential | Credential | 凭据类. |
-| last_id | Union[Optional,, None] | 最后一个 ID |
-| at_time | Union[Optional,, None] | 最后一个点赞发送时间 |
+| last_id | Optional, int | 最后一个 ID |
+| at_time | Optional, int | 最后一个点赞发送时间 |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -184,8 +206,8 @@ from bilibili_api import session
 | name | type | description |
 | - | - | - |
 | credential | Credential | 凭据类. |
-| last_id | Union[Optional,, None] | 最后一个 ID |
-| like_time | Union[Optional,, None] | 最后一个点赞发送时间 |
+| last_id | Optional, int | 最后一个 ID |
+| like_time | Optional, int | 最后一个点赞发送时间 |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -202,8 +224,8 @@ from bilibili_api import session
 | name | type | description |
 | - | - | - |
 | credential | Credential | 凭据类. |
-| last_reply_id | Union[Optional,, None] | 最后一个评论的 ID |
-| reply_time | Union[Optional,, None] | 最后一个评论发送时间 |
+| last_reply_id | Optional, int | 最后一个评论的 ID |
+| reply_time | Optional, int | 最后一个评论发送时间 |
 
 **Returns:** dict: 调用 API 返回的结果
 

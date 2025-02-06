@@ -13,6 +13,7 @@
 [![Testing](https://github.com/Nemo2011/bilibili-api/actions/workflows/testing.yml/badge.svg?branch=dev)](https://github.com/Nemo2011/bilibili-api/actions/workflows/testing.yml)
 
 **:warning: 接口可能改动，请及时更新最新版 [![Stable Version](https://img.shields.io/pypi/v/bilibili-api-python?label=stable)][pypi]**
+
 </div>
 
 **注意事项：使用此模块时请仅用于学习和测试，禁止用于非法用途及其他恶劣的社区行为如：恶意刷屏、辱骂黄暴、各种形式的滥用等，违规此模块许可证 `GNU General Public License Version 3` 及此条注意事项而产生的任何后果自负，模块的所有贡献者不负任何责任。**
@@ -38,8 +39,10 @@ Github 仓库：[https://github.com/nemo2011/bilibili-api](https://github.com/ne
 - 可使用代理，绕过 b 站风控策略。
 - 全面支持 BV 号（bvid），同时也兼容 AV 号（aid）。
 - 调用简便，函数命名易懂，代码注释详细。
-- 不仅仅是官方提供的 API！还附加：AV 号与 BV 号互转[[2]](#脚注)、连接直播弹幕 Websocket 服务器、视频弹幕反查、下载弹幕、字幕文件、专栏内容爬取等。
+- 不仅仅是官方提供的 API！还附加：AV 号与 BV 号互转[[2]](#脚注)、连接直播弹幕 Websocket 服务器、视频弹幕反查、下载弹幕、字幕文件[[3]](#脚注)、专栏内容爬取、cookies 刷新等[[4]](#脚注)。
+- 支持采用各种手段避免触发反爬虫风控[[5]](#脚注)。
 - **全部是异步操作**。
+- 默认支持 `aiohttp` / `httpx` / `curl_cffi`。
 
 # 快速上手
 
@@ -56,6 +59,18 @@ $ pip3 install bilibili-api-dev
 $ pip3 install git+https://github.com/Nemo2011/bilibili-api.git@dev
 ```
 
+然后需要**自行安装**一个支持异步的第三方请求库，如 `aiohttp` / `httpx` / `curl_cffi`。
+
+```
+# aiohttp
+$ pip3 install aiohttp
+
+# httpx
+$ pip3 install httpx
+
+# curl_cffi
+$ pip3 install "curl_cffi>=0.8.1b9"
+```
 
 接下来我们来获取视频的播放量等信息：
 
@@ -74,7 +89,7 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.get_event_loop().run_until_complete(main())
+    asyncio.run(main())
 
 ```
 
@@ -117,7 +132,7 @@ async def main() -> None:
     await v.like(True)
 
 if __name__ == '__main__':
-    asyncio.get_event_loop().run_until_complete(main())
+    asyncio.run(main())
 ```
 
 如果没有报错，就代表调用 API 成功，你可以到视频页面确认是不是调用成功了。
@@ -134,14 +149,17 @@ if __name__ == '__main__':
 
 如果你仍然想继续使用同步代码，请参考 [同步执行异步代码](https://nemo2011.github.io/bilibili-api/#/sync-executor)
 
-以下为 `API` 关于异步请求库使用的详细信息：
+# 模块使用的请求库
 
-| Feature | 同步 | 异步 | aiohttp | httpx | 备注 |
-| ------ | ---- | ----- | ------ | ------ | ---- |
-| `LiveDanmaku` & `VideoOnlineMonitor` | :x: | :white_check_mark: | :white_check_mark: | :x: | httpx 暂不支持 `WebSocket` |
-| `login` | :white_check_mark: | :x: | :x: | :white_check_mark: | 旧版登录，仅支持同步请求 |
-| `login_v2` | :x: | :white_check_mark: | :white_check_mark: | :white_check_mark: | 新版登录 |
-| other | :x: | :white_check_mark: | :white_check_mark: | :white_check_mark: | |
+模块在允许的条件下，按照 `curl_cffi` `aiohttp` `httpx` 的优先级选择第三方请求库。
+
+如果想要指定请求库，可以利用 `select_client` 进行切换。
+
+``` python
+select_client("curl_cffi") # 选择 curl_cffi
+select_client("aiohttp") # 选择 aiohttp
+select_client("httpx") # 选择 httpx，不支持 WebSocket
+```
 
 # FA♂Q
 
@@ -171,12 +189,16 @@ A: 你的请求速度太快了。造成请求速度过快的原因可能是你�
 这种情况下，你的 IP 会暂时被封禁而无法使用，你可以设置代理绕过。
 
 ```python
-from bilibili_api import settings
+from bilibili_api import request_settings
 
-settings.proxy = "http://your-proxy.com" # 里头填写你的代理地址
+request_settings.set_proxy("http://your-proxy.com") # 里头填写你的代理地址
 
-settings.proxy = "http://username:password@your-proxy.com" # 如果需要用户名、密码
+request_settings.set_proxy("http://username:password@your-proxy.com") # 如果需要用户名、密码
 ```
+
+**Q: 我想在项目中使用这个模块，但是我的项目使用其他请求库进行网络请求（如 `pycurl`），想要模块也同时使用它（们），可以吗？**
+
+A: 可以，但是你可能要自己动手实现模块和具体请求库的适配。详见 [自定义请求库](https://nemo2011.github.io/bilibili-api/#/request_client)
 
 **Q: 怎么没有我想要的功能？**
 
@@ -194,9 +216,11 @@ A: 由于该模块比较特殊，是爬虫模块，如果 b 站的接口变更�
 
 # 脚注
 
-+ \[1\] 这里只列出一部分，请以实际 API 为准。
-+ \[2\] 代码来源：<https://www.zhihu.com/question/381784377/answer/1099438784>
-
+- \[1\] 这里只列出一部分，请以实际 API 为准。
+- \[2\] 代码来源：<https://www.zhihu.com/question/381784377/answer/1099438784> (WTFPL)
+- \[3\] 部分代码来源：<https://github.com/m13253/danmaku2ass> (GPLv3) <https://github.com/ewwink/python-srt2ass>
+- \[4\] 思路来源：<https://socialsisteryi.github.io/bilibili-API-collect/docs/login/cookie_refresh.html> (CC-BY-NC 4.0)
+- \[5\] 大量思路来源 <https://socialsisteryi.github.io/bilibili-API-collect> 中相关讨论。
 
 [docs]: https://nemo2011.github.io/bilibili-api
 [docs-github]: https://github.com/nemo2011/bilibili-api/tree/main/docs

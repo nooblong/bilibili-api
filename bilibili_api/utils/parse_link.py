@@ -4,15 +4,11 @@ bilibili_api.utils.parse_link
 链接资源解析。
 """
 
-import re
-import json
 from enum import Enum
 from typing import Tuple, Union, Literal
 
-import httpx
 from yarl import URL
 
-from .network import Api
 from ..game import Game
 from ..manga import Manga
 from ..topic import Topic
@@ -24,7 +20,7 @@ from ..dynamic import Dynamic
 from .short import get_real_url
 from ..note import Note, NoteType
 from ..black_room import BlackRoom
-from .credential import Credential
+from .network import Credential, Api
 from ..audio import Audio, AudioList
 from ..bangumi import Bangumi, Episode
 from ..article import Article, ArticleList
@@ -502,9 +498,7 @@ async def parse_space_favorite_list(
                     api = get_api("favorite-list")["info"]["list_list"]
                     params = {"up_mid": uid, "type": 2}
                     favorite_lists = await (
-                        Api(**api, credential=credential)
-                        .update_params(**params)
-                        .result
+                        Api(**api, credential=credential).update_params(**params).result
                     )
 
                     if favorite_lists == None:

@@ -14,19 +14,20 @@ from urllib.parse import unquote
 from typing import List, Union, TypeVar, overload
 
 import yaml
-import httpx
 from yarl import URL
 from bs4 import BeautifulSoup, element
 
-from .utils.initial_state import get_initial_state, get_initial_state_sync
+from .utils.initial_state import get_initial_state
 from .utils.utils import get_api, raise_for_statement
-from .utils.credential import Credential
-from .utils.network import Api
+from .utils.network import Api, Credential
 from .exceptions.NetworkException import ApiException, NetworkException
 from .utils import cache_pool
 
 from . import dynamic
+from . import opus
 from .note import Note, NoteType
+
+import html
 
 API = get_api("article")
 
@@ -168,22 +169,35 @@ class Article:
         """
         将专栏转为对应动态（评论、点赞等数据专栏/动态/图文共享）
 
+        专栏完全包含于动态，因此此函数绝对成功。
+
         转换后可查看“赞和转发”列表。
 
         Returns:
             Dynamic: 动态实例
         """
         if cache_pool.article2dynamic.get(self.get_cvid()) is None:
-            cache_pool.article2dynamic[self.get_cvid()] = (await self.get_all())[
-                "readInfo"
-            ]["dyn_id_str"]
-            cache_pool.dynamic2article[cache_pool.article2dynamic[self.get_cvid()]] = (
-                self.get_cvid()
-            )
-        if cache_pool.dynamic_is_article.get(cache_pool.article2dynamic[self.get_cvid()]) is None:
-            cache_pool.dynamic_is_article[cache_pool.article2dynamic[self.get_cvid()]] = True
+            await self.get_all()
         return dynamic.Dynamic(
             dynamic_id=cache_pool.article2dynamic[self.get_cvid()],
+            credential=self.credential,
+        )
+
+    async def turn_to_opus(self) -> "opus.Opus":
+        """
+        将专栏转为对应图文（评论、点赞等数据专栏/动态/图文共享）
+
+        专栏完全包含于图文，因此此函数绝对成功。
+
+        转换后可查看“赞和转发”列表。
+
+        Returns:
+            Opus: 动态实例
+        """
+        if cache_pool.article2dynamic.get(self.get_cvid()) is None:
+            await self.get_all()
+        return opus.Opus(
+            opus_id=cache_pool.article2dynamic[self.get_cvid()],
             credential=self.credential,
         )
 
@@ -195,9 +209,7 @@ class Article:
             bool: 是否为笔记
         """
         if cache_pool.article_is_note.get(self.get_cvid()) is None:
-            cache_pool.article_is_note[self.get_cvid()] = (await self.get_all())[
-                "readInfo"
-            ]["category"]["id"] in [41, 42]
+            await self.get_all()
         return cache_pool.article_is_note[self.get_cvid()]
 
     def turn_to_note(self) -> "Note":
@@ -439,7 +451,7 @@ class Article:
                                     node = ImageNode()
                                     node_list.append(node)
 
-                                    node.url = "https:" + e.find("img").attrs["data-src"]  # type: ignore
+                                    node.url = e.find("img").attrs["data-src"]  # type: ignore
 
                                     figcaption_el: BeautifulSoup = e.find("figcaption")  # type: ignore
 
@@ -451,7 +463,7 @@ class Article:
                                 node = ImageNode()
                                 node_list.append(node)
 
-                                node.url = "https:" + e.find("img").attrs["data-src"]  # type: ignore
+                                node.url = e.find("img").attrs["data-src"]  # type: ignore
 
                                 figcaption_el: BeautifulSoup = e.find("figcaption")  # type: ignore
 
@@ -574,6 +586,17 @@ class Article:
                     f"https://www.bilibili.com/read/cv{self.__cvid}/?jump_opus=1"
                 )
             )[0]
+            cache_pool.article2dynamic[self.__cvid] = self.__get_all_data["readInfo"][
+                "dyn_id_str"
+            ]
+            cache_pool.dynamic2article[cache_pool.article2dynamic[self.__cvid]] = (
+                self.__cvid
+            )
+            cache_pool.dynamic_is_article[cache_pool.article2dynamic[self.__cvid]] = True
+            cache_pool.dynamic_is_opus[cache_pool.article2dynamic[self.__cvid]] = True
+            cache_pool.article_is_note[self.get_cvid()] = self.__get_all_data["readInfo"][
+                "category"
+            ]["id"] in [41, 42]
         return self.__get_all_data
 
     async def set_like(self, status: bool = True) -> dict:
@@ -849,7 +872,7 @@ class TextNode(Node):
         txt = txt.replace("\t", " ")
         txt = txt.replace(" ", "&emsp;")
         txt = txt.replace(chr(160), "&emsp;")
-        special_chars = ["\\", "*", "$", "<", ">", "|"]
+        special_chars = ["\\", "*", "$", "<", ">", "|", "~", "_"]
         for c in special_chars:
             txt = txt.replace(c, "\\" + c)
         return txt
@@ -897,9 +920,11 @@ class CodeNode(Node):
         self.lang = ""
 
     def markdown(self):
+        self.code = html.unescape(self.code)
         return f"```{self.lang if self.lang else ''}\n{self.code}\n```\n\n"
 
     def json(self):
+        self.code = html.unescape(self.code)
         return {"type": "CodeNode", "code": self.code, "lang": self.lang}
 
 

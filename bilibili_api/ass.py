@@ -13,11 +13,36 @@ from .video import Video
 from .bangumi import Episode
 from .cheese import CheeseVideo
 from .utils.srt2ass import srt2ass
-from .utils.json2srt import json2srt
-from .utils.credential import Credential
 from .utils.danmaku2ass import Danmaku2ASS
-from .utils.network import Api
+from .utils.network import Api, Credential
 from .exceptions.ArgsException import ArgsException
+
+
+def json2srt(input_path: str, output_path: str):
+    data = json.load(open(input_path, "r"))
+    with open(output_path, "w+") as file:
+        for cnt, comment in enumerate(data["body"]):
+            file.write(
+                "{}\n{}:{}:{},{} --> {}:{}:{},{}\n{}\n\n".format(
+                    cnt + 1,
+                    str(int(comment["from"]) // 3600).zfill(2),
+                    str(int(comment["from"]) // 60 % 60).zfill(2),
+                    str(int(comment["from"]) % 60).zfill(2),
+                    str(
+                        int(round(comment["from"] - int(comment["from"]), 2) * 100)
+                    ).zfill(2),
+                    str(int(comment["to"] - 0.01) // 3600).zfill(2),
+                    str(int(comment["to"] - 0.01) // 60 % 60).zfill(2),
+                    str(int(comment["to"] - 0.01) % 60).zfill(2),
+                    str(
+                        int(
+                            round(comment["to"] - 0.01 - int(comment["to"] - 0.01), 2)
+                            * 100
+                        )
+                    ).zfill(2),
+                    comment["content"],
+                )
+            )
 
 
 def export_ass_from_xml(

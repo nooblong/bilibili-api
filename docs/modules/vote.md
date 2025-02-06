@@ -12,6 +12,20 @@ bilibili_api.vote
 from bilibili_api import vote
 ```
 
+- [class Vote()](#class-Vote)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def get\_info()](#async-def-get\_info)
+  - [async def get\_title()](#async-def-get\_title)
+  - [def get\_vote\_id()](#def-get\_vote\_id)
+  - [async def update\_vote()](#async-def-update\_vote)
+- [class VoteChoices()](#class-VoteChoices)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [def add\_choice()](#def-add\_choice)
+  - [def get\_choices()](#def-get\_choices)
+  - [def remove\_choice()](#def-remove\_choice)
+- [class VoteType()](#class-VoteType)
+- [async def create\_vote()](#async-def-create\_vote)
+
 ---
 
 ## class Vote()
@@ -35,17 +49,6 @@ from bilibili_api import vote
 
 
 ### async def get_info()
-
-获取投票详情
-
-
-
-**Returns:** dict: 调用 API 返回的结果
-
-
-
-
-### def get_info_sync()
 
 获取投票详情
 
@@ -92,7 +95,7 @@ from bilibili_api import vote
 | duration | int | 投票持续秒数 常用 |
 | choices | VoteChoices | 投票选项 |
 | credential | Credential | Credential 枚举类 |
-| desc | Union[str], optiona, None] | 投票描述. Defaults to None. |
+| desc | Optional[str], optional | 投票描述. Defaults to None. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -122,7 +125,7 @@ from bilibili_api import vote
 | name | type | description |
 | - | - | - |
 | desc | str | 选项描述 |
-| image | Union[str, None] | 选项的图片链接，用于图片投票。支持 Picture 类. Defaults to None. |
+| image | str, Picture, optional | 选项的图片链接，用于图片投票。支持 Picture 类. Defaults to None. |
 
 **Returns:** None
 
@@ -181,7 +184,7 @@ from bilibili_api import vote
 | duration | int | 投票持续秒数 常用 |
 | choices | VoteChoices | 投票选项 |
 | credential | Credential | Credential |
-| desc | Union[str], optiona, None] | 投票描述. Defaults to None. |
+| desc | Optional[str], optional | 投票描述. Defaults to None. |
 
 **Returns:** Vote: Vote 类
 

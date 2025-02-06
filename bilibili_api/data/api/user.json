@@ -46,6 +46,7 @@
       "method": "GET",
       "verify": false,
       "wbi": true,
+      "wbi2": true,
       "params": {
         "mid": "int: uid"
       },
@@ -132,7 +133,6 @@
       "verify": false,
       "wbi": true,
       "wbi2": true,
-      "bili_ticket": true,
       "params": {
         "mid": "int: uid",
         "ps": "const int: 30",
@@ -360,7 +360,7 @@
       "comment": "用户浏览历史记录"
     },
     "channel_list": {
-      "url": "https://api.bilibili.com/x/polymer/space/seasons_series_list",
+      "url": "https://api.bilibili.com/x/polymer/web-space/seasons_series_list",
       "method": "GET",
       "verify": false,
       "params": {
@@ -383,7 +383,7 @@
       "comment": "查看列表内视频（旧版）"
     },
     "channel_video_season": {
-      "url": "https://api.bilibili.com/x/polymer/space/seasons_archives_list",
+      "url": "https://api.bilibili.com/x/polymer/web-space/seasons_archives_list",
       "method": "GET",
       "verify": false,
       "params": {

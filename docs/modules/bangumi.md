@@ -16,6 +16,83 @@ bilibili_api.bangumi
 from bilibili_api import bangumi
 ```
 
+- [class Bangumi()](#class-Bangumi)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def get\_episode\_list()](#async-def-get\_episode\_list)
+  - [async def get\_episodes()](#async-def-get\_episodes)
+  - [async def get\_long\_comment\_list()](#async-def-get\_long\_comment\_list)
+  - [async def get\_media\_id()](#async-def-get\_media\_id)
+  - [async def get\_meta()](#async-def-get\_meta)
+  - [async def get\_overview()](#async-def-get\_overview)
+  - [async def get\_raw()](#async-def-get\_raw)
+  - [async def get\_season\_id()](#async-def-get\_season\_id)
+  - [async def get\_short\_comment\_list()](#async-def-get\_short\_comment\_list)
+  - [async def get\_stat()](#async-def-get\_stat)
+  - [async def get\_up\_info()](#async-def-get\_up\_info)
+  - [async def set\_media\_id()](#async-def-set\_media\_id)
+  - [async def set\_ssid()](#async-def-set\_ssid)
+- [class BangumiCommentOrder()](#class-BangumiCommentOrder)
+- [class BangumiType()](#class-BangumiType)
+- [class Episode()](#class-Episode)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def get\_ai\_conclusion()](#async-def-get\_ai\_conclusion)
+  - [async def get\_aid()](#async-def-get\_aid)
+  - [async def get\_bangumi()](#async-def-get\_bangumi)
+  - [async def get\_bangumi\_from\_episode()](#async-def-get\_bangumi\_from\_episode)
+  - [async def get\_bvid()](#async-def-get\_bvid)
+  - [async def get\_cid()](#async-def-get\_cid)
+  - [async def get\_danmaku\_view()](#async-def-get\_danmaku\_view)
+  - [async def get\_danmaku\_xml()](#async-def-get\_danmaku\_xml)
+  - [async def get\_danmakus()](#async-def-get\_danmakus)
+  - [async def get\_download\_url()](#async-def-get\_download\_url)
+  - [def get\_epid()](#def-get\_epid)
+  - [async def get\_episode\_info()](#async-def-get\_episode\_info)
+  - [async def get\_history\_danmaku\_index()](#async-def-get\_history\_danmaku\_index)
+  - [async def get\_pbp()](#async-def-get\_pbp)
+  - [async def get\_player\_info()](#async-def-get\_player\_info)
+  - [async def get\_subtitle()](#async-def-get\_subtitle)
+  - [async def recall\_danmaku()](#async-def-recall\_danmaku)
+  - [async def send\_danmaku()](#async-def-send\_danmaku)
+  - [async def set\_epid()](#async-def-set\_epid)
+  - [async def submit\_subtitle()](#async-def-submit\_subtitle)
+- [class IndexFilter()](#class-IndexFilter)
+  - [class Area()](#class-Area)
+  - [class Copyright()](#class-Copyright)
+  - [class Finish\_Status()](#class-Finish\_Status)
+  - [class Order()](#class-Order)
+  - [class Payment()](#class-Payment)
+  - [class Producer()](#class-Producer)
+  - [class Season()](#class-Season)
+  - [class Sort()](#class-Sort)
+  - [class Spoken\_Language()](#class-Spoken\_Language)
+  - [class Style()](#class-Style)
+    - [class Anime()](#class-Anime)
+    - [class Documentary()](#class-Documentary)
+    - [class GuoChuang()](#class-GuoChuang)
+    - [class Movie()](#class-Movie)
+    - [class TV()](#class-TV)
+    - [class Variety()](#class-Variety)
+  - [class Type()](#class-Type)
+  - [class Version()](#class-Version)
+  - [def make\_time\_filter()](#def-make\_time\_filter)
+- [class IndexFilterMeta()](#class-IndexFilterMeta)
+  - [class Anime()](#class-Anime)
+    - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [class Documentary()](#class-Documentary)
+    - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [class GuoChuang()](#class-GuoChuang)
+    - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [class Movie()](#class-Movie)
+    - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [class TV()](#class-TV)
+    - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [class Variety()](#class-Variety)
+    - [def \_\_init\_\_()](#def-\_\_init\_\_)
+- [async def get\_index\_info()](#async-def-get\_index\_info)
+- [async def get\_timeline()](#async-def-get\_timeline)
+- [async def set\_follow()](#async-def-set\_follow)
+- [async def update\_follow\_status()](#async-def-update\_follow\_status)
+
 ---
 
 ## class Bangumi()
@@ -33,11 +110,11 @@ from bilibili_api import bangumi
 
 | name | type | description |
 | - | - | - |
-| media_id | Union[int, None] | 番剧本身的 ID. Defaults to -1. |
-| ssid | Union[int, None] | 每季度的 ID. Defaults to -1. |
-| epid | Union[int, None] | 每集的 ID. Defaults to -1. |
-| oversea | Union[bool, None] | 是否要采用兼容的港澳台Api,用于仅限港澳台地区番剧的信息请求. Defaults to False. |
-| credential | Union[Credential, None] | 凭据类. Defaults to None. |
+| media_id | int, optional | 番剧本身的 ID. Defaults to -1. |
+| ssid | int, optional | 每季度的 ID. Defaults to -1. |
+| epid | int, optional | 每集的 ID. Defaults to -1. |
+| oversea | bool, optional | 是否要采用兼容的港澳台Api,用于仅限港澳台地区番剧的信息请求. Defaults to False. |
+| credential | Credential \| None, optional | 凭据类. Defaults to None. |
 
 
 ### async def get_episode_list()
@@ -68,8 +145,8 @@ from bilibili_api import bangumi
 
 | name | type | description |
 | - | - | - |
-| order | Union[BangumiCommentOrder, None] | 排序方式。Defaults to BangumiCommentOrder.DEFAULT |
-| next | Union[str, None] | 调用返回结果中的 next 键值，用于获取下一页数据。Defaults to None |
+| order | BangumiCommentOrder, optional | 排序方式。Defaults to BangumiCommentOrder.DEFAULT |
+| next | str \| None, optional | 调用返回结果中的 next 键值，用于获取下一页数据。Defaults to None |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -138,8 +215,8 @@ from bilibili_api import bangumi
 
 | name | type | description |
 | - | - | - |
-| order | Union[BangumiCommentOrder, None] | 排序方式。Defaults to BangumiCommentOrder.DEFAULT |
-| next | Union[str, None] | 调用返回结果中的 next 键值，用于获取下一页数据。Defaults to None |
+| order | BangumiCommentOrder, optional | 排序方式。Defaults to BangumiCommentOrder.DEFAULT |
+| next | str \| None, optional | 调用返回结果中的 next 键值，用于获取下一页数据。Defaults to None |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -245,8 +322,7 @@ from bilibili_api import bangumi
 | name | type | description |
 | - | - | - |
 | epid | int | 番剧 epid |
-| credential | Union[Credential, None] | 凭据. Defaults to None. |
-| initial_state_retry_times | int | 番剧剧集加载初始化信息请求重试次数上限设置. Defaults to 3. |
+| credential | Credential, optional | 凭据. Defaults to None. |
 
 
 ### async def get_ai_conclusion()
@@ -256,7 +332,7 @@ from bilibili_api import bangumi
 
 | name | type | description |
 | - | - | - |
-| up_mid | Union[Optional,, None] | up 主的 mid。 |
+| up_mid | Optional, int | up 主的 mid。 |
 
 **Returns:** dict: 调用 API 返回的结果。
 
@@ -347,9 +423,9 @@ from bilibili_api import bangumi
 
 | name | type | description |
 | - | - | - |
-| date | Union[datetime.date, None] | 指定某一天查询弹幕. Defaults to None. (不指定某一天) |
-| from_seg | Union[int, None] | 从第几段开始(0 开始编号，None 为从第一段开始，一段 6 分钟). Defaults to None. |
-| to_seg | Union[int, None] | 到第几段结束(0 开始编号，None 为到最后一段，包含编号的段，一段 6 分钟). Defaults to None. |
+| date | datetime.date \| None, optional | 指定某一天查询弹幕. Defaults to None. (不指定某一天) |
+| from_seg | int, optional | 从第几段开始(0 开始编号，None 为从第一段开始，一段 6 分钟). Defaults to None. |
+| to_seg | int, optional | 到第几段结束(0 开始编号，None 为到最后一段，包含编号的段，一段 6 分钟). Defaults to None. |
 
 **Returns:** dict[Danmaku]: 弹幕列表
 
@@ -395,7 +471,7 @@ from bilibili_api import bangumi
 
 | name | type | description |
 | - | - | - |
-| date | Union[datetime.date, None] | 精确到年月. Defaults to None。 |
+| date | datetime.date \| None, optional | 精确到年月. Defaults to None。 |
 
 **Returns:** None | List[str]: 调用 API 返回的结果。不存在时为 None。
 
@@ -1106,11 +1182,11 @@ Variety Meta
 
 | name | type | description |
 | - | - | - |
-| filters | Union[Index_Filter_Meta, None] | 筛选条件元数据. Defaults to Anime. |
-| order | Union[BANGUMI_INDEX.ORDER, None] | 排序字段. Defaults to SCORE. |
-| sort | Union[BANGUMI_INDEX.SORT, None] | 排序方式. Defaults to DESC. |
-| pn | Union[int, None] | 页数. Defaults to 1. |
-| ps | Union[int, None] | 每页数量. Defaults to 20. |
+| filters | Index_Filter_Meta, optional | 筛选条件元数据. Defaults to Anime. |
+| order | BANGUMI_INDEX.ORDER, optional | 排序字段. Defaults to SCORE. |
+| sort | BANGUMI_INDEX.SORT, optional | 排序方式. Defaults to DESC. |
+| pn | int, optional | 页数. Defaults to 1. |
+| ps | int, optional | 每页数量. Defaults to 20. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -1144,8 +1220,8 @@ Variety Meta
 | name | type | description |
 | - | - | - |
 | bangumi | Bangumi | 番剧类 |
-| status | Union[bool, None] | 追番状态. Defaults to True. |
-| credential | Union[Credential, None] | 凭据. Defaults to None. |
+| status | bool, optional | 追番状态. Defaults to True. |
+| credential | Credential \| None, optional | 凭据. Defaults to None. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -1162,7 +1238,7 @@ Variety Meta
 | name | type | description |
 | - | - | - |
 | bangumi | Bangumi | 番剧类 |
-| credential | Union[Credential, None] | 凭据. Defaults to None. |
+| credential | Credential \| None, optional | 凭据. Defaults to None. |
 | status | int | 追番状态 1 想看 2 在看 3 已看 |
 
 **Returns:** dict: 调用 API 返回的结果

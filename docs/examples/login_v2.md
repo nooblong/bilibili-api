@@ -10,6 +10,12 @@
 
 因为 `login` 和 `login_v2` 间的完全不兼容，`login` 和 `login_func` 将在之后的版本中暂时保留，甚至永久保留也有可能（懒得删）。
 
+> `login` 和 `login_v2` 因 v17.0.0 不再支持同步请求被删除
+
+## Note
+
+bilibili 登录状态由 cookies 保存。因此 `login_v2` 的功能便是模仿网页端登录过程获取登录后的 cookies，这样可以模仿用户登录状态访问 API。
+
 # 示例: 终端简易二维码登录脚本
 
 ``` python
@@ -33,10 +39,14 @@ if __name__ == '__main__':
 # 示例：终端简易密码登录和验证码登录脚本
 
 ``` python
-from bilibili_api import *
+from bilibili_api import Geetest, GeetestType, login_v2, sync
 
 
 async def main() -> None:
+    choice = input("pwd / sms:")
+    if not choice in ["pwd", "sms"]:
+        return
+
     gee = Geetest()                                                         # 实例化极验测试类
     await gee.generate_test()                                               # 生成测试
     gee.start_geetest_server()                                              # 在本地部署网页端测试服务
@@ -44,27 +54,43 @@ async def main() -> None:
     while not gee.has_done():                                               # 如果测试未完成
         pass                                                                # 就等待
     gee.close_geetest_server()                                              # 关闭部署的网页端测试服务
-    print("result:", gee.get_result())                                      # 获取测试结果及相关数据
+    print("result:", gee.get_result())
 
     # 1. 密码登录
-    username = "xxxxxxxxxxx"                                                # 手机号/邮箱
-    password = "xxxxxxxxxxx"                                                # 密码
-    cred = await login_v2.login_with_password(
-        username=username, password=password, geetest=gee                   # 调用接口登陆
-    )
+    if choice == "pwd":
+        username = input("username:")                                       # 手机号/邮箱
+        password = input("password:")                                       # 密码
+        cred = await login_v2.login_with_password(
+            username=username, password=password, geetest=gee               # 调用接口登陆
+        )
 
     # 2. 验证码登录
-    phone = login_v2.PhoneNumber("xxxxxxxxxxx", "+86")                      # 实例化手机号类
-    captcha_id = await login_v2.send_sms(phonenumber=phone, geetest=gee)    # 发送验证码
-    print("captcha_id:", captcha_id)                                        # 顺便获得对应的 captcha_id
-    code = input("code: ")                                                  # 手机收到的验证码
-    cred = await login_v2.login_with_sms(
-        phonenumber=phone, code=code, captcha_id=captcha_id                 # 调用接口登陆
-    )
+    if choice == "sms":
+        phone = login_v2.PhoneNumber(input("phone:"), "+86")                # 实例化手机号类
+        captcha_id = await login_v2.send_sms(phonenumber=phone, geetest=gee)# 发送验证码
+        print("captcha_id:", captcha_id)                                    # 顺便获得对应的 captcha_id
+        code = input("code: ")
+        cred = await login_v2.login_with_sms(
+            phonenumber=phone, code=code, captcha_id=captcha_id             # 调用接口登陆
+        )
+
+    # 安全验证
+    if isinstance(cred, login_v2.LoginCheck):
+        # 如法炮制 Geetest
+        gee = Geetest()                                                     # 实例化极验测试类
+        await gee.generate_test(type_=GeetestType.VERIFY)                   # 生成测试 (注意 type_ 为 GeetestType.VERIFY)
+        gee.start_geetest_server()                                          # 在本地部署网页端测试服务
+        print(gee.get_geetest_server_url())                                 # 获取本地服务链接
+        while not gee.has_done():                                           # 如果测试未完成
+            pass                                                            # 就等待
+        gee.close_geetest_server()                                          # 关闭部署的网页端测试服务
+        print("result:", gee.get_result())
+        await cred.send_sms(gee)                                            # 发送验证码
+        code = input("code:")
+        cred = await cred.complete_check(code)                              # 调用接口登陆
 
     print("cookies:", cred.get_cookies())                                   # 获得 cookies
 
 if __name__ == "__main__":
-    settings.http_client = settings.HTTPClient.HTTPX
     sync(main())
 ```

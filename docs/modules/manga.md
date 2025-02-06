@@ -10,6 +10,21 @@ bilibili_api.manga
 from bilibili_api import manga
 ```
 
+- [class Manga()](#class-Manga)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [def get\_manga\_id()](#def-get\_manga\_id)
+- [class MangaIndexFilter()](#class-MangaIndexFilter)
+  - [class Area()](#class-Area)
+  - [class Order()](#class-Order)
+  - [class Payment()](#class-Payment)
+  - [class Status()](#class-Status)
+  - [class Style()](#class-Style)
+- [class MangaOrderType()](#class-MangaOrderType)
+- [async def get\_followed\_manga()](#async-def-get\_followed\_manga)
+- [async def get\_manga\_home\_recommend()](#async-def-get\_manga\_home\_recommend)
+- [async def get\_manga\_update()](#async-def-get\_manga\_update)
+- [async def set\_follow\_manga()](#async-def-set\_follow\_manga)
+
 ---
 
 ## class Manga()
@@ -29,86 +44,6 @@ from bilibili_api import manga
 | - | - | - |
 | manga_id | int | 漫画 id |
 | credential | Credential \| None | 凭据类. Defaults to None. |
-
-
-### async def get_episode_id()
-
-获取某一话的 id
-
-
-| name | type | description |
-| - | - | - |
-| episode_count | int \| float \| None | 第几话. |
-
-**Returns:** int: 对应的话的 id
-
-
-
-
-### async def get_episode_info()
-
-获取某一话的详细信息
-
-
-| name | type | description |
-| - | - | - |
-| episode_count | int \| float \| None | 第几话. |
-| episode_id | int \| None | 对应的话的 id. 可以通过 `get_episode_id` 获取。 |
-
-**Returns:** dict: 对应的话的详细信息
-
-
-**注意：episode_count 和 episode_id 中必须提供一个参数。**
-
-
-
-### async def get_images()
-
-获取某一话的所有图片
-
-
-| name | type | description |
-| - | - | - |
-| episode_count | int \| float \| None | 第几话. |
-| episode_id | int \| None | 对应的话的 id. 可以通过 `get_episode_id` 获取。 |
-
-**Returns:** List[Picture]: 所有的图片
-
-
-**注意：episode_count 和 episode_id 中必须提供一个参数。**
-
-注意事项：此函数速度非常慢并且失败率高
-
-
-
-### async def get_images_url()
-
-获取某一话的图片链接。(未经过处理，所有的链接无法直接访问)
-
-获取的图片 url 请传入 `manga.manga_image_url_turn_to_Picture` 函数以转换为 `Picture` 类。
-
-
-| name | type | description |
-| - | - | - |
-| episode_count | int \| float \| None | 第几话. |
-| episode_id | int \| None | 对应的话的 id. 可以通过 `get_episode_id` 获取。 |
-
-**Returns:** dict: 调用 API 返回的结果
-
-
-**注意：episode_count 和 episode_id 中必须提供一个参数。**
-
-
-
-### async def get_info()
-
-获取漫画信息
-
-
-
-**Returns:** dict: 调用 API 返回的结果
-
-
 
 
 ### def get_manga_id()
@@ -215,6 +150,41 @@ from bilibili_api import manga
 
 ---
 
+## class MangaOrderType()
+
+**Extend: enum.Enum**
+
+漫画排序方式
+
+- FOLLOW: 追漫顺序
+- UPDATE: 更新时间
+- READING: 最近阅读
+- FREE: 等免
+
+
+
+
+---
+
+## async def get_followed_manga()
+
+获取追漫列表
+
+
+| name | type | description |
+| - | - | - |
+| pn | int | 页码。Defaults to 1. |
+| ps | int | 每页数量。Defaults to 18. |
+| order | MangaOrderType | 排序方式。Defaults to MangaOrderType.FOLLOW. |
+| credential | Credential | 凭据类. |
+
+**Returns:** List[Manga]: 追漫列表
+
+
+
+
+---
+
 ## async def get_manga_home_recommend()
 
 获取首页推荐的漫画
@@ -223,33 +193,10 @@ from bilibili_api import manga
 | name | type | description |
 | - | - | - |
 | pn | int | 页码。Defaults to 1. |
-| seed | Union[Optional,, None] | Unknown param，无需传入. |
+| seed | Optional, str | Unknown param，无需传入. |
 | credential | Credential | 凭据类. Defaults to None. |
 
 **Returns:** List[Manga]: 漫画列表
-
-
-
-
----
-
-## async def get_manga_index()
-
-获取漫画索引
-
-
-| name | type | description |
-| - | - | - |
-| area | MangaIndexFilter.Area | 地区。Defaults to MangaIndexFilter.Area.ALL. |
-| order | MangaIndexFilter.Order | 排序。Defaults to MangaIndexFilter.Order.HOT. |
-| status | MangaIndexFilter.Status | 状态。Defaults to MangaIndexFilter.Status.ALL. |
-| payment | MangaIndexFilter.Payment | 支付。Defaults to MangaIndexFilter.Payment.ALL. |
-| style | MangaIndexFilter.Style | 风格。Defaults to MangaIndexFilter.Style.ALL. |
-| pn | int | 页码。Defaults to 1. |
-| ps | int | 每页数量。Defaults to 18. |
-| credential | Credential | 凭据类. Defaults to None. |
-
-**Returns:** List[Manga]: 漫画索引
 
 
 
@@ -269,46 +216,6 @@ from bilibili_api import manga
 | credential | Credential | 凭据类. Defaults to None. |
 
 **Returns:** List[Manga]: 漫画列表
-
-
-
-
----
-
-## async def get_raw_manga_index()
-
-获取漫画索引
-
-
-| name | type | description |
-| - | - | - |
-| area | MangaIndexFilter.Area | 地区。Defaults to MangaIndexFilter.Area.ALL. |
-| order | MangaIndexFilter.Order | 排序。Defaults to MangaIndexFilter.Order.HOT. |
-| status | MangaIndexFilter.Status | 状态。Defaults to MangaIndexFilter.Status.ALL. |
-| payment | MangaIndexFilter.Payment | 支付。Defaults to MangaIndexFilter.Payment.ALL. |
-| style | MangaIndexFilter.Style | 风格。Defaults to MangaIndexFilter.Style.ALL. |
-| pn | int | 页码。Defaults to 1. |
-| ps | int | 每页数量。Defaults to 18. |
-| credential | Credential | 凭据类. Defaults to None. |
-
-**Returns:** list: 调用 API 返回的结果
-
-
-
-
----
-
-## async def manga_image_url_turn_to_Picture()
-
-将 Manga.get_images_url 函数获得的图片 url 转换为 Picture 类。
-
-
-| name | type | description |
-| - | - | - |
-| url | str | 未经处理的漫画图片链接。 |
-| credential | Credential \| None | 凭据类. Defaults to None. |
-
-**Returns:** Picture: 图片类。
 
 
 

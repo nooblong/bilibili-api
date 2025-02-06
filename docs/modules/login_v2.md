@@ -1,7 +1,7 @@
 # Module login_v2.py
 
 
-bilibili_api.login
+bilibili_api.login_v2
 
 登录
 
@@ -10,24 +10,88 @@ bilibili_api.login
 from bilibili_api import login_v2
 ```
 
+- [class LoginCheck()](#class-LoginCheck)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def complete\_check()](#async-def-complete\_check)
+  - [async def fetch\_info()](#async-def-fetch\_info)
+  - [async def send\_sms()](#async-def-send\_sms)
+- [class PhoneNumber()](#class-PhoneNumber)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+- [class QrCodeLogin()](#class-QrCodeLogin)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def check\_state()](#async-def-check\_state)
+  - [async def generate\_qrcode()](#async-def-generate\_qrcode)
+  - [def get\_credential()](#def-get\_credential)
+  - [def get\_qrcode\_picture()](#def-get\_qrcode\_picture)
+  - [def get\_qrcode\_terminal()](#def-get\_qrcode\_terminal)
+  - [def has\_done()](#def-has\_done)
+  - [def has\_qrcode()](#def-has\_qrcode)
+- [class QrCodeLoginChannel()](#class-QrCodeLoginChannel)
+- [class QrCodeLoginEvents()](#class-QrCodeLoginEvents)
+- [def get\_code\_by\_country()](#def-get\_code\_by\_country)
+- [def get\_countries\_list()](#def-get\_countries\_list)
+- [def get\_id\_by\_code()](#def-get\_id\_by\_code)
+- [def have\_code()](#def-have\_code)
+- [def have\_country()](#def-have\_country)
+- [async def login\_with\_password()](#async-def-login\_with\_password)
+- [async def login\_with\_sms()](#async-def-login\_with\_sms)
+- [def search\_countries()](#def-search\_countries)
+- [async def send\_sms()](#async-def-send\_sms)
+
 ---
 
-## Overview
+## class LoginCheck()
 
-`login_v2` 是对登陆模块的一次彻底的重写，主要有以下改动：
+验证类，如果密码登录需要验证会返回此类
 
-- **将所有同步操作迁移至异步**
-- 将 `login` 和 `login_func` 所有功能合并，即把 `login` 功能拆分，结合 `login_func` 进行编写。
-- 将 Geetest 实例化，作为参数传入函数，生成、作答、检查、部署本地服务器过程全程由用户操作，取代了原先除作答外全模块操作。
-- 同样将二维码登录过程实例化，用户操控生成、检查、获取数据的全流程。
 
-（另一种表达方式：重构）
 
-`login_v2` 相较于 `login` 也更加灵活，可以满足更多情况下的需求，虽然固定功能代码长度相较于原来有所上升，但是编写特定功能起来也更加游刃有余。
 
-因为 `login` 和 `login_v2` 间的完全不兼容，`login` 和 `login_func` 将在之后的版本中暂时保留，甚至永久保留也有可能（懒得删）。
+### def \_\_init\_\_()
 
-相关使用案例见 [Examples](/examples/login_v2.md)
+
+| name | type | description |
+| - | - | - |
+| check_url | str | 验证链接 |
+
+
+### async def complete_check()
+
+完成验证
+
+
+| name | type | description |
+| - | - | - |
+| code | str | 验证码 |
+
+**Returns:** Credential: 凭据类
+
+
+
+
+### async def fetch_info()
+
+获取验证信息
+
+
+
+**Returns:** dict: 调用 API 返回的结果
+
+
+
+
+### async def send_sms()
+
+发送验证码
+
+
+| name | type | description |
+| - | - | - |
+| geetest | Geetest | 极验验证码实例，须完成。验证码类型应为 `GeetestType.VERIFY` |
+
+**Returns:** None
+
+
 
 ---
 
@@ -63,7 +127,7 @@ from bilibili_api import login_v2
 
 | name | type | description |
 | - | - | - |
-| platform | Union[QrCodeLoginChannel, None] | 平台. (web/tv) Defaults to QrCodeLoginChannel.WEB. |
+| platform | QrCodeLoginChannel, optional | 平台. (web/tv) Defaults to QrCodeLoginChannel.WEB. |
 
 
 ### async def check_state()
@@ -260,9 +324,9 @@ from bilibili_api import login_v2
 | - | - | - |
 | username | str | 用户手机号、邮箱 |
 | password | str | 密码 |
-| geetest | Geetest | 极验验证码实例，须完成 |
+| geetest | Geetest | 极验验证码实例，须完成。验证码类型应为 `GeetestType.LOGIN` |
 
-**Returns:** Union[Credential, Check]: 如果需要验证，会返回 `Check` 类，否则返回 `Credential` 类。
+**Returns:** Union[Credential, LoginCheck]: 如果需要验证，会返回 `LoginCheck` 类，否则返回 `Credential` 类。
 
 
 
@@ -280,7 +344,7 @@ from bilibili_api import login_v2
 | code | str | 验证码 |
 | captcha_id | str | captcha_id，为 `send_sms` 调用返回结果 |
 
-**Returns:** Credential: 凭据类
+**Returns:** Union[Credential, LoginCheck]: 如果需要验证，会返回 `LoginCheck` 类，否则返回 `Credential` 类。
 
 
 
@@ -311,7 +375,7 @@ from bilibili_api import login_v2
 | name | type | description |
 | - | - | - |
 | phonenumber | PhoneNumber | 手机号类 |
-| geetest | Geetest | 极验验证码实例，须完成 |
+| geetest | Geetest | 极验验证码实例，须完成。验证码类型应为 `GeetestType.LOGIN` |
 
 **Returns:** str: captcha_id，需传入 `login_with_sms`
 

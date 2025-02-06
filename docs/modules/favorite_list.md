@@ -10,6 +10,33 @@ bilibili_api.favorite_list
 from bilibili_api import favorite_list
 ```
 
+- [class FavoriteList()](#class-FavoriteList)
+  - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [async def get\_content()](#async-def-get\_content)
+  - [async def get\_content\_ids\_info()](#async-def-get\_content\_ids\_info)
+  - [async def get\_content\_video()](#async-def-get\_content\_video)
+  - [def get\_favorite\_list\_type()](#def-get\_favorite\_list\_type)
+  - [async def get\_info()](#async-def-get\_info)
+  - [def get\_media\_id()](#def-get\_media\_id)
+  - [def is\_video\_favorite\_list()](#def-is\_video\_favorite\_list)
+- [class FavoriteListContentOrder()](#class-FavoriteListContentOrder)
+- [class FavoriteListType()](#class-FavoriteListType)
+- [class SearchFavoriteListMode()](#class-SearchFavoriteListMode)
+- [async def clean\_video\_favorite\_list\_content()](#async-def-clean\_video\_favorite\_list\_content)
+- [async def copy\_video\_favorite\_list\_content()](#async-def-copy\_video\_favorite\_list\_content)
+- [async def create\_video\_favorite\_list()](#async-def-create\_video\_favorite\_list)
+- [async def delete\_video\_favorite\_list()](#async-def-delete\_video\_favorite\_list)
+- [async def delete\_video\_favorite\_list\_content()](#async-def-delete\_video\_favorite\_list\_content)
+- [async def get\_article\_favorite\_list()](#async-def-get\_article\_favorite\_list)
+- [async def get\_course\_favorite\_list()](#async-def-get\_course\_favorite\_list)
+- [async def get\_favorite\_collected()](#async-def-get\_favorite\_collected)
+- [async def get\_note\_favorite\_list()](#async-def-get\_note\_favorite\_list)
+- [async def get\_topic\_favorite\_list()](#async-def-get\_topic\_favorite\_list)
+- [async def get\_video\_favorite\_list()](#async-def-get\_video\_favorite\_list)
+- [async def get\_video\_favorite\_list\_content()](#async-def-get\_video\_favorite\_list\_content)
+- [async def modify\_video\_favorite\_list()](#async-def-modify\_video\_favorite\_list)
+- [async def move\_video\_favorite\_list\_content()](#async-def-move\_video\_favorite\_list\_content)
+
 ---
 
 ## class FavoriteList()
@@ -27,9 +54,9 @@ from bilibili_api import favorite_list
 
 | name | type | description |
 | - | - | - |
-| type_ | Union[FavoriteListType, None] | 收藏夹类型. Defaults to FavoriteListType.VIDEO. |
-| media_id | Union[int, None] | 收藏夹号（仅为视频收藏夹时提供）. Defaults to None. |
-| credential | Union[Credential, None] | 凭据类. Defaults to Credential(). |
+| type_ | FavoriteListType, optional | 收藏夹类型. Defaults to FavoriteListType.VIDEO. |
+| media_id | int, optional | 收藏夹号（仅为视频收藏夹时提供）. Defaults to None. |
+| credential | Credential, optional | 凭据类. Defaults to Credential(). |
 
 
 ### async def get_content()
@@ -39,7 +66,7 @@ from bilibili_api import favorite_list
 
 | name | type | description |
 | - | - | - |
-| page | Union[int, None] | 页码. Defaults to 1. |
+| page | int, optional | 页码. Defaults to 1. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -64,11 +91,11 @@ from bilibili_api import favorite_list
 
 | name | type | description |
 | - | - | - |
-| page | Union[int, None] | 页码. Defaults to 1. |
-| keyword | Union[str, None] | 搜索关键词. Defaults to None. |
-| order | Union[FavoriteListContentOrder, None] | 排序方式. Defaults to FavoriteListContentOrder.MTIME. |
-| mode | Union[SearchFavoriteListMode, None] | 搜索模式，默认仅当前收藏夹. |
-| tid | Union[int, None] | 分区 ID. Defaults to 0. |
+| page | int, optional | 页码. Defaults to 1. |
+| keyword | str \| None, optional | 搜索关键词. Defaults to None. |
+| order | FavoriteListContentOrder, optional | 排序方式. Defaults to FavoriteListContentOrder.MTIME. |
+| mode | SearchFavoriteListMode, optional | 搜索模式，默认仅当前收藏夹. |
+| tid | int, optional | 分区 ID. Defaults to 0. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -209,9 +236,9 @@ from bilibili_api import favorite_list
 | name | type | description |
 | - | - | - |
 | title | str | 收藏夹名。 |
-| introduction | Union[str, None] | 收藏夹简介. Defaults to ''. |
-| private | Union[bool, None] | 是否为私有. Defaults to False. |
-| credential | Union[Credential, None] | 凭据. Defaults to None. |
+| introduction | str, optional | 收藏夹简介. Defaults to ''. |
+| private | bool, optional | 是否为私有. Defaults to False. |
+| credential | Credential, optional | 凭据. Defaults to None. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -262,8 +289,8 @@ from bilibili_api import favorite_list
 
 | name | type | description |
 | - | - | - |
-| page | Union[int, None] | 页码. Defaults to 1. |
-| credential | Union[Credential, None] | Credential. Defaults to None. |
+| page | int, optional | 页码. Defaults to 1. |
+| credential | Credential \| None, optional | Credential. Defaults to None. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -279,8 +306,8 @@ from bilibili_api import favorite_list
 
 | name | type | description |
 | - | - | - |
-| page | Union[int, None] | 页码. Defaults to 1. |
-| credential | Union[Credential, None] | Credential. Defaults to None. |
+| page | int, optional | 页码. Defaults to 1. |
+| credential | Credential \| None, optional | Credential. Defaults to None. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -297,9 +324,9 @@ from bilibili_api import favorite_list
 | name | type | description |
 | - | - | - |
 | uid | int | 用户 UID。 |
-| pn | Union[int, None] | 页码. Defaults to 1. |
-| ps | Union[int, None] | 每页数据大小. Defaults to 20. |
-| credential | Union[Credential, None] | Credential. Defaults to None. |
+| pn | int, optional | 页码. Defaults to 1. |
+| ps | int, optional | 每页数据大小. Defaults to 20. |
+| credential | Credential \| None, optional | Credential. Defaults to None. |
 
 **Returns:** None
 
@@ -314,8 +341,8 @@ from bilibili_api import favorite_list
 
 | name | type | description |
 | - | - | - |
-| page | Union[int, None] | 页码. Defaults to 1. |
-| credential | Union[Credential, None] | Credential. Defaults to None. |
+| page | int, optional | 页码. Defaults to 1. |
+| credential | Credential \| None, optional | Credential. Defaults to None. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -331,8 +358,8 @@ from bilibili_api import favorite_list
 
 | name | type | description |
 | - | - | - |
-| page | Union[int, None] | 页码. Defaults to 1. |
-| credential | Union[Credential, None] | Credential |
+| page | int, optional | 页码. Defaults to 1. |
+| credential | Credential \| None, optional | Credential |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -349,8 +376,8 @@ from bilibili_api import favorite_list
 | name | type | description |
 | - | - | - |
 | uid | int | 用户 UID。 |
-| video | Union[Video, None] | 视频类。若提供该参数则结果会附带该收藏夹是否存在该视频。Defaults to None. |
-| credential | Union[Credential, None] | 凭据. Defaults to None. |
+| video | Video \| None, optional | 视频类。若提供该参数则结果会附带该收藏夹是否存在该视频。Defaults to None. |
+| credential | Credential \| None, optional | 凭据. Defaults to None. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -369,12 +396,12 @@ mode 参数见 SearchFavoriteListMode 枚举。
 | name | type | description |
 | - | - | - |
 | media_id | int | 收藏夹 ID。 |
-| page | Union[int, None] | 页码. Defaults to 1. |
-| keyword | Union[str, None] | 搜索关键词. Defaults to None. |
-| order | Union[FavoriteListContentOrder, None] | 排序方式. Defaults to FavoriteListContentOrder.MTIME. |
-| tid | Union[int, None] | 分区 ID. Defaults to 0. |
-| mode | Union[SearchFavoriteListMode, None] | 搜索模式，默认仅当前收藏夹. |
-| credential | Union[Credential, None] | Credential. Defaults to None. |
+| page | int, optional | 页码. Defaults to 1. |
+| keyword | str, optional | 搜索关键词. Defaults to None. |
+| order | FavoriteListContentOrder, optional | 排序方式. Defaults to FavoriteListContentOrder.MTIME. |
+| tid | int, optional | 分区 ID. Defaults to 0. |
+| mode | SearchFavoriteListMode, optional | 搜索模式，默认仅当前收藏夹. |
+| credential | Credential, optional | Credential. Defaults to None. |
 
 **Returns:** dict: 调用 API 返回的结果
 
@@ -392,9 +419,9 @@ mode 参数见 SearchFavoriteListMode 枚举。
 | - | - | - |
 | media_id | int | 收藏夹 ID. |
 | title | str | 收藏夹名。 |
-| introduction | Union[str, None] | 收藏夹简介. Defaults to ''. |
-| private | Union[bool, None] | 是否为私有. Defaults to False. |
-| credential | Union[Credential, None] | Credential. Defaults to None. |
+| introduction | str, optional | 收藏夹简介. Defaults to ''. |
+| private | bool, optional | 是否为私有. Defaults to False. |
+| credential | Credential, optional | Credential. Defaults to None. |
 
 **Returns:** dict: 调用 API 返回的结果
 

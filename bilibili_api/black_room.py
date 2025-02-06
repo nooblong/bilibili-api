@@ -8,8 +8,7 @@ from enum import Enum
 from typing import List, Union, Optional
 
 from .utils.utils import get_api
-from .utils.credential import Credential
-from .utils.network import Api
+from .utils.network import Api, Credential
 
 
 class BlackReasonType(Enum):
@@ -222,7 +221,7 @@ class BlackRoom:
         """
         return BlackReasonType((await self.get_details())["reasonType"])
 
-    async def get_id(self) -> int:
+    def get_id(self) -> int:
         """
         获取小黑屋 id
 
@@ -231,7 +230,7 @@ class BlackRoom:
         """
         return self.__id
 
-    async def set_id(self, id_: int) -> None:
+    def set_id(self, id_: int) -> None:
         """
         设置小黑屋 id
 
