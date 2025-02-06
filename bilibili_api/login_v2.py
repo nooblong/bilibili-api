@@ -477,6 +477,7 @@ class QrCodeLogin:
         img.save(img_dir)
         self.__qr_picture = Picture.from_file(img_dir)
         self.__qr_terminal = qrcode_terminal.qr_terminal_str(self.__qr_link)
+        return data
 
     async def check_state(self) -> QrCodeLoginEvents:
         """
