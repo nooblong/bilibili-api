@@ -479,7 +479,7 @@ class QrCodeLogin:
         self.__qr_terminal = qrcode_terminal.qr_terminal_str(self.__qr_link)
         return data
 
-    async def check_state(self) -> QrCodeLoginEvents:
+    async def check_state(self, key) -> QrCodeLoginEvents:
         """
         检查二维码登录状态
 
@@ -488,10 +488,11 @@ class QrCodeLogin:
         """
         if self.__platform == QrCodeLoginChannel.WEB:
             api = API["qrcode"]["web"]["get_events"]
-            params = {"qrcode_key": self.__qr_key}
+            params = {"qrcode_key": key}
             events = (
                 await Api(credential=Credential(), **api).update_params(**params).result
             )
+            return events
             code = events["code"]
             if code == 86101:
                 return QrCodeLoginEvents.SCAN
