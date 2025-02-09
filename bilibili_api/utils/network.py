@@ -1156,7 +1156,7 @@ class Credential:
         """
         return await _check_cookies(self)
 
-    async def refresh(self) -> None:
+    async def refresh(self) -> dict:
         """
         刷新 cookies
         """
@@ -1165,6 +1165,13 @@ class Credential:
         self.bili_jct = new_cred.bili_jct
         self.dedeuserid = new_cred.dedeuserid
         self.ac_time_value = new_cred.ac_time_value
+
+        return {
+            "sessdata": self.sessdata,
+            "bili_jct": self.bili_jct,
+            "dedeuserid": self.dedeuserid,
+            "ac_time_value": self.ac_time_value
+        }
 
     @staticmethod
     def from_cookies(cookies: dict = {}) -> "Credential":
