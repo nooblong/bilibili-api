@@ -20,6 +20,7 @@ from bilibili_api import session
   - [def on()](#def-on)
   - [async def reply()](#async-def-reply)
   - [async def run()](#async-def-run)
+  - [async def start()](#async-def-start)
 - [async def fetch\_session\_msgs()](#async-def-fetch\_session\_msgs)
 - [async def get\_at()](#async-def-get\_at)
 - [async def get\_likes()](#async-def-get\_likes)
@@ -57,8 +58,8 @@ from bilibili_api import session
 
 | name | type | description |
 | - | - | - |
-| data: 接收到的事件详细信息 |  | 接收到的事件详细信息 |
-| self_uid: 用户自身 UID |  | 用户自身 UID |
+| `data` | `Dict` | 接收到的事件详细信息 |
+| `self_uid` | `int` | 用户自身 UID |
 
 
 ---
@@ -103,7 +104,6 @@ from bilibili_api import session
 结束轮询
 
 
-**Returns:** None
 
 
 
@@ -113,7 +113,7 @@ from bilibili_api import session
 
 
 
-**Returns:** int: 0 初始化，1 已连接，2 断开连接中，3 已断开，4 错误
+**Returns:** `int`:  0 初始化，1 已连接，2 断开连接中，3 已断开，4 错误
 
 
 
@@ -125,9 +125,8 @@ from bilibili_api import session
 
 | name | type | description |
 | - | - | - |
-| event_type | EventType | 事件类型 |
+| `event_type` | `EventType` | 事件类型 |
 
-**Returns:** None
 
 
 
@@ -138,10 +137,10 @@ from bilibili_api import session
 
 | name | type | description |
 | - | - | - |
-| event  :  Event  要回复的消息 |  | Event  要回复的消息 |
-| content:  str | Picture  要回复的文字内容 |  | str | Picture  要回复的文字内容 |
+| `event` | `Event` | 要回复的消息 |
+| `content` | `str \| Picture` | 要回复的文字内容 |
 
-**Returns:** dict: 调用接口返回的内容。
+**Returns:** `dict`:  调用接口返回的内容。
 
 
 
@@ -153,9 +152,20 @@ from bilibili_api import session
 
 | name | type | description |
 | - | - | - |
-| exclude_self: bool 是否排除自己发出的消息，默认排除 |  | bool 是否排除自己发出的消息，默认排除 |
+| `exclude_self` | `bool` | 是否排除自己发出的消息，默认排除 |
 
-**Returns:** None
+
+
+
+### async def start()
+
+阻塞异步启动 通过调用 self.close() 后可断开连接
+
+
+| name | type | description |
+| - | - | - |
+| `exclude_self` | `bool` | 是否排除自己发出的消息，默认排除 |
+
 
 
 
@@ -168,12 +178,12 @@ from bilibili_api import session
 
 | name | type | description |
 | - | - | - |
-| talker_id | int | 用户 UID |
-| credential | Credential | Credential |
-| session_type | int | 会话类型 1 私聊 2 应援团 |
-| begin_seqno | int | 起始 Seqno |
+| `talker_id` | `int` | 用户 UID |
+| `credential` | `Credential` | Credential |
+| `session_type` | `int` | 会话类型 1 私聊 2 应援团 |
+| `begin_seqno` | `int` | 起始 Seqno |
 
-**Returns:** dict: 调用 API 返回结果
+**Returns:** `dict`:  调用 API 返回结果
 
 
 
@@ -187,11 +197,11 @@ from bilibili_api import session
 
 | name | type | description |
 | - | - | - |
-| credential | Credential | 凭据类. |
-| last_id | Optional, int | 最后一个 ID |
-| at_time | Optional, int | 最后一个点赞发送时间 |
+| `credential` | `Credential` | 凭据类. |
+| `last_id` | `Optional, int` | 最后一个 ID |
+| `at_time` | `Optional, int` | 最后一个点赞发送时间 |
 
-**Returns:** dict: 调用 API 返回的结果
+**Returns:** `dict`:  调用 API 返回的结果
 
 
 
@@ -205,11 +215,11 @@ from bilibili_api import session
 
 | name | type | description |
 | - | - | - |
-| credential | Credential | 凭据类. |
-| last_id | Optional, int | 最后一个 ID |
-| like_time | Optional, int | 最后一个点赞发送时间 |
+| `credential` | `Credential` | 凭据类. |
+| `last_id` | `Optional, int` | 最后一个 ID |
+| `like_time` | `Optional, int` | 最后一个点赞发送时间 |
 
-**Returns:** dict: 调用 API 返回的结果
+**Returns:** `dict`:  调用 API 返回的结果
 
 
 
@@ -223,11 +233,11 @@ from bilibili_api import session
 
 | name | type | description |
 | - | - | - |
-| credential | Credential | 凭据类. |
-| last_reply_id | Optional, int | 最后一个评论的 ID |
-| reply_time | Optional, int | 最后一个评论发送时间 |
+| `credential` | `Credential` | 凭据类. |
+| `last_reply_id` | `Optional, int` | 最后一个评论的 ID |
+| `reply_time` | `Optional, int` | 最后一个评论发送时间 |
 
-**Returns:** dict: 调用 API 返回的结果
+**Returns:** `dict`:  调用 API 返回的结果
 
 
 
@@ -241,11 +251,11 @@ from bilibili_api import session
 
 | name | type | description |
 | - | - | - |
-| credential | Credential | Credential |
-| session_type | int | 会话类型 |
-| talker_id | int | 会话对象的UID |
+| `credential` | `Credential` | Credential |
+| `session_type` | `int` | 会话类型 |
+| `talker_id` | `int` | 会话对象的UID |
 
-**Returns:** dict: 调用 API 返回结果
+**Returns:** `dict`:  调用 API 返回结果
 
 
 
@@ -259,9 +269,9 @@ from bilibili_api import session
 
 | name | type | description |
 | - | - | - |
-| credential | Credential | 凭据类. |
+| `credential` | `Credential` | 凭据类. |
 
-**Returns:** dict: 调用 API 返回的结果
+**Returns:** `dict`:  调用 API 返回的结果
 
 
 
@@ -275,10 +285,10 @@ from bilibili_api import session
 
 | name | type | description |
 | - | - | - |
-| credential | Credential | Credential |
-| session_type | int | 会话类型 1 |
+| `credential` | `Credential` | Credential |
+| `session_type` | `int` | 会话类型 1 |
 
-**Returns:** dict: 调用 API 返回结果
+**Returns:** `dict`:  调用 API 返回结果
 
 
 
@@ -292,9 +302,9 @@ from bilibili_api import session
 
 | name | type | description |
 | - | - | - |
-| credential | Credential | 凭据类. |
+| `credential` | `Credential` | 凭据类. |
 
-**Returns:** dict: 调用 API 返回的结果
+**Returns:** `dict`:  调用 API 返回的结果
 
 
 
@@ -308,9 +318,9 @@ from bilibili_api import session
 
 | name | type | description |
 | - | - | - |
-| credential | Credential | 凭据类. |
+| `credential` | `Credential` | 凭据类. |
 
-**Returns:** dict: 调用 API 返回的结果
+**Returns:** `dict`:  调用 API 返回的结果
 
 
 
@@ -324,10 +334,10 @@ from bilibili_api import session
 
 | name | type | description |
 | - | - | - |
-| credential | Credential | Credential |
-| begin_ts | int | 起始时间戳 |
+| `credential` | `Credential` | Credential |
+| `begin_ts` | `int` | 起始时间戳 |
 
-**Returns:** dict: 调用 API 返回结果
+**Returns:** `dict`:  调用 API 返回结果
 
 
 
@@ -341,12 +351,12 @@ from bilibili_api import session
 
 | name | type | description |
 | - | - | - |
-| credential | Credential | 凭证 |
-| receiver_id | int | 接收者 UID |
-| msg_type | EventType | 信息类型，参考 Event 类的事件类型。 |
-| content | str \| Picture | 信息内容。支持文字和图片。 |
+| `credential` | `Credential` | 凭证 |
+| `receiver_id` | `int` | 接收者 UID |
+| `msg_type` | `EventType` | 信息类型，参考 Event 类的事件类型。 |
+| `content` | `str \| Picture` | 信息内容。支持文字和图片。 |
 
-**Returns:** dict: 调用 API 返回结果
+**Returns:** `dict`:  调用 API 返回结果
 
 
 

@@ -1,3 +1,5 @@
+# Recommend cpython 3.13
+
 import os
 import sys
 import json
@@ -57,7 +59,6 @@ ignored_funcs = [
     "parse_tv_resp",
     "photo",
     "qrcode_image",
-    "start",
     "update_qrcode_data",
     "update_tv_qrcode_data",
     "verify_tv_login_status",
@@ -324,20 +325,27 @@ def parse_docstring(doc: str):
                     .replace("union", "Union")
                     .replace("|", "\|")
                 )
+                # print(line)
+                # assert argtype != ""
                 table.append((argname, argtype, arginfo))
             elif state == 2:
                 ret += line + "\n"
                 state = 3
             else:
                 note += line + "\n"
-    if ret.replace(" ", "").replace("\n", "") == "":
-        ret = "None\n"
-    ret = "**Returns:** " + ret
+    if ret.replace(" ", "").replace("\n", "") != "":
+        rettype = ret.split(":")[0]
+        retdesc = "".join(ret.split(":")[1:])
+        # print(ret.split(":"))
+        # assert retdesc != ""
+        ret = f"**Returns:** `{rettype}`: {retdesc}"
+    else:
+        ret = ""
     mdstring = f"{info}\n"
     if table != []:
         mdstring += "| name | type | description |\n| - | - | - |\n"
         for arg in table:
-            mdstring += f"| {arg[0]} | {arg[1]} | {arg[2]} |\n"
+            mdstring += f"| `{arg[0]}` | `{arg[1]}` | {arg[2]} |\n"
     mdstring += f"\n{ret}\n{note}\n\n"
     return mdstring
 
@@ -378,12 +386,14 @@ def parse_docstring1(doc: str):
                     .replace("union", "Union")
                     .replace("|", "\|")
                 )
+                # print(line)
+                # assert argtype != ""
                 table.append((argname, argtype, arginfo))
     mdstring = f"{info}\n"
     if table != []:
         mdstring += "| name | type | description |\n| - | - | - |\n"
         for arg in table:
-            mdstring += f"| {arg[0]} | {arg[1]} | {arg[2]} |\n"
+            mdstring += f"| `{arg[0]}` | `{arg[1]}` | {arg[2]} |\n"
     mdstring += f"\n\n"
     return mdstring
 
@@ -394,9 +404,12 @@ for module in all_funcs:
     docs_dir = "./docs/modules/" + module[0][0] + ".md"
     file = open(docs_dir, "w+")
     print("BEGIN", module[0][0])
-    file.write(
-        f"# Module {module[0][0]}.py\n\n{eval(f'{module[0][1]}.__doc__')}\n\n``` python\nfrom bilibili_api import {module[0][0]}\n```\n\n"
-    )
+    if module[0][0] != "bilibili_api":
+        file.write(
+            f"# Module {module[0][0]}.py\n\n{eval(f'{module[0][1]}.__doc__')}\n\n``` python\nfrom bilibili_api import {module[0][0]}\n```\n\n"
+        )
+    else:
+        file.write(f"# Module bilibili_api\n\n{eval(f'{module[0][1]}.__doc__')}\n\n``` python\nfrom bilibili_api import ...\n```\n\n")
     print("GENERATING TOC")
     last_data_class = -114514
     for idx, func in enumerate(module[1:]):
@@ -432,12 +445,7 @@ for module in all_funcs:
         if func[2] == "class" or func[2] == "var":
             if not func[3].startswith("@") and func[3] != "builtins.object":
                 file.write(f"**Extend: {func[3]}**\n\n")
-            if func[0] in ["BiliAPIClient"]:
-                doc = eval(f"{func[1]}.__doc__")
-                for line in doc.split("\n"):
-                    file.write(line[4:] + "\n")
-                file.write("\n\n")
-            elif func[0] in ["request_log"]:
+            if func[0] in ["request_log", "BiliAPIClient"]:
                 doc = eval(f"{func[1]}.__doc__")
                 for line in doc.split("\n"):
                     file.write(line + "\n")

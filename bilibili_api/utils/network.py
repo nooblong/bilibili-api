@@ -60,7 +60,7 @@ class RequestLog(AsyncEvent):
             )
             self.logger.addHandler(handler)
         self.__on = False
-        self.__on_events = [
+        self.__on_events: List[str] = [
             "API_REQUEST",
             "API_RESPONSE",
             "ANTI_SPIDER",
@@ -69,42 +69,42 @@ class RequestLog(AsyncEvent):
             "WS_SEND",
             "WS_CLOSE",
         ]
-        self.__ignore_events = []
+        self.__ignore_events: List[str] = []
         self.add_event_listener("__ALL__", self.__handle_events)
 
-    def get_on_events(self) -> dict:
+    def get_on_events(self) -> List[str]:
         """
         获取日志输出支持的事件类型
 
         Returns:
-            dict: 日志输出支持的事件类型
+            List[str]: 日志输出支持的事件类型
         """
         return self.__on_events
 
-    def set_on_events(self, events: dict) -> None:
+    def set_on_events(self, events: List[str]) -> None:
         """
         设置日志输出支持的事件类型
 
         Args:
-            events (dict): 日志输出支持的事件类型
+            events (List[str]): 日志输出支持的事件类型
         """
         self.__on_events = events
 
-    def get_ignore_events(self) -> dict:
+    def get_ignore_events(self) -> List[str]:
         """
         获取日志输出排除的事件类型
 
         Returns:
-            dict: 日志输出排除的事件类型
+            List[str]: 日志输出排除的事件类型
         """
         return self.__ignore_events
 
-    def set_ignore_events(self, events: dict) -> None:
+    def set_ignore_events(self, events: List[str]) -> None:
         """
         设置日志输出排除的事件类型
 
         Args:
-            events (dict): 日志输出排除的事件类型
+            events (List[str]): 日志输出排除的事件类型
         """
         self.__ignore_events = events
 
@@ -175,8 +175,10 @@ Events:
 
 CallbackData: 描述 (str) 数据 (dict)
 
+示例：
+
 ``` python
-@request_log.on("__ALL__")
+@request_log.on("REQUEST")
 async def handle(desc: str, data: dict) -> None:
     print(desc, data)
 ```
@@ -211,8 +213,10 @@ Events:
 
 CallbackData: 描述 (str) 数据 (dict)
 
+示例：
+
 ``` python
-@request_log.on("__ALL__")
+@request_log.on("REQUEST")
 async def handle(desc: str, data: dict) -> None:
     print(desc, data)
 ```
@@ -257,7 +261,7 @@ class RequestSettings:
         """
         return self.__settings[name]
 
-    def set(self, name: str, value: str) -> Any:
+    def set(self, name: str, value: Any) -> None:
         """
         设置某项设置
 
@@ -941,6 +945,10 @@ def get_selected_client() -> Tuple[str, Type[BiliAPIClient]]:
     Returns:
         Tuple[str, Type[BiliAPIClient]]: 第 0 项为客户端名称，第 1 项为对应的类
     """
+    if selected_client == "":
+        raise ArgsException(
+            "尚未安装第三方请求库或未注册自定义第三方请求库。\n$ pip3 install (curl_cffi|httpx|aiohttp)"
+        )
     return selected_client, sessions[selected_client]
 
 
@@ -951,6 +959,10 @@ def get_available_settings() -> List[str]:
     Returns:
         List[str]: 支持的设置项名称
     """
+    if selected_client == "":
+        raise ArgsException(
+            "尚未安装第三方请求库或未注册自定义第三方请求库。\n$ pip3 install (curl_cffi|httpx|aiohttp)"
+        )
     return client_settings[selected_client]
 
 
@@ -983,7 +995,7 @@ def get_client() -> BiliAPIClient:
     """
     if selected_client == "":
         raise ArgsException(
-            "尚未安装第三方请求库或未注册自定义第三方请求库。\n$ pip3 install (curl_cffi==0.8.1b9|httpx|aiohttp)"
+            "尚未安装第三方请求库或未注册自定义第三方请求库。\n$ pip3 install (curl_cffi|httpx|aiohttp)"
         )
     global session_pool
     pool = session_pool.get(selected_client)
@@ -1114,7 +1126,7 @@ class Credential:
         是否提供 dedeuserid。
 
         Returns:
-            bool。
+            bool: 是否提供 dedeuserid。
         """
         return self.dedeuserid is not None and self.sessdata != ""
 
@@ -1123,7 +1135,7 @@ class Credential:
         是否提供 sessdata。
 
         Returns:
-            bool。
+            bool: 是否提供 sessdata。
         """
         return self.sessdata is not None and self.sessdata != ""
 
@@ -1132,7 +1144,7 @@ class Credential:
         是否提供 bili_jct。
 
         Returns:
-            bool。
+            bool: 是否提供 bili_jct。
         """
         return self.bili_jct is not None and self.sessdata != ""
 
@@ -1141,7 +1153,7 @@ class Credential:
         是否提供 buvid3
 
         Returns:
-            bool.
+            bool: 是否提供 buvid3
         """
         return self.buvid3 is not None and self.sessdata != ""
 
@@ -1150,7 +1162,7 @@ class Credential:
         是否提供 ac_time_value
 
         Returns:
-            bool.
+            bool: 是否提供 ac_time_value
         """
         return self.ac_time_value is not None and self.sessdata != ""
 

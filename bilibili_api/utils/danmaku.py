@@ -14,6 +14,14 @@ from .utils import crack_uid as _crack_uid
 class DmFontSize(Enum):
     """
     字体大小枚举。
+
+    - EXTREME_SMALL
+    - SUPER_SMALL
+    - SMALL
+    - NORMAL
+    - BIG
+    - SUPER_BIG
+    - EXTREME_BIG
     """
 
     EXTREME_SMALL = 12
@@ -28,12 +36,22 @@ class DmFontSize(Enum):
 class DmMode(Enum):
     """
     弹幕模式枚举。
+
+    - FLY: 飞行弹幕
+    - TOP: 置顶弹幕
+    - BOTTOM: 底部弹幕
+    - REVERSE: 反向弹幕
+    - ADVANCE: 高级弹幕
+    - CODE: 代码弹幕 (基于 flash 实现)
+    - SPECIAL: BAS 弹幕
     """
 
     FLY = 1
     TOP = 5
     BOTTOM = 4
     REVERSE = 6
+    ADVANCE = 7
+    CODE = 8
     SPECIAL = 9
 
 
@@ -61,6 +79,10 @@ class Danmaku:
         uid: int = -1,
     ):
         """
+        大会员专属颜色文字填充：http://i0.hdslb.com/bfs/dm/9dcd329e617035b45d2041ac889c49cb5edd3e44.png
+
+        大会员专属颜色背景填充：http://i0.hdslb.com/bfs/dm/ba8e32ae03a0a3f70f4e51975a965a9ddce39d50.png
+
         Args:
             text      (str)                             : 弹幕文本。
 
@@ -91,10 +113,6 @@ class Danmaku:
             attr      (int, optional)                   : 暂不清楚。 Defaults to -1.
 
             uid       (int, optional)                   : 弹幕发送者 UID。Defaults to -1.
-
-        大会员专属颜色文字填充：http://i0.hdslb.com/bfs/dm/9dcd329e617035b45d2041ac889c49cb5edd3e44.png
-
-        大会员专属颜色背景填充：http://i0.hdslb.com/bfs/dm/ba8e32ae03a0a3f70f4e51975a965a9ddce39d50.png
         """
         self.text = text
         self.dm_time = dm_time
@@ -141,6 +159,9 @@ class Danmaku:
     def to_xml(self):
         """
         将弹幕转换为 xml 格式弹幕
+
+        Returns:
+            str: xml
         """
         txt = self.text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         string = f'<d p="{self.dm_time},{self.mode},{self.font_size},{int(self.color, 16)},{self.send_time},{self.pool},{self.crc32_id},{self.id_},11">{txt}</d>'

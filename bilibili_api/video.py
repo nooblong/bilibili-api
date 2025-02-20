@@ -78,12 +78,20 @@ class VideoAppealReasonType:
     - CLICKBAIT(): 不良封面/标题
     - POLITICAL_RUMORS(): 涉政谣言
     - SOCIAL_RUMORS(): 涉社会事件谣言
-    - COVID_RUMORS(): 疫情谣言
     - UNREAL_EVENT(): 虚假不实消息
     - OTHER(): 有其他问题
     - LEAD_WAR(): 引战
     - CANNOT_CHARGE(): 不能参加充电
     - UNREAL_COPYRIGHT(source: str): 转载/自制类型错误
+    - ILLEGAL_POPULARIZE(): 违规推广
+    - ILLEGAL_OTHER(): 其他不规范行为
+    - DANGEROUS(): 危险行为
+    - OTHER_NEW(): 其他
+    - COOPERATE_INFRINGEMENT(): 企业商誉侵权
+    - INFRINGEMENT(): 侵权申诉
+    - VIDEO_INFRINGEMENT(): 盗搬稿件-路人举报
+    - DISCOMFORT(): 观感不适
+    - ILLEGAL_URL(): 违法信息外链
     """
 
     ILLEGAL = lambda: 2
@@ -96,11 +104,19 @@ class VideoAppealReasonType:
     CLICKBAIT = lambda: 10013
     POLITICAL_RUMORS = lambda: 10014
     SOCIAL_RUMORS = lambda: 10015
-    COVID_RUMORS = lambda: 10016
     UNREAL_EVENT = lambda: 10017
     OTHER = lambda: 1
     LEAD_WAR = lambda: 9
     CANNOT_CHARGE = lambda: 10
+    ILLEGAL_POPULARIZE = lambda: 10018
+    ILLEGAL_OTHER = lambda: 10019
+    DANGEROUS = lambda: 10020
+    OTHER_NEW = lambda: 10022
+    COOPERATE_INFRINGEMENT = lambda: 10023
+    INFRINGEMENT = lambda: 10024
+    VIDEO_INFRINGEMENT = lambda: 10026
+    DISCOMFORT = lambda: 10021
+    ILLEGAL_URL = lambda: 10025
 
     @staticmethod
     def PLAGIARISM(bvid: str):
@@ -447,6 +463,9 @@ class Video:
             "fnval": 4048,
             "fourk": 1,
             "gaia_source": "",
+            "from_client": "BROWSER",
+            "is_main_page": "false",
+            "need_fragment": "false",
             "isGaiaAvoided": "true",
             "web_location": 1315873,
             "voice_balance": 1,
@@ -1027,42 +1046,44 @@ class Video:
             cid = await self.__get_cid_by_index(page_index)
 
         view = await self.get_danmaku_view(cid=cid)
-        special_dms = view["special_dms"][0]
-        dm_content = await Api(
-            url=special_dms, method="GET", credential=self.credential
-        ).request(byte=True)
-        reader = BytesReader(dm_content)
+        if not view.get("special_dms"):
+            return []
         dms: List[SpecialDanmaku] = []
-        while not reader.has_end():
-            spec_dm = SpecialDanmaku("")
-            type_ = reader.varint() >> 3
-            if type_ == 1:
-                reader_ = BytesReader(reader.bytes_string())
-                while not reader_.has_end():
-                    type__ = reader_.varint() >> 3
-                    if type__ == 1:
-                        spec_dm.id_ = reader_.varint()
-                    elif type__ == 3:
-                        spec_dm.mode = reader_.varint()
-                    elif type__ == 4:
-                        reader_.varint()
-                    elif type__ == 5:
-                        reader_.varint()
-                    elif type__ == 6:
-                        reader_.string()
-                    elif type__ == 7:
-                        spec_dm.content = reader_.string()
-                    elif type__ == 8:
-                        reader_.varint()
-                    elif type__ == 11:
-                        spec_dm.pool = reader_.varint()
-                    elif type__ == 12:
-                        spec_dm.id_str = reader_.string()
-                    else:
-                        continue
-            else:
-                continue
-            dms.append(spec_dm)
+        for special_dms in view["special_dms"]:
+            dm_content = await Api(
+                url=special_dms, method="GET", credential=self.credential
+            ).request(byte=True)
+            reader = BytesReader(dm_content)
+            while not reader.has_end():
+                spec_dm = SpecialDanmaku("")
+                type_ = reader.varint() >> 3
+                if type_ == 1:
+                    reader_ = BytesReader(reader.bytes_string())
+                    while not reader_.has_end():
+                        type__ = reader_.varint() >> 3
+                        if type__ == 1:
+                            spec_dm.id_ = reader_.varint()
+                        elif type__ == 3:
+                            spec_dm.mode = reader_.varint()
+                        elif type__ == 4:
+                            reader_.varint()
+                        elif type__ == 5:
+                            reader_.varint()
+                        elif type__ == 6:
+                            reader_.string()
+                        elif type__ == 7:
+                            spec_dm.content = reader_.string()
+                        elif type__ == 8:
+                            reader_.varint()
+                        elif type__ == 11:
+                            spec_dm.pool = reader_.varint()
+                        elif type__ == 12:
+                            spec_dm.id_str = reader_.string()
+                        else:
+                            continue
+                else:
+                    continue
+                dms.append(spec_dm)
         return dms
 
     async def get_history_danmaku_index(
@@ -1202,7 +1223,7 @@ class Video:
             cid        (int | None, optional): cid. Defaults to None.
 
         Return:
-            xml 文件源
+            str: xml 文件源
         """
         if cid is None:
             if page_index is None:
@@ -1503,7 +1524,7 @@ class Video:
             cid (int | None): 分 P ID,从视频信息中获取
 
         Returns:
-            调用 API 返回的结果
+            dict: 调用 API 返回的结果
         """
         if cid is None:
             raise ArgsException("需要 cid")
@@ -1524,7 +1545,7 @@ class Video:
             epid (int | None): 番剧分集 ID,从番剧信息中获取
 
         Returns:
-            调用 API 返回的结果
+            dict: 调用 API 返回的结果
         """
         if cid is None:
             raise ArgsException("需要 cid")
@@ -1637,7 +1658,7 @@ class Video:
         获取弹幕快照
 
         Returns:
-            调用 API 返回的结果
+            dict: 调用 API 返回的结果
         """
         api = API["danmaku"]["snapshot"]
 
@@ -1663,7 +1684,7 @@ class Video:
 
             cid(int | None, optional)       : 分 P 编码
         Returns:
-            调用 API 返回的结果
+            dict: 调用 API 返回的结果
         """
         if cid is None:
             if page_index is None:
@@ -1691,7 +1712,7 @@ class Video:
             cid(int | None)       : 分 P 编码
 
         Returns:
-            调用 API 返回的结果
+            dict: 调用 API 返回的结果
         """
         if cid is None:
             if page_index is None:
@@ -1712,7 +1733,7 @@ class Video:
         添加视频至稍后再看列表
 
         Returns:
-            调用 API 返回的结果
+            dict: 调用 API 返回的结果
         """
         self.credential.raise_for_no_sessdata()
         self.credential.raise_for_no_bili_jct()
@@ -1727,7 +1748,7 @@ class Video:
         从稍后再看列表删除视频
 
         Returns:
-            调用 API 返回的结果
+            dict: 调用 API 返回的结果
         """
         self.credential.raise_for_no_sessdata()
         self.credential.raise_for_no_bili_jct()
@@ -2164,28 +2185,14 @@ class FLVStreamDownloadURL:
 
 
 @dataclass
-class HTML5MP4DownloadURL:
+class MP4StreamDownloadURL:
     """
     (@dataclass)
 
-    可供 HTML5 播放的 mp4 视频流
+    MP4 视频流
 
     Attributes:
         url           (str): HTML5 mp4 视频流
-    """
-
-    url: str
-
-
-@dataclass
-class EpisodeTryMP4DownloadURL:
-    """
-    (@dataclass)
-
-    番剧/课程试看的 mp4 播放流
-
-    Attributes:
-        url           (str): 番剧试看的 mp4 播放流
     """
 
     url: str
@@ -2211,56 +2218,29 @@ class VideoDownloadURLDataDetecter:
             data (dict): `Video.get_download_url` 返回的结果
         """
         self.__data = data
-        if self.__data.get("video_info"): # bangumi
+        if self.__data.get("video_info"):  # bangumi
             self.__data = self.__data["video_info"]
 
     def check_video_and_audio_stream(self) -> bool:
         """
-        判断是否为音视频分离流
+        判断是否为 DASH （音视频分离）
 
         Returns:
-            bool: 是否为音视频分离流
+            bool: 是否为 DASH
         """
         if "dash" in self.__data.keys():
             return True
         return False
 
-    def check_flv_stream(self) -> bool:
+    def check_flv_mp4_stream(self) -> bool:
         """
-        判断是否为 FLV 视频流
+        判断是否为 FLV / MP4 流
 
         Returns:
-            bool: 是否为 FLV 视频流
+            bool: 是否为 FLV / MP4 流
         """
         if "durl" in self.__data.keys():
-            if self.__data["format"].startswith("flv"):
-                return True
-        return False
-
-    def check_html5_mp4_stream(self) -> bool:
-        """
-        判断是否为 HTML5 可播放的 mp4 视频流
-
-        Returns:
-            bool: 是否为 HTML5 可播放的 mp4 视频流
-        """
-        if "durl" in self.__data.keys():
-            if self.__data["format"].startswith("mp4"):
-                if self.__data.get("is_html5") == True:
-                    return True
-        return False
-
-    def check_episode_try_mp4_stream(self):
-        """
-        判断是否为番剧/课程试看的 mp4 视频流
-
-        Returns:
-            bool: 是否为番剧试看的 mp4 视频流
-        """
-        if "durl" in self.__data.keys():
-            if self.__data["format"].startswith("mp4"):
-                if self.__data.get("is_html5") != True:
-                    return True
+            return True
         return False
 
     def detect_all(self):
@@ -2298,8 +2278,7 @@ class VideoDownloadURLDataDetecter:
             VideoStreamDownloadURL,
             AudioStreamDownloadURL,
             FLVStreamDownloadURL,
-            HTML5MP4DownloadURL,
-            EpisodeTryMP4DownloadURL,
+            MP4StreamDownloadURL,
         ]
     ]:
         """
@@ -2331,19 +2310,15 @@ class VideoDownloadURLDataDetecter:
         Returns:
             List[VideoStreamDownloadURL | AudioStreamDownloadURL | FLVStreamDownloadURL | HTML5MP4DownloadURL | EpisodeTryMP4DownloadURL]: 提取出来的视频/音频流
 
-        **参数仅能在音视频流分离的情况下产生作用，flv / mp4 试看流 / html5 mp4 流下以下参数均没有作用**
+        **参数仅能在音视频流分离的情况下产生作用，flv / mp4 流下以下参数均没有作用**
         """
         if "durl" in self.__data.keys():
             if self.__data["format"].startswith("flv"):
                 # FLV 视频流
                 return [FLVStreamDownloadURL(url=self.__data["durl"][0]["url"])]
             else:
-                if self.check_html5_mp4_stream():
-                    # HTML5 MP4 视频流
-                    return [HTML5MP4DownloadURL(url=self.__data["durl"][0]["url"])]
-                else:
-                    # 会员番剧试看 MP4 流
-                    return [EpisodeTryMP4DownloadURL(url=self.__data["durl"][0]["url"])]
+                # MP4 视频流
+                return [MP4StreamDownloadURL(url=self.__data["durl"][0]["url"])]
         else:
             # 正常情况
             streams = []
@@ -2450,11 +2425,13 @@ class VideoDownloadURLDataDetecter:
         no_dolby_audio: bool = False,
         no_hdr: bool = False,
         no_hires: bool = False,
-    ) -> Union[
-        List[FLVStreamDownloadURL],
-        List[HTML5MP4DownloadURL],
-        List[EpisodeTryMP4DownloadURL],
-        List[Union[VideoStreamDownloadURL, AudioStreamDownloadURL, None]],
+    ) -> List[
+        Union[
+            VideoStreamDownloadURL,
+            AudioStreamDownloadURL,
+            FLVStreamDownloadURL,
+            MP4StreamDownloadURL,
+        ]
     ]:
         """
         提取出分辨率、音质等信息最好的音视频流。
@@ -2487,12 +2464,8 @@ class VideoDownloadURLDataDetecter:
 
         **以上参数仅能在音视频流分离的情况下产生作用，flv / mp4 试看流 / html5 mp4 流下以下参数均没有作用**
         """
-        if self.check_flv_stream():
-            return self.detect_all()  # type: ignore
-        elif self.check_html5_mp4_stream():
-            return self.detect_all()  # type: ignore
-        elif self.check_episode_try_mp4_stream():
-            return self.detect_all()  # type: ignore
+        if self.check_flv_mp4_stream():
+            return self.detect_all()
         else:
             data = self.detect(
                 video_max_quality=video_max_quality,

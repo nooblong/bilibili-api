@@ -69,7 +69,7 @@ $ pip3 install aiohttp
 $ pip3 install httpx
 
 # curl_cffi
-$ pip3 install "curl_cffi>=0.8.1b9"
+$ pip3 install "curl_cffi"
 ```
 
 接下来我们来获取视频的播放量等信息：
@@ -156,6 +156,8 @@ if __name__ == '__main__':
 如果想要指定请求库，可以利用 `select_client` 进行切换。
 
 ``` python
+from bilibili_api import select_client
+
 select_client("curl_cffi") # 选择 curl_cffi
 select_client("aiohttp") # 选择 aiohttp
 select_client("httpx") # 选择 httpx，不支持 WebSocket
