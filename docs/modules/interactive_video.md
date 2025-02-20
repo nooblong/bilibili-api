@@ -24,20 +24,25 @@ from bilibili_api import interactive_video
   - [def get\_video()](#def-get\_video)
 - [class InteractiveJumpingCommand()](#class-InteractiveJumpingCommand)
   - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [def get\_command()](#def-get\_command)
+  - [def get\_vars()](#def-get\_vars)
   - [def run\_command()](#def-run\_command)
 - [class InteractiveJumpingCondition()](#class-InteractiveJumpingCondition)
   - [def \_\_init\_\_()](#def-\_\_init\_\_)
+  - [def get\_condition()](#def-get\_condition)
   - [def get\_result()](#def-get\_result)
+  - [def get\_vars()](#def-get\_vars)
 - [class InteractiveNode()](#class-InteractiveNode)
   - [def \_\_init\_\_()](#def-\_\_init\_\_)
   - [async def get\_children()](#async-def-get\_children)
   - [def get\_cid()](#def-get\_cid)
   - [async def get\_info()](#async-def-get\_info)
+  - [def get\_jumping\_command()](#def-get\_jumping\_command)
   - [def get\_jumping\_condition()](#def-get\_jumping\_condition)
   - [async def get\_jumping\_type()](#async-def-get\_jumping\_type)
   - [def get\_node\_id()](#def-get\_node\_id)
   - [def get\_self\_button()](#def-get\_self\_button)
-  - [async def get\_vars()](#async-def-get\_vars)
+  - [def get\_vars()](#def-get\_vars)
   - [def get\_video()](#def-get\_video)
   - [def is\_default()](#def-is\_default)
 - [class InteractiveNodeJumpingType()](#class-InteractiveNodeJumpingType)
@@ -61,6 +66,7 @@ from bilibili_api import interactive_video
 - [class InteractiveVideoDownloader()](#class-InteractiveVideoDownloader)
   - [def \_\_init\_\_()](#def-\_\_init\_\_)
   - [async def abort()](#async-def-abort)
+  - [async def start()](#async-def-start)
 - [class InteractiveVideoDownloaderEvents()](#class-InteractiveVideoDownloaderEvents)
 - [class InteractiveVideoDownloaderMode()](#class-InteractiveVideoDownloaderMode)
 - [def get\_ivi\_file\_meta()](#def-get\_ivi\_file\_meta)
@@ -79,10 +85,10 @@ from bilibili_api import interactive_video
 
 | name | type | description |
 | - | - | - |
-| text | str | 文字 |
-| x | int | x 轴 |
-| y | int | y 轴 |
-| align | InteractiveButtonAlign \| int | 按钮的文字在按钮中的位置 |
+| `text` | `str` | 文字 |
+| `x` | `int` | x 轴 |
+| `y` | `int` | y 轴 |
+| `align` | `InteractiveButtonAlign \| int` | 按钮的文字在按钮中的位置 |
 
 
 ### def get_align()
@@ -91,7 +97,7 @@ from bilibili_api import interactive_video
 
 
 
-**Returns:** int: 按钮文字布局
+**Returns:** `int`:  按钮文字布局
 
 
 
@@ -102,7 +108,7 @@ from bilibili_api import interactive_video
 
 
 
-**Returns:** Tuple[int, int]: 按钮位置
+**Returns:** `Tuple[int, int]`:  按钮位置
 
 
 
@@ -113,7 +119,7 @@ from bilibili_api import interactive_video
 
 
 
-**Returns:** str: 按钮文字
+**Returns:** `str`:  按钮文字
 
 
 
@@ -164,9 +170,9 @@ o----|xxx| (TEXT_RIGHT)
 
 | name | type | description |
 | - | - | - |
-| video | InteractiveVideo | 互动视频类 |
-| skin | Dict | 样式 |
-| root_cid | int | 根节点 CID |
+| `video` | `InteractiveVideo` | 互动视频类 |
+| `skin` | `Dict` | 样式 |
+| `root_cid` | `int` | 根节点 CID |
 
 
 ### async def get_children()
@@ -175,7 +181,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** List[InteractiveNode]: 子节点
+**Returns:** `List[InteractiveNode]`:  子节点
 
 
 
@@ -186,7 +192,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** InteractiveNode: 根节点
+**Returns:** `InteractiveNode`:  根节点
 
 
 
@@ -197,7 +203,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** dict: 按钮样式
+**Returns:** `dict`:  按钮样式
 
 
 
@@ -208,7 +214,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** InteractiveVideo: 视频
+**Returns:** `InteractiveVideo`:  视频
 
 
 
@@ -227,8 +233,30 @@ o----|xxx| (TEXT_RIGHT)
 
 | name | type | description |
 | - | - | - |
-| var | List[InteractiveVariable] | 所有变量 |
-| command | str | 公式 |
+| `var` | `List[InteractiveVariable]` | 所有变量 |
+| `command` | `str` | 公式 |
+
+
+### def get_command()
+
+获取表达式
+
+
+
+**Returns:** `str`:  表达式
+
+
+
+
+### def get_vars()
+
+获取公式中的变量
+
+
+
+**Returns:** `List[InteractiveVariable]`:  变量
+
+
 
 
 ### def run_command()
@@ -237,7 +265,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** List[InteractiveVariable]
+**Returns:** `List[InteractiveVariable]`:  所有变量的最终值
 
 
 
@@ -256,8 +284,19 @@ o----|xxx| (TEXT_RIGHT)
 
 | name | type | description |
 | - | - | - |
-| var | List[InteractiveVariable] | 所有变量 |
-| condition | str | 公式 |
+| `var` | `List[InteractiveVariable]` | 所有变量 |
+| `condition` | `str` | 公式 |
+
+
+### def get_condition()
+
+获取表达式
+
+
+
+**Returns:** `str`:  表达式
+
+
 
 
 ### def get_result()
@@ -266,7 +305,18 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** bool: 是否成立
+**Returns:** `bool`:  是否成立
+
+
+
+
+### def get_vars()
+
+获取公式中的变量
+
+
+
+**Returns:** `List[InteractiveVariable]`:  变量
 
 
 
@@ -285,14 +335,14 @@ o----|xxx| (TEXT_RIGHT)
 
 | name | type | description |
 | - | - | - |
-| video | InteractiveVideo | 视频类 |
-| node_id | int | 节点 id |
-| cid | int | CID |
-| vars | List[InteractiveVariable] | 变量 |
-| button | InteractiveButton | 对应的按钮 |
-| condition | InteractiveJumpingCondition | 跳转公式 |
-| native_command | InteractiveJumpingCommand | 跳转时变量操作 |
-| is_default | bool | 是不是默认的跳转的节点 |
+| `video` | `InteractiveVideo` | 视频类 |
+| `node_id` | `int` | 节点 id |
+| `cid` | `int` | CID |
+| `vars` | `List[InteractiveVariable]` | 变量 |
+| `button` | `InteractiveButton` | 对应的按钮 |
+| `condition` | `InteractiveJumpingCondition` | 跳转公式 |
+| `native_command` | `InteractiveJumpingCommand` | 跳转时变量操作 |
+| `is_default` | `bool` | 是不是默认的跳转的节点 |
 
 
 ### async def get_children()
@@ -301,7 +351,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** List[InteractiveNode]: 所有子节点
+**Returns:** `List[InteractiveNode]`:  所有子节点
 
 
 
@@ -312,7 +362,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** int: 节点 cid
+**Returns:** `int`:  节点 cid
 
 
 
@@ -323,7 +373,18 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** dict: 调用 API 返回的结果
+**Returns:** `dict`:  调用 API 返回的结果
+
+
+
+
+### def get_jumping_command()
+
+获取跳转时执行的语句，已自动执行，无需手动调用
+
+
+
+**Returns:** `InteractiveJumpingCommand`:  执行的语句
 
 
 
@@ -334,7 +395,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** InteractiveJumpingCondition: 跳转条件
+**Returns:** `InteractiveJumpingCondition`:  跳转条件
 
 
 
@@ -345,7 +406,6 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** None
 
 
 
@@ -355,7 +415,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** int: 节点 id
+**Returns:** `int`:  节点 id
 
 
 
@@ -366,18 +426,18 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** InteractiveButton: 所对应的按钮
+**Returns:** `InteractiveButton`:  所对应的按钮
 
 
 
 
-### async def get_vars()
+### def get_vars()
 
 获取节点的所有变量
 
 
 
-**Returns:** List[InteractiveVariable]: 节点的所有变量
+**Returns:** `List[InteractiveVariable]`:  节点的所有变量
 
 
 
@@ -388,7 +448,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** InteractiveVideo: 对应视频
+**Returns:** `InteractiveVideo`:  对应视频
 
 
 
@@ -399,7 +459,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** bool: 是否为跳转中默认节点
+**Returns:** `bool`:  是否为跳转中默认节点
 
 
 
@@ -433,11 +493,11 @@ o----|xxx| (TEXT_RIGHT)
 
 | name | type | description |
 | - | - | - |
-| name | str | 变量名 |
-| var_id | str | 变量 id |
-| var_value | int | 变量的值 |
-| show | bool | 是否显示 |
-| random | bool | 是否为随机值(1-100) |
+| `name` | `str` | 变量名 |
+| `var_id` | `str` | 变量 id |
+| `var_value` | `int` | 变量的值 |
+| `show` | `bool` | 是否显示 |
+| `random` | `bool` | 是否为随机值(1-100) |
 
 
 ### def get_id()
@@ -446,7 +506,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** str: 变量 id
+**Returns:** `str`:  变量 id
 
 
 
@@ -457,7 +517,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** str: 变量的名字
+**Returns:** `str`:  变量的名字
 
 
 
@@ -468,7 +528,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** int: 变量对应的值
+**Returns:** `int`:  变量对应的值
 
 
 
@@ -479,7 +539,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** bool: 变量是否随机生成
+**Returns:** `bool`:  变量是否随机生成
 
 
 
@@ -490,7 +550,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** bool: 变量是否显示
+**Returns:** `bool`:  变量是否显示
 
 
 
@@ -501,7 +561,6 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** None
 
 
 
@@ -528,7 +587,6 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** None
 
 
 
@@ -539,9 +597,9 @@ o----|xxx| (TEXT_RIGHT)
 
 | name | type | description |
 | - | - | - |
-| edge_id | int, optional | 节点 ID，为 None 时获取根节点信息. Defaults to None. |
+| `edge_id` | `int, optional` | 节点 ID，为 None 时获取根节点信息. Defaults to None. |
 
-**Returns:** dict: 调用 API 返回的结果
+**Returns:** `dict`:  调用 API 返回的结果
 
 
 
@@ -552,7 +610,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** InteractiveGraph: 情节树
+**Returns:** `InteractiveGraph`:  情节树
 
 
 
@@ -563,7 +621,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** int: 剧情图版本号
+**Returns:** `int`:  剧情图版本号
 
 
 
@@ -575,9 +633,9 @@ o----|xxx| (TEXT_RIGHT)
 
 | name | type | description |
 | - | - | - |
-| score | int | 互动视频分数. Defaults to 5. |
+| `score` | `int` | 互动视频分数. Defaults to 5. |
 
-**Returns:** dict: 调用 API 返回的结果
+**Returns:** `dict`:  调用 API 返回的结果
 
 
 
@@ -588,7 +646,7 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** dict: 调用 API 返回的结果
+**Returns:** `dict`:  调用 API 返回的结果
 
 
 
@@ -600,9 +658,9 @@ o----|xxx| (TEXT_RIGHT)
 
 | name | type | description |
 | - | - | - |
-| story_tree | str | 情节树的描述，参考 bilibili_storytree.StoryGraph, 需要 Serialize 这个结构 |
+| `story_tree` | `str` | 情节树的描述，参考 bilibili_storytree.StoryGraph, 需要 Serialize 这个结构 |
 
-**Returns:** dict: 调用 API 返回的结果
+**Returns:** `dict`:  调用 API 返回的结果
 
 
 
@@ -627,12 +685,12 @@ o----|xxx| (TEXT_RIGHT)
 
 | name | type | description |
 | - | - | - |
-| video | InteractiveVideo | 互动视频类 |
-| out | str | 输出文件地址 (如果模式为 NODE_VIDEOS/NO_PACKAGING 则此参数表示所有节点视频的存放目录) |
-| self_download_func | Coroutine | 自定义下载函数（需 async 函数）. Defaults to None. |
-| downloader_mode | InteractiveVideoDownloaderMode | 下载模式 |
-| stream_detecting_params | Dict | `VideoDownloadURLDataDetecter` 提取最佳流时传入的参数，可控制视频及音频品质 |
-| fetching_nodes_retry_times | int | 获取节点时的最大重试次数 |
+| `video` | `InteractiveVideo` | 互动视频类 |
+| `out` | `str` | 输出文件地址 (如果模式为 NODE_VIDEOS/NO_PACKAGING 则此参数表示所有节点视频的存放目录) |
+| `self_download_func` | `Coroutine` | 自定义下载函数（需 async 函数）. Defaults to None. |
+| `downloader_mode` | `InteractiveVideoDownloaderMode` | 下载模式 |
+| `stream_detecting_params` | `Dict` | `VideoDownloadURLDataDetecter` 提取最佳流时传入的参数，可控制视频及音频品质 |
+| `fetching_nodes_retry_times` | `int` | 获取节点时的最大重试次数 |
 
 
 ### async def abort()
@@ -641,7 +699,15 @@ o----|xxx| (TEXT_RIGHT)
 
 
 
-**Returns:** None
+
+
+
+### async def start()
+
+开始下载
+
+
+
 
 
 
@@ -694,9 +760,9 @@ o----|xxx| (TEXT_RIGHT)
 
 | name | type | description |
 | - | - | - |
-| path | str | 文件地址 |
+| `path` | `str` | 文件地址 |
 
-**Returns:** dict: 文件信息
+**Returns:** `dict`:  文件信息
 
 
 

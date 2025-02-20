@@ -22,7 +22,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
 from functools import reduce
-from typing import Dict, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from Cryptodome.Cipher import PKCS1_OAEP
 from Cryptodome.Hash import SHA256
@@ -60,7 +60,7 @@ class RequestLog(AsyncEvent):
             )
             self.logger.addHandler(handler)
         self.__on = False
-        self.__on_events = [
+        self.__on_events: List[str] = [
             "API_REQUEST",
             "API_RESPONSE",
             "ANTI_SPIDER",
@@ -69,42 +69,42 @@ class RequestLog(AsyncEvent):
             "WS_SEND",
             "WS_CLOSE",
         ]
-        self.__ignore_events = []
+        self.__ignore_events: List[str] = []
         self.add_event_listener("__ALL__", self.__handle_events)
 
-    def get_on_events(self) -> dict:
+    def get_on_events(self) -> List[str]:
         """
         获取日志输出支持的事件类型
 
         Returns:
-            dict: 日志输出支持的事件类型
+            List[str]: 日志输出支持的事件类型
         """
         return self.__on_events
 
-    def set_on_events(self, events: dict) -> None:
+    def set_on_events(self, events: List[str]) -> None:
         """
         设置日志输出支持的事件类型
 
         Args:
-            events (dict): 日志输出支持的事件类型
+            events (List[str]): 日志输出支持的事件类型
         """
         self.__on_events = events
 
-    def get_ignore_events(self) -> dict:
+    def get_ignore_events(self) -> List[str]:
         """
         获取日志输出排除的事件类型
 
         Returns:
-            dict: 日志输出排除的事件类型
+            List[str]: 日志输出排除的事件类型
         """
         return self.__ignore_events
 
-    def set_ignore_events(self, events: dict) -> None:
+    def set_ignore_events(self, events: List[str]) -> None:
         """
         设置日志输出排除的事件类型
 
         Args:
-            events (dict): 日志输出排除的事件类型
+            events (List[str]): 日志输出排除的事件类型
         """
         self.__ignore_events = events
 
@@ -175,8 +175,10 @@ Events:
 
 CallbackData: 描述 (str) 数据 (dict)
 
+示例：
+
 ``` python
-@request_log.on("__ALL__")
+@request_log.on("REQUEST")
 async def handle(desc: str, data: dict) -> None:
     print(desc, data)
 ```
@@ -211,8 +213,10 @@ Events:
 
 CallbackData: 描述 (str) 数据 (dict)
 
+示例：
+
 ``` python
-@request_log.on("__ALL__")
+@request_log.on("REQUEST")
 async def handle(desc: str, data: dict) -> None:
     print(desc, data)
 ```
@@ -229,16 +233,49 @@ async def handle(desc: str, data: dict) -> None:
 
 sessions: Dict[str, Type["BiliAPIClient"]] = {}
 session_pool: Dict[str, Dict[asyncio.AbstractEventLoop, "BiliAPIClient"]] = {}
+client_settings: Dict[str, list] = {}
 selected_client: str = ""
 
 
 class RequestSettings:
     def __init__(self):
-        self.__proxy: str = ""
-        self.__timeout: float = 5.0
-        self.__verify_ssl: bool = True
-        self.__trust_env: bool = True
-        self.__wbi_retry_times: int = 3
+        self.__settings: dict = {
+            "proxy": "",
+            "timeout": 5.0,
+            "verify_ssl": True,
+            "trust_env": True,
+        }
+        self.__wbi_retry_times = 3
+
+    def get(self, name: str) -> Any:
+        """
+        获取某项设置
+
+        默认设置名称：`proxy` `timeout` `verify_ssl` `trust_env`
+
+        Args:
+            name (str): 设置名称
+
+        Returns:
+            Any: 设置的值
+        """
+        return self.__settings[name]
+
+    def set(self, name: str, value: Any) -> None:
+        """
+        设置某项设置
+
+        默认设置名称：`proxy` `timeout` `verify_ssl` `trust_env`
+
+        Args:
+            name  (str): 设置名称
+            value (str): 设置的值
+        """
+        global session_pool
+        self.__settings[name] = value
+        for _, pool in session_pool.items():
+            for _, client in pool.items():
+                client.__getattribute__(f"set_{name}")(value)
 
     def get_proxy(self) -> str:
         """
@@ -247,7 +284,7 @@ class RequestSettings:
         Returns:
             str: 代理地址. Defaults to "".
         """
-        return self.__proxy
+        return self.get("proxy")
 
     def set_proxy(self, proxy: str):
         """
@@ -256,11 +293,7 @@ class RequestSettings:
         Args:
             proxy (str): 代理地址
         """
-        global session_pool
-        self.__proxy = proxy
-        for _, pool in session_pool.items():
-            for _, client in pool.items():
-                client.set_proxy(proxy)
+        self.set("proxy", proxy)
 
     def get_timeout(self) -> float:
         """
@@ -269,7 +302,7 @@ class RequestSettings:
         Returns:
             float: 超时时间. Defaults to 5.0.
         """
-        return self.__timeout
+        return self.get("timeout")
 
     def set_timeout(self, timeout: float):
         """
@@ -278,11 +311,7 @@ class RequestSettings:
         Args:
             timeout (float): 超时时间
         """
-        global session_pool
-        self.__timeout = timeout
-        for _, pool in session_pool.items():
-            for _, client in pool.items():
-                client.set_timeout(timeout)
+        self.set("timeout", timeout)
 
     def get_verify_ssl(self) -> bool:
         """
@@ -291,7 +320,7 @@ class RequestSettings:
         Returns:
             bool: 是否验证 SSL. Defaults to True.
         """
-        return self.__verify_ssl
+        return self.get("verify_ssl")
 
     def set_verify_ssl(self, verify_ssl: bool):
         """
@@ -300,11 +329,7 @@ class RequestSettings:
         Args:
             verify_ssl (bool): 是否验证 SSL
         """
-        global session_pool
-        self.__verify_ssl = verify_ssl
-        for _, pool in session_pool.items():
-            for _, client in pool.items():
-                client.set_verify_ssl(verify_ssl)
+        self.set("verify_ssl", verify_ssl)
 
     def get_trust_env(self) -> bool:
         """
@@ -313,7 +338,7 @@ class RequestSettings:
         Returns:
             bool: `trust_env`. Defaults to True.
         """
-        return self.__trust_env
+        return self.get("trust_env")
 
     def set_trust_env(self, trust_env: bool):
         """
@@ -322,11 +347,7 @@ class RequestSettings:
         Args:
             verify_ssl (bool): `trust_env`
         """
-        global session_pool
-        self.__trust_env = trust_env
-        for _, pool in session_pool.items():
-            for _, client in pool.items():
-                client.set_trust_env(trust_env)
+        self.set("trust_env", trust_env)
 
     def get_wbi_retry_times(self) -> int:
         """
@@ -346,10 +367,21 @@ class RequestSettings:
         """
         self.__wbi_retry_times = wbi_retry_times
 
+    def get_all(self) -> dict:
+        """
+        获取目前所有的设置项
+
+        Returns:
+            dict: 所有的设置项
+        """
+        return self.__settings
+
 
 request_settings = RequestSettings()
 "请求参数设置"
 request_settings.__doc__ = "请求参数设置"
+
+DEFAULT_SETTINGS = ["proxy", "timeout", "verify_ssl", "trust_env"]
 
 
 @dataclass
@@ -856,13 +888,14 @@ class BiliAPIClient(ABC):
         raise NotImplementedError
 
 
-def register_client(name: str, cls: type) -> None:
+def register_client(name: str, cls: type, settings: dict = {}) -> None:
     """
     注册请求客户端并切换，可用于用户自定义请求客户端。
 
     Args:
-        name (str): 请求客户端类型名称，用户自定义命名。
-        cls  (type): 基于 BiliAPIClient 重写后的请求客户端类。
+        name     (str): 请求客户端类型名称，用户自定义命名。
+        cls      (type): 基于 BiliAPIClient 重写后的请求客户端类。
+        settings (dict): 请求客户端在基础设置外的其他设置，键为设置名称，值为设置默认值。Defaults to {}.
     """
     global sessions, session_pool
     raise_for_statement(
@@ -871,6 +904,10 @@ def register_client(name: str, cls: type) -> None:
     sessions[name] = cls
     session_pool[name] = {}
     select_client(name)
+    for key, value in settings.items():
+        request_settings.set(key, value)
+    client_settings[name] = DEFAULT_SETTINGS.copy()
+    client_settings[name] += list(settings.keys())
 
 
 def unregister_client(name: str) -> None:
@@ -908,7 +945,45 @@ def get_selected_client() -> Tuple[str, Type[BiliAPIClient]]:
     Returns:
         Tuple[str, Type[BiliAPIClient]]: 第 0 项为客户端名称，第 1 项为对应的类
     """
+    if selected_client == "":
+        raise ArgsException(
+            "尚未安装第三方请求库或未注册自定义第三方请求库。\n$ pip3 install (curl_cffi|httpx|aiohttp)"
+        )
     return selected_client, sessions[selected_client]
+
+
+def get_available_settings() -> List[str]:
+    """
+    获取当前支持的设置项
+
+    Returns:
+        List[str]: 支持的设置项名称
+    """
+    if selected_client == "":
+        raise ArgsException(
+            "尚未安装第三方请求库或未注册自定义第三方请求库。\n$ pip3 install (curl_cffi|httpx|aiohttp)"
+        )
+    return client_settings[selected_client]
+
+
+def get_registered_clients() -> Dict[str, Type[BiliAPIClient]]:
+    """
+    获取所有注册过的 BiliAPIClient
+
+    Returns:
+        Dict[str, Type[BiliAPIClient]]: 注册过的 BiliAPIClient
+    """
+    return sessions
+
+
+def get_registered_available_settings() -> Dict[str, List[str]]:
+    """
+    获取所有注册过的 BiliAPIClient 所支持的设置项
+
+    Returns:
+        Dict[str, List[str]]: 所有注册过的 BiliAPIClient 所支持的设置项
+    """
+    return client_settings
 
 
 def get_client() -> BiliAPIClient:
@@ -920,7 +995,7 @@ def get_client() -> BiliAPIClient:
     """
     if selected_client == "":
         raise ArgsException(
-            "尚未安装第三方请求库或未注册自定义第三方请求库。\n$ pip3 install (curl_cffi==0.8.1b9|httpx|aiohttp)"
+            "尚未安装第三方请求库或未注册自定义第三方请求库。\n$ pip3 install (curl_cffi|httpx|aiohttp)"
         )
     global session_pool
     pool = session_pool.get(selected_client)
@@ -929,12 +1004,10 @@ def get_client() -> BiliAPIClient:
     loop = asyncio.get_event_loop()
     session = pool.get(loop)
     if session is None:
-        session = sessions[selected_client](
-            proxy=request_settings.get_proxy(),
-            timeout=request_settings.get_timeout(),
-            verify_ssl=request_settings.get_verify_ssl(),
-            trust_env=request_settings.get_trust_env(),
-        )
+        kwargs = {}
+        for piece in client_settings[selected_client]:
+            kwargs[piece] = request_settings.get(piece)
+        session = sessions[selected_client](**kwargs)
         session_pool[selected_client][loop] = session
     return session
 
@@ -962,16 +1035,6 @@ def set_session(session: object) -> None:
         raise ArgsException("未找到用户指定的请求客户端。")
     loop = asyncio.get_event_loop()
     session_pool[selected_client][loop] = sessions[selected_client](session=session)
-
-
-def get_registered_clients() -> Dict[str, Type[BiliAPIClient]]:
-    """
-    获取所有注册过的 BiliAPIClient
-
-    Returns:
-        Dict[str, Type[BiliAPIClient]]: 注册过的 BiliAPIClient
-    """
-    return sessions
 
 
 @atexit.register
@@ -1063,7 +1126,7 @@ class Credential:
         是否提供 dedeuserid。
 
         Returns:
-            bool。
+            bool: 是否提供 dedeuserid。
         """
         return self.dedeuserid is not None and self.sessdata != ""
 
@@ -1072,7 +1135,7 @@ class Credential:
         是否提供 sessdata。
 
         Returns:
-            bool。
+            bool: 是否提供 sessdata。
         """
         return self.sessdata is not None and self.sessdata != ""
 
@@ -1081,7 +1144,7 @@ class Credential:
         是否提供 bili_jct。
 
         Returns:
-            bool。
+            bool: 是否提供 bili_jct。
         """
         return self.bili_jct is not None and self.sessdata != ""
 
@@ -1090,7 +1153,7 @@ class Credential:
         是否提供 buvid3
 
         Returns:
-            bool.
+            bool: 是否提供 buvid3
         """
         return self.buvid3 is not None and self.sessdata != ""
 
@@ -1099,7 +1162,7 @@ class Credential:
         是否提供 ac_time_value
 
         Returns:
-            bool.
+            bool: 是否提供 ac_time_value
         """
         return self.ac_time_value is not None and self.sessdata != ""
 

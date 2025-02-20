@@ -199,6 +199,20 @@ class OrderType(Enum):
     asc = "asc"
 
 
+class OpusType(Enum):
+    """
+    图文类型
+
+    + ALL: 所有
+    + ARTICLE: 属于专栏的图文
+    + DYNAMIC: 不属于专栏（但为动态）的图文
+    """
+
+    ALL = "all"
+    ARTICLE = "article"
+    DYNAMIC = "dynamic"
+
+
 async def name2uid(names: Union[str, List[str]], credential: Credential = None):
     """
     将用户名转为 uid
@@ -628,8 +642,10 @@ class User:
         params = {
             "host_mid": self.__uid,
             "offset": offset,
-            "features": "itemOpusStyle",
+            "features": "itemOpusStyle,listOnlyfans,opusBigCover,onlyfansVote,forwardListHidden,decorationCard,commentsNewVersion,onlyfansAssetsV2,ugcDelete,onlyfansQaCard",
             "timezone_offset": -480,
+            "x-bili-device-req-json": '{"platform":"web","device":"pc"}',
+            "x-bili-web-req-json": '{"spm_id":"333.1387"}',
         }
         data = (
             await Api(**api, credential=self.credential).update_params(**params).result
@@ -1007,15 +1023,40 @@ class User:
         视频三联特效
 
         Returns:
-            dict: 调用 API 返回的结果。
+            dict: 调用 API 返回的结果
         """
         api = API["info"]["uplikeimg"]
         params = {"vmid": self.get_uid()}
-        return await Api(**api).update_params(**params).result
+        return (
+            await Api(**api, credential=self.credential).update_params(**params).result
+        )
+
+    async def get_opus(self, type_: OpusType = OpusType.ALL, offset: str = "") -> dict:
+        """
+        获取用户发布过的图文
+
+        Args:
+            type_  (OpusType, optional): 获取的图文类型. Defaults to OpusType.ALL.
+            offset (str, optional)     : 偏移量。每次请求可获取下次请求对应的偏移量，类似单向链表。对应返回结果的 `["offset"]` Defaults to "".
+
+        Returns:
+            dict: 调用 API 返回的结果
+        """
+        api = API["info"]["opus"]
+        params = {
+            "host_mid": self.get_uid(),
+            "offset": offset,
+            "type": type_.value,
+            "web_location": "333.1387",
+            "w_webid": await self.get_access_id(),
+        }
+        return (
+            await Api(**api, credential=self.credential).update_params(**params).result
+        )
 
     async def get_access_id(self) -> str:
         """
-        获取用户 access_id 如未过期直接从本地获取 防止重复请求
+        获取用户 access_id (w_webid) 如未过期直接从本地获取 防止重复请求
 
         Returns:
             str: access_id
@@ -1097,7 +1138,7 @@ async def create_subscribe_group(name: str, credential: Credential) -> dict:
         credential (Credential): Credential
 
     Returns:
-        API 调用返回结果。
+        dict: API 调用返回结果。
     """
     credential.raise_for_no_sessdata()
     credential.raise_for_no_bili_jct()
@@ -1118,7 +1159,7 @@ async def delete_subscribe_group(group_id: int, credential: Credential) -> dict:
         credential (Credential): Credential
 
     Returns:
-        调用 API 返回结果
+        dict: 调用 API 返回结果
     """
     credential.raise_for_no_sessdata()
     credential.raise_for_no_bili_jct()
@@ -1143,7 +1184,7 @@ async def rename_subscribe_group(
         credential (Credential): Credential
 
     Returns:
-        调用 API 返回结果
+        dict: 调用 API 返回结果
     """
     credential.raise_for_no_sessdata()
     credential.raise_for_no_bili_jct()
@@ -1168,7 +1209,7 @@ async def set_subscribe_group(
         credential (Credential): Credential
 
     Returns:
-        API 调用结果
+        dict: API 调用结果
     """
     credential.raise_for_no_sessdata()
     credential.raise_for_no_bili_jct()
@@ -1426,11 +1467,11 @@ async def get_self_notes_info(
     获取自己的笔记列表
 
     Args:
-        page_num: 页码
+        page_num (int): 页码
 
-        page_size: 每页项数
+        page_size (int): 每页项数
 
-        credential(Credential): 凭据类
+        credential (Credential): 凭据类
 
     Returns:
         dict: 调用 API 返回的结果
@@ -1453,11 +1494,11 @@ async def get_self_public_notes_info(
     获取自己的公开笔记列表
 
     Args:
-        page_num: 页码
+        page_num (int): 页码
 
-        page_size: 每页项数
+        page_size (int): 每页项数
 
-        credential(Credential): 凭据类
+        credential (Credential): 凭据类
 
     Returns:
         dict: 调用 API 返回的结果
