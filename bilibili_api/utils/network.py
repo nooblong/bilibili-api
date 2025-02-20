@@ -1011,6 +1011,12 @@ def get_client() -> BiliAPIClient:
         session_pool[selected_client][loop] = session
     return session
 
+def new_client() -> BiliAPIClient:
+    if selected_client == "":
+        raise ArgsException("尚未安装第三方请求库。\n$ pip3 install (curl_cffi|httpx|aiohttp)")
+
+    kwargs = {piece: request_settings.get(piece) for piece in client_settings[selected_client]}
+    return sessions[selected_client](**kwargs)
 
 def get_session() -> object:
     """

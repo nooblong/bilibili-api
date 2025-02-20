@@ -4,7 +4,7 @@ from typing import Any
 from urllib.parse import unquote
 
 from ..exceptions import ApiException, NetworkException
-from .network import HEADERS, get_client
+from .network import HEADERS, get_client, new_client
 
 RENDER_DATA_PATTERN: Pattern[str] = compile(
     r"<script id=\"__RENDER_DATA__\" type=\"application/json\">(.*?)</script>"
@@ -21,8 +21,9 @@ async def get_user_dynamic_render_data(uid: int) -> dict[str, Any]:
 
     dynamic_url: str = "https://space.bilibili.com/{}/dynamic".format(uid)
 
-    session = get_client()
+    session = new_client()
     response = await session.request(method="GET", url=dynamic_url, headers=HEADERS)
+    await session.close()
     if response.code != 200:
         raise NetworkException(response.code, "")
 
