@@ -32,6 +32,10 @@ from .utils.network import (
     get_client,
     get_session,
     set_session,
+    # anti spider
+    recalculate_wbi,
+    refresh_buvid,
+    refresh_bili_ticket,
     # credential
     Credential,
     # api
@@ -207,6 +211,9 @@ __all__ = [
     "opus",
     "parse_link",
     "rank",
+    "recalculate_wbi",
+    "refresh_bili_ticket",
+    "refresh_buvid",
     "register_client",
     "request_log",
     "request_settings",

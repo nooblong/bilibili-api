@@ -111,6 +111,9 @@ from bilibili_api import ...
 - [def get\_selected\_client()](#def-get\_selected\_client)
 - [def get\_session()](#def-get\_session)
 - [async def parse\_link()](#async-def-parse\_link)
+- [def recalculate\_wbi()](#def-recalculate\_wbi)
+- [def refresh\_bili\_ticket()](#def-refresh\_bili\_ticket)
+- [def refresh\_buvid()](#def-refresh\_buvid)
 - [def register\_client()](#def-register\_client)
 - [var request\_log](#var-request\_log)
   - [def get\_ignore\_events()](#def-get\_ignore\_events)
@@ -1586,6 +1589,39 @@ BV 号转 AV 号。
 | `credential` | `Credential` | 凭据类 |
 
 **Returns:** `Tuple[obj, ResourceType]`:  (对象，类型) 或 -1,-1 表示出错
+
+
+
+
+---
+
+## def recalculate_wbi()
+
+重新计算 wbi 的参数
+
+
+
+
+
+
+---
+
+## def refresh_bili_ticket()
+
+刷新 bili_ticket
+
+
+
+
+
+
+---
+
+## def refresh_buvid()
+
+刷新模块自动生成的 buvid3 和 buvid4
+
+
 
 
 
