@@ -32,10 +32,15 @@ from .utils.network import (
     get_client,
     get_session,
     set_session,
+    # anti spider
+    recalculate_wbi,
+    refresh_buvid,
+    refresh_bili_ticket,
     # credential
     Credential,
     # api
     HEADERS,
+    bili_simple_download,
 )
 from .utils.AsyncEvent import AsyncEvent
 from .utils.geetest import Geetest, GeetestMeta, GeetestType
@@ -46,6 +51,7 @@ from .exceptions import (
     CredentialNoAcTimeValueException,
     CredentialNoBiliJctException,
     CredentialNoBuvid3Exception,
+    CredentialNoBuvid4Exception,
     CredentialNoDedeUserIDException,
     CredentialNoSessdataException,
     DanmakuClosedException,
@@ -105,7 +111,7 @@ from . import (
 )
 
 
-BILIBILI_API_VERSION = "17.1.2"
+BILIBILI_API_VERSION = "17.1.3"
 
 
 def __register_all_clients():
@@ -140,6 +146,7 @@ __all__ = [
     "CredentialNoAcTimeValueException",
     "CredentialNoBiliJctException",
     "CredentialNoBuvid3Exception",
+    "CredentialNoBuvid4Exception",
     "CredentialNoDedeUserIDException",
     "CredentialNoSessdataException",
     "Danmaku",
@@ -172,6 +179,7 @@ __all__ = [
     "audio",
     "audio_uploader",
     "bangumi",
+    "bili_simple_download",
     "black_room",
     "bvid2aid",
     "channel_series",
@@ -203,6 +211,9 @@ __all__ = [
     "opus",
     "parse_link",
     "rank",
+    "recalculate_wbi",
+    "refresh_bili_ticket",
+    "refresh_buvid",
     "register_client",
     "request_log",
     "request_settings",

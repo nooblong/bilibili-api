@@ -16,6 +16,13 @@ request_settings.set_proxy("http://example.com")
 request_settings.set_timeout(1.0)
 ```
 
+## 设置是否验证 ssl / 使用环境变量
+
+```python
+request_settings.set_verify_ssl(False)
+request_settings.set_trust_env(True)
+```
+
 ## 打印请求日志
 
 ```python
@@ -41,10 +48,41 @@ request_log 默认只打印以下类型信息：
 
 ## 设置 `wbi` 请求重试次数上限
 
-> `wbi` 为 B 站对用户相关 API 采取的一个反爬虫措施，需要传入一些经过加密的参数，否则请求可能会被驳回。每次计算此参数的之后，这个值有失效可能，届时模块会自动重新计算这个参数新的值，进行重试。当重试次数超过一定次数 (`settings.wbi_retry_times`) 后，模块将发出报错。
+> `wbi` 为 B 站对用户相关 API 采取的一个反爬虫措施，需要传入一些经过加密的参数，否则请求可能会被驳回。每次计算此参数的之后，这个值有失效可能，届时模块会 **自动重新计算** 这个参数新的值，进行重试。当重试次数超过一定次数 (`settings.wbi_retry_times`) 后，模块将发出报错。
+
+> 手动重新计算可用 `recalculate_wbi` 
 
 ```python
 request_settings.set_wbi_retry_times(10) # defaults to 3
+
+from bilibili_api import recalculate_wbi
+recalculate_wbi() # 重新计算 wbi 参数
+```
+
+## 设置 `buvid` 自动生成
+
+> `buvid` 是访问 B 站时可能需要提供的 cookie 系列，分为 `buvid3` 和 `buvid4` 字段。如果不提供部分接口可能受限。模块在用户未提供 credential 或 credential 中无 `buvid3` 或 `buvid4` 字段时，会自动生成一组 `buvid`，但过程中需要进行网络请求，此功能可通过这项设置关闭。
+
+> 自动生成的 `buvid` 若有必要，**需要用户手动刷新**，使用 `refresh_buvid`
+
+```python
+request_settings.set_enable_auto_buvid(False)
+
+from bilibili_api import refresh_buvid
+refresh_buvid() # 刷新 buvid
+```
+
+## 设置 `bili_ticket` 自动生成
+
+> `bili_ticket` 是访问 B 站时可能需要提供的 cookie 系列，分为 `bili_ticket` 和 `bili_ticket_expires` 字段。提供 `bili_ticket` 有时可以达到一些玄学效果。默认不启用，可以通过此项设置启用。
+
+> `bili_ticket` 过期后模块会 **自动重新计算**。手动重新计算可用 `refresh_bili_ticket`
+
+```python
+request_settings.set_enable_bili_ticket(True)
+
+from bilibili_api import refresh_bili_ticket
+refresh_bili_ticket() # 刷新 bili_ticket
 ```
 
 ## 额外设置

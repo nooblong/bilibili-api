@@ -39,17 +39,20 @@ from bilibili_api import ...
   - [def has\_ac\_time\_value()](#def-has\_ac\_time\_value)
   - [def has\_bili\_jct()](#def-has\_bili\_jct)
   - [def has\_buvid3()](#def-has\_buvid3)
+  - [def has\_buvid4()](#def-has\_buvid4)
   - [def has\_dedeuserid()](#def-has\_dedeuserid)
   - [def has\_sessdata()](#def-has\_sessdata)
   - [def raise\_for\_no\_ac\_time\_value()](#def-raise\_for\_no\_ac\_time\_value)
   - [def raise\_for\_no\_bili\_jct()](#def-raise\_for\_no\_bili\_jct)
   - [def raise\_for\_no\_buvid3()](#def-raise\_for\_no\_buvid3)
+  - [def raise\_for\_no\_buvid4()](#def-raise\_for\_no\_buvid4)
   - [def raise\_for\_no\_dedeuserid()](#def-raise\_for\_no\_dedeuserid)
   - [def raise\_for\_no\_sessdata()](#def-raise\_for\_no\_sessdata)
   - [async def refresh()](#async-def-refresh)
 - [class CredentialNoAcTimeValueException()](#class-CredentialNoAcTimeValueException)
 - [class CredentialNoBiliJctException()](#class-CredentialNoBiliJctException)
 - [class CredentialNoBuvid3Exception()](#class-CredentialNoBuvid3Exception)
+- [class CredentialNoBuvid4Exception()](#class-CredentialNoBuvid4Exception)
 - [class CredentialNoDedeUserIDException()](#class-CredentialNoDedeUserIDException)
 - [class CredentialNoSessdataException()](#class-CredentialNoSessdataException)
 - [class Danmaku()](#class-Danmaku)
@@ -98,6 +101,7 @@ from bilibili_api import ...
 - [class VideoUploadException()](#class-VideoUploadException)
 - [class WbiRetryTimesExceedException()](#class-WbiRetryTimesExceedException)
 - [def aid2bvid()](#def-aid2bvid)
+- [async def bili\_simple\_download()](#async-def-bili\_simple\_download)
 - [def bvid2aid()](#def-bvid2aid)
 - [def get\_available\_settings()](#def-get\_available\_settings)
 - [def get\_client()](#def-get\_client)
@@ -107,6 +111,9 @@ from bilibili_api import ...
 - [def get\_selected\_client()](#def-get\_selected\_client)
 - [def get\_session()](#def-get\_session)
 - [async def parse\_link()](#async-def-parse\_link)
+- [def recalculate\_wbi()](#def-recalculate\_wbi)
+- [def refresh\_bili\_ticket()](#def-refresh\_bili\_ticket)
+- [def refresh\_buvid()](#def-refresh\_buvid)
 - [def register\_client()](#def-register\_client)
 - [var request\_log](#var-request\_log)
   - [def get\_ignore\_events()](#def-get\_ignore\_events)
@@ -118,12 +125,16 @@ from bilibili_api import ...
 - [var request\_settings](#var-request\_settings)
   - [def get()](#def-get)
   - [def get\_all()](#def-get\_all)
+  - [def get\_enable\_auto\_buvid()](#def-get\_enable\_auto\_buvid)
+  - [def get\_enable\_bili\_ticket()](#def-get\_enable\_bili\_ticket)
   - [def get\_proxy()](#def-get\_proxy)
   - [def get\_timeout()](#def-get\_timeout)
   - [def get\_trust\_env()](#def-get\_trust\_env)
   - [def get\_verify\_ssl()](#def-get\_verify\_ssl)
   - [def get\_wbi\_retry\_times()](#def-get\_wbi\_retry\_times)
   - [def set()](#def-set)
+  - [def set\_enable\_auto\_buvid()](#def-set\_enable\_auto\_buvid)
+  - [def set\_enable\_bili\_ticket()](#def-set\_enable\_bili\_ticket)
   - [def set\_proxy()](#def-set\_proxy)
   - [def set\_timeout()](#def-set\_timeout)
   - [def set\_trust\_env()](#def-set\_trust\_env)
@@ -587,6 +598,7 @@ Cookies 刷新错误。
 | `sessdata` | `str \| None, optional` | 浏览器 Cookies 中的 SESSDATA 字段值. Defaults to None. |
 | `bili_jct` | `str \| None, optional` | 浏览器 Cookies 中的 bili_jct 字段值. Defaults to None. |
 | `buvid3` | `str \| None, optional` | 浏览器 Cookies 中的 BUVID3 字段值. Defaults to None. |
+| `buvid4` | `str \| None, optional` | 浏览器 Cookies 中的 BUVID4 字段值. Defaults to None. |
 | `dedeuserid` | `str \| None, optional` | 浏览器 Cookies 中的 DedeUserID 字段值. Defaults to None. |
 | `ac_time_value` | `str \| None, optional` | 浏览器 Cookies 中的 ac_time_value 字段值. Defaults to None. |
 
@@ -673,6 +685,17 @@ Cookies 刷新错误。
 
 
 
+### def has_buvid4()
+
+是否提供 buvid4
+
+
+
+**Returns:** `bool`:  是否提供 buvid4
+
+
+
+
 ### def has_dedeuserid()
 
 是否提供 dedeuserid。
@@ -714,6 +737,15 @@ Cookies 刷新错误。
 
 
 ### def raise_for_no_buvid3()
+
+没有提供 buvid3 时抛出异常。
+
+
+
+
+
+
+### def raise_for_no_buvid4()
 
 没有提供 buvid3 时抛出异常。
 
@@ -777,7 +809,18 @@ Credential 类未提供 bili_jct 时的异常。
 
 **Extend: bilibili_api.exceptions.ApiException.ApiException**
 
-Credential 类未提供 bili_jct 时的异常。
+Credential 类未提供 buvid3 时的异常。
+
+
+
+
+---
+
+## class CredentialNoBuvid4Exception()
+
+**Extend: bilibili_api.exceptions.ApiException.ApiException**
+
+Credential 类未提供 buvid4 时的异常。
 
 
 
@@ -889,6 +932,14 @@ Credential 类未提供 sessdata 时的异常。
 
 字体大小枚举。
 
+- EXTREME_SMALL
+- SUPER_SMALL
+- SMALL
+- NORMAL
+- BIG
+- SUPER_BIG
+- EXTREME_BIG
+
 
 
 
@@ -899,6 +950,14 @@ Credential 类未提供 sessdata 时的异常。
 **Extend: enum.Enum**
 
 弹幕模式枚举。
+
+- FLY: 飞行弹幕
+- TOP: 置顶弹幕
+- BOTTOM: 底部弹幕
+- REVERSE: 反向弹幕
+- ADVANCE: 高级弹幕
+- CODE: 代码弹幕 (基于 flash 实现)
+- SPECIAL: BAS 弹幕
 
 
 
@@ -1389,6 +1448,26 @@ AV 号转 BV 号。
 
 ---
 
+## async def bili_simple_download()
+
+适用于下载 bilibili 链接的简易终端下载函数
+
+默认会携带 HEADERS 访问链接，避免 403
+
+用途举例：下载 video.get_download_url 返回结果中的链接
+
+
+| name | type | description |
+| - | - | - |
+| `url` | `str` | 链接 |
+| `out` | `str` | 输出地址 |
+| `intro` | `str` | 下载简述 |
+
+
+
+
+---
+
 ## def bvid2aid()
 
 BV 号转 AV 号。
@@ -1510,6 +1589,39 @@ BV 号转 AV 号。
 | `credential` | `Credential` | 凭据类 |
 
 **Returns:** `Tuple[obj, ResourceType]`:  (对象，类型) 或 -1,-1 表示出错
+
+
+
+
+---
+
+## def recalculate_wbi()
+
+重新计算 wbi 的参数
+
+
+
+
+
+
+---
+
+## def refresh_bili_ticket()
+
+刷新 bili_ticket
+
+
+
+
+
+
+---
+
+## def refresh_buvid()
+
+刷新模块自动生成的 buvid3 和 buvid4
+
+
 
 
 
@@ -1657,6 +1769,8 @@ async def handle(desc: str, data: dict) -> None:
 
 获取某项设置
 
+不可用于 `wbi_retry_times` `enable_auto_buvid` `enable_bili_ticket`
+
 默认设置名称：`proxy` `timeout` `verify_ssl` `trust_env`
 
 
@@ -1673,9 +1787,33 @@ async def handle(desc: str, data: dict) -> None:
 
 获取目前所有的设置项
 
+不可用于 `wbi_retry_times` `enable_auto_buvid` `enable_bili_ticket`
+
 
 
 **Returns:** `dict`:  所有的设置项
+
+
+
+
+### def get_enable_auto_buvid()
+
+获取设置的是否自动生成 buvid
+
+
+
+**Returns:** `bool`:  是否自动生成 buvid. Defaults to True.
+
+
+
+
+### def get_enable_bili_ticket()
+
+获取设置的是否使用 bili_ticket
+
+
+
+**Returns:** `bool`:  是否使用 bili_ticket. Defaults to True.
 
 
 
@@ -1739,6 +1877,8 @@ async def handle(desc: str, data: dict) -> None:
 
 设置某项设置
 
+不可用于 `wbi_retry_times` `enable_auto_buvid` `enable_bili_ticket`
+
 默认设置名称：`proxy` `timeout` `verify_ssl` `trust_env`
 
 
@@ -1746,6 +1886,30 @@ async def handle(desc: str, data: dict) -> None:
 | - | - | - |
 | `name` | `str` | 设置名称 |
 | `value` | `str` | 设置的值 |
+
+
+
+
+### def set_enable_auto_buvid()
+
+设置是否自动生成 buvid
+
+
+| name | type | description |
+| - | - | - |
+| `enable_auto_buvid` | `bool` | 是否自动生成 buvid. |
+
+
+
+
+### def set_enable_bili_ticket()
+
+设置是否使用 bili_ticket
+
+
+| name | type | description |
+| - | - | - |
+| `enable_bili_ticket` | `bool` | 是否使用 bili_ticket. |
 
 
 
