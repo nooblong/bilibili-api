@@ -68,6 +68,7 @@ from .exceptions import (
     WbiRetryTimesExceedException,
 )
 from . import (
+    activity,
     app,
     article_category,
     article,
@@ -111,7 +112,7 @@ from . import (
 )
 
 
-BILIBILI_API_VERSION = "17.1.3"
+BILIBILI_API_VERSION = "17.1.4"
 
 
 def __register_all_clients():
@@ -172,6 +173,7 @@ __all__ = [
     "VideoUploadException",
     "WbiRetryTimesExceedException",
     "aid2bvid",
+    "activity",
     "app",
     "article",
     "article_category",
