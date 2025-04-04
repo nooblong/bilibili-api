@@ -280,8 +280,8 @@ class User:
         Returns:
             dict: 调用接口返回的内容。
         """
-        if self.__self_info is not None:
-            return self.__self_info
+        # if self.__self_info is not None:
+        #     return self.__self_info
 
         self.__self_info = await self.get_user_info()
         return self.__self_info
