@@ -17,7 +17,14 @@ import brotli
 
 from .utils.utils import get_api, raise_for_statement
 from .utils.danmaku import Danmaku
-from .utils.network import Credential, Api, HEADERS, get_client, BiliWsMsgType
+from .utils.network import (
+    Credential,
+    Api,
+    HEADERS,
+    get_client,
+    BiliWsMsgType,
+    get_buvid,
+)
 from .utils.AsyncEvent import AsyncEvent
 from .exceptions.LiveException import LiveException
 
@@ -121,6 +128,7 @@ class LiveRoom:
             self.credential: Credential = credential
 
         self.__ruid = None
+        self.__real_id = None
 
     async def start(self, area_id: int) -> dict:
         """
@@ -174,6 +182,7 @@ class LiveRoom:
 
         # 缓存真实房间 ID
         self.__ruid = resp["uid"]
+        self.__real_id = resp["room_id"]
         return resp
 
     async def get_emoticons(self) -> dict:
@@ -195,16 +204,19 @@ class LiveRoom:
 
     async def get_room_id(self) -> int:
         """
-        获取直播间 id
+        获取直播间真实 id
 
         Returns:
             int: 直播间 id
         """
-        return (await self.get_room_play_info())["room_id"]
+        if self.__real_id is None:
+            await self.get_room_play_info()
+
+        return self.__real_id
 
     async def __get_ruid(self) -> int:
         """
-        获取真实房间 ID，若有缓存则使用缓存
+        获取直播的 up 的 uid (ruid)，若有缓存则使用缓存
         """
         if self.__ruid is None:
             await self.get_room_play_info()
@@ -213,10 +225,10 @@ class LiveRoom:
 
     async def get_ruid(self) -> int:
         """
-        获取真实房间 id
+        获取直播的 up 的 uid (ruid)
 
         Returns:
-            int: 真实房间 id
+            int: ruid
         """
         return await self.__get_ruid()
 
@@ -228,7 +240,7 @@ class LiveRoom:
             dict: 调用 API 返回的结果
         """
         api = API["info"]["danmu_info"]
-        params = {"id": self.room_display_id}
+        params = {"id": await self.get_room_id(), "type": 0, "web_location": "444.8"}
         return (
             await Api(**api, credential=self.credential).update_params(**params).result
         )
@@ -961,7 +973,11 @@ class LiveDanmaku(AsyncEvent):
         self.__tasks = []
         self.__debug = debug
         self.__heartbeat_timer = 60.0
+        self.__heartbeat_timer_web = 60.0
         self.err_reason: str = ""
+        self.room = LiveRoom(
+            room_display_id=self.room_display_id, credential=credential
+        )
 
         # logging
         self.logger = logging.getLogger(f"LiveDanmaku_{self.room_display_id}")
@@ -976,6 +992,15 @@ class LiveDanmaku(AsyncEvent):
                 )
             )
             self.logger.addHandler(handler)
+
+    def get_live_room(self) -> LiveRoom:
+        """
+        获取对应直播间对象
+
+        Returns:
+            LiveRoom: 直播间对象
+        """
+        return self.room
 
     def get_status(self) -> int:
         """
@@ -1026,23 +1051,21 @@ class LiveDanmaku(AsyncEvent):
         """
         self.__status = self.STATUS_CONNECTING
 
-        room = LiveRoom(self.room_display_id, self.credential)
         self.logger.info(f"准备连接直播间 {self.room_display_id}")
         # 获取真实房间号
         self.logger.debug("正在获取真实房间号")
-        info = await room.get_room_play_info()
-        self.__room_real_id = info["room_id"]
+        self.__room_real_id = await self.room.get_room_id()
         self.logger.debug(f"获取成功，真实房间号：{self.__room_real_id}")
 
         # 获取直播服务器配置
         self.logger.debug("正在获取聊天服务器配置")
-        conf = await room.get_danmu_info()
+        conf = await self.room.get_danmu_info()
         self.logger.debug("聊天服务器配置获取成功")
 
         # 连接直播间
         self.logger.debug("准备连接直播间")
         self.__client = get_client()
-        available_hosts: List[dict] = conf["host_list"]
+        available_hosts: List[dict] = conf["host_list"][::-1]
         retry = self.max_retry
         host = None
 
@@ -1056,6 +1079,7 @@ class LiveDanmaku(AsyncEvent):
             self.err_reason = ""
             # 重置心跳计时器
             self.__heartbeat_timer = 0
+            self.__heartbeat_timer_web = 0
             if not available_hosts:
                 self.err_reason = "已尝试所有主机但仍无法连接"
                 break
@@ -1079,6 +1103,7 @@ class LiveDanmaku(AsyncEvent):
                     while len(self.__tasks) > 0:
                         self.__tasks.pop().cancel()
                     self.__tasks.append(asyncio.create_task(self.__heartbeat()))
+                    self.__tasks.append(asyncio.create_task(self.__heartbeat_web()))
 
                 self.logger.debug("连接主机成功, 准备发送认证信息")
                 await self.__send_verify_data(conf["token"])
@@ -1111,7 +1136,8 @@ class LiveDanmaku(AsyncEvent):
                     break
 
             except Exception as e:
-                await self.__client.ws_close(self.__ws)
+                if self.__ws:
+                    await self.__client.ws_close(self.__ws)
                 self.logger.warning(e)
                 if retry <= 0 or len(available_hosts) == 0:
                     self.logger.error("无法连接服务器")
@@ -1160,7 +1186,11 @@ class LiveDanmaku(AsyncEvent):
                 self.dispatch("VIEW", callback_info)
                 self.dispatch("ALL", callback_info)
 
-            elif info["datapack_type"] == LiveDanmaku.DATAPACK_TYPE_NOTICE:
+            elif (
+                info["datapack_type"] == LiveDanmaku.DATAPACK_TYPE_NOTICE
+                and "cmd" in info["data"]
+            ):
+                # https://github.com/Nemo2011/bilibili-api/issues/913#issuecomment-2789372339
                 # 直播间弹幕、礼物等信息
                 callback_info["type"] = info["data"]["cmd"]
 
@@ -1188,15 +1218,41 @@ class LiveDanmaku(AsyncEvent):
             "uid": int(self.credential.dedeuserid),
             "roomid": self.__room_real_id,
             "protover": 3,
-            "buvid": self.credential.buvid3,
             "platform": "web",
             "type": 2,
+            "buvid": self.credential.buvid3,
             "key": token,
         }
-        data = json.dumps(verifyData).encode()
+        if not self.credential.has_buvid3():
+            verifyData["buvid"] = (await get_buvid())[0]
+        data = json.dumps(verifyData, separators=(",", ":")).encode()
         await self.__send(
             data, self.PROTOCOL_VERSION_HEARTBEAT, self.DATAPACK_TYPE_VERIFY
         )
+
+    async def __heartbeat_web(self) -> None:
+        """
+        定时发送心跳包
+        """
+        while True:
+            if self.__heartbeat_timer_web == 0:
+                self.logger.debug("发送 Web 端心跳包")
+                api = API["operate"]["heartbeat_web"]
+                params = {
+                    "pf": "web",
+                    "hb": str(
+                        base64.b64encode(
+                            f"60|{self.__room_real_id}|1|0".encode("utf-8")
+                        ),
+                        "utf-8",
+                    ),
+                }
+                await Api(**api, credential=self.credential).update_params(
+                    **params
+                ).result
+                self.__heartbeat_timer_web = 60
+            await asyncio.sleep(1.0)
+            self.__heartbeat_timer_web -= 1
 
     async def __heartbeat(self) -> None:
         """
@@ -1209,24 +1265,12 @@ class LiveDanmaku(AsyncEvent):
         )
         while True:
             if self.__heartbeat_timer == 0:
-                self.logger.debug("发送心跳包")
+                self.logger.debug("发送 WebSocket 心跳包")
                 await self.__client.ws_send(self.__ws, HEARTBEAT)
-                heartbeat_url = "https://live-trace.bilibili.com/xlive/rdata-interface/v1/heartbeat/webHeartBeat?pf=web&hb="
-                hb = str(
-                    base64.b64encode(f"60|{self.room_display_id}|1|0".encode("utf-8")),
-                    "utf-8",
-                )
-                await Api(
-                    method="GET",
-                    url=heartbeat_url,
-                    json_body=True,
-                    comment="[直播心跳包]",
-                ).update_params(**{"hb": hb, "pf": "web"}).result
             elif self.__heartbeat_timer <= -30:
                 # 视为已异常断开连接，发布 TIMEOUT 事件
                 self.dispatch("TIMEOUT")
                 break
-
             await asyncio.sleep(1.0)
             self.__heartbeat_timer -= 1
 

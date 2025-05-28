@@ -106,7 +106,7 @@ class CurlCFFIClient(BiliAPIClient):
         files: Dict[str, BiliAPIFile] = {},
         headers: dict = {},
         cookies: dict = {},
-        allow_redirects: bool = False,
+        allow_redirects: bool = True,
     ) -> BiliAPIResponse:
         if headers.get("User-Agent") and self.__session.impersonate != "":
             headers.pop("User-Agent")
@@ -276,6 +276,8 @@ class CurlCFFIClient(BiliAPIClient):
             except curl_cffi.CurlError as e:
                 if e.code == curl_cffi.CurlECode.AGAIN:
                     pass
+                elif e.code == curl_cffi.CurlECode.GOT_NOTHING:
+                    return (b"", BiliWsMsgType.CLOSED)
                 else:
                     raise e
         if flags & curl_cffi.CurlWsFlag.CLOSE:

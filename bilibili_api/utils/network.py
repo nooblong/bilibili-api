@@ -40,6 +40,7 @@ from ..exceptions import (
     ExClimbWuzhiException,
     ResponseCodeException,
     WbiRetryTimesExceedException,
+    NetworkException,
 )
 from .AsyncEvent import AsyncEvent
 from .utils import get_api, raise_for_statement
@@ -597,7 +598,7 @@ class BiliAPIClient(ABC):
             files: Dict[str, BiliAPIFile] = {},
             headers: dict = {},
             cookies: dict = {},
-            allow_redirects: bool = False,
+            allow_redirects: bool = True,
         ) -> BiliAPIResponse:
             """
             进行 HTTP 请求
@@ -610,7 +611,7 @@ class BiliAPIClient(ABC):
                 files (Dict[str, BiliAPIFile], optional): 请求文件. Defaults to {}.
                 headers (dict, optional): 请求头. Defaults to {}.
                 cookies (dict, optional): 请求 Cookies. Defaults to {}.
-                allow_redirects (bool, optional): 是否允许重定向. Defaults to False.
+                allow_redirects (bool, optional): 是否允许重定向. Defaults to True.
 
             Returns:
                 BiliAPIResponse: 响应对象
@@ -806,7 +807,7 @@ class BiliAPIClient(ABC):
         files: Dict[str, BiliAPIFile] = {},
         headers: dict = {},
         cookies: dict = {},
-        allow_redirects: bool = False,
+        allow_redirects: bool = True,
     ) -> BiliAPIResponse:
         """
         进行 HTTP 请求
@@ -819,7 +820,7 @@ class BiliAPIClient(ABC):
             files (Dict[str, BiliAPIFile], optional): 请求文件. Defaults to {}.
             headers (dict, optional): 请求头. Defaults to {}.
             cookies (dict, optional): 请求 Cookies. Defaults to {}.
-            allow_redirects (bool, optional): 是否允许重定向. Defaults to False.
+            allow_redirects (bool, optional): 是否允许重定向. Defaults to True.
 
         Returns:
             BiliAPIResponse: 响应对象
@@ -1171,6 +1172,25 @@ class Credential:
 
         return cookies
 
+    async def get_buvid_cookies(self) -> dict:
+        """
+        获取请求 Cookies 字典，自动补充 buvid 字段
+
+        Returns:
+            dict: 请求 Cookies 字典
+        """
+        cookies = {
+            "SESSDATA": self.sessdata if self.sessdata else "",
+            "buvid3": self.buvid3 if self.buvid3 else (await get_buvid())[0],
+            "buvid4": self.buvid4 if self.buvid4 else (await get_buvid())[1],
+            "bili_jct": self.bili_jct if self.bili_jct else "",
+            "ac_time_value": self.ac_time_value if self.ac_time_value else "",
+        }
+        if self.dedeuserid:
+            cookies.update({"DedeUserID": self.dedeuserid})
+
+        return cookies
+
     def has_dedeuserid(self) -> bool:
         """
         是否提供 dedeuserid。
@@ -1317,7 +1337,7 @@ class Credential:
         c.sessdata = cookies.get("SESSDATA")
         c.bili_jct = cookies.get("bili_jct")
         c.buvid3 = cookies.get("buvid3")
-        c.buvid3 = cookies.get("buvid4")
+        c.buvid4 = cookies.get("buvid4")
         c.dedeuserid = cookies.get("DedeUserID")
         c.ac_time_value = cookies.get("ac_time_value")
         return c
@@ -2196,6 +2216,9 @@ class Api:
     def _process_response(
         self, resp: BiliAPIResponse, raw: bool = False
     ) -> Union[int, str, dict, None]:
+        # 检查状态码
+        if resp.code != 200:
+            raise NetworkException(resp.code, resp.utf8_text())
         # 检查响应头 Content-Length
         content_length = resp.headers.get("content-length")
         if content_length and int(content_length) == 0:
