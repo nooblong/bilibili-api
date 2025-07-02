@@ -144,7 +144,7 @@ class LiveRoom:
         data = {
             "area_v2": area_id,
             "room_id": self.room_display_id,
-            "platform": "pc",
+            "platform": "pc_link",
             "csrf": self.credential.bili_jct,
             "csrf_token": self.credential.bili_jct,
         }
@@ -161,6 +161,7 @@ class LiveRoom:
         api = API["info"]["stop"]
         data = {
             "room_id": self.room_display_id,
+            "platform": "pc_link",
         }
         resp = await Api(**api, credential=self.credential).update_data(**data).result
         return resp
@@ -950,6 +951,7 @@ class LiveDanmaku(AsyncEvent):
         credential: Union[Credential, None] = None,
         max_retry: int = 5,
         retry_after: float = 1,
+        max_retry_for_credential: int = 5,
     ):
         """
         Args:
@@ -958,6 +960,7 @@ class LiveDanmaku(AsyncEvent):
             credential      (Credential | None, optional): 凭据. Defaults to None.
             max_retry       (int, optional)              : 连接出错后最大重试次数. Defaults to 5
             retry_after     (int, optional)              : 连接出错后重试间隔时间（秒）. Defaults to 1
+            max_retry_for_credential (int, optional)     : 获取用户信息最大重试次数. Defaults to 5
         """
         super().__init__()
 
@@ -967,6 +970,7 @@ class LiveDanmaku(AsyncEvent):
         self.room_display_id: int = room_display_id
         self.max_retry: int = max_retry
         self.retry_after: float = retry_after
+        self.max_retry_for_credential: int = max_retry_for_credential
         self.__room_real_id = None
         self.__status = 0
         self.__ws = None
@@ -1211,11 +1215,28 @@ class LiveDanmaku(AsyncEvent):
     async def __send_verify_data(self, token: str) -> None:
         # 没传入 dedeuserid 可以试图 live.get_self_info
         if not self.credential.has_dedeuserid():
-            try:
-                info = await get_self_info(self.credential)
-                self.credential.dedeuserid = str(info["uid"])
-            except:
+            if not self.credential.has_sessdata():
+                self.logger.warning("未提供登录凭据，使用匿名身份连接")
                 self.credential.dedeuserid = 0
+            else:
+                for attempt in range(self.max_retry_for_credential):
+                    if self.credential.has_dedeuserid():
+                        break
+                    try:
+                        info = await get_self_info(self.credential)
+                        self.credential.dedeuserid = str(info.get("uid", 0))
+                        if self.credential.has_dedeuserid():
+                            break
+                    except Exception as e:
+                        self.logger.warning(
+                            f"获取用户信息失败，重试中... ({attempt + 1}/{self.max_retry_for_credential})\n{e}"
+                        )
+                        await asyncio.sleep(self.retry_after)
+                if not self.credential.has_dedeuserid():
+                    self.credential.dedeuserid = 0
+                    self.logger.warning("获取用户信息失败，使用匿名身份连接")
+
+
         verifyData = {
             "uid": int(self.credential.dedeuserid),
             "roomid": self.__room_real_id,

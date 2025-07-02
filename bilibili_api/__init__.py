@@ -87,6 +87,7 @@ from . import (
     favorite_list,
     festival,
     game,
+    garb,
     homepage,
     hot,
     interactive_video,
@@ -112,7 +113,7 @@ from . import (
 )
 
 
-BILIBILI_API_VERSION = "17.2.1"
+BILIBILI_API_VERSION = "17.3.0"
 
 
 def __register_all_clients():
@@ -194,6 +195,7 @@ __all__ = [
     "favorite_list",
     "festival",
     "game",
+    "garb",
     "get_available_settings",
     "get_client",
     "get_real_url",
