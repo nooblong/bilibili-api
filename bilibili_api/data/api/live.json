@@ -4,6 +4,7 @@
       "url": "https://api.live.bilibili.com/room/v1/Room/startLive",
       "method": "POST",
       "verify": true,
+      "sign": true,
       "params": {
         "room_id": "int: 房间号",
         "platform": "pc/web/...",
@@ -16,6 +17,7 @@
       "url": "https://api.live.bilibili.com/room/v1/Room/stopLive",
       "method": "POST",
       "verify": true,
+      "sign": true,
       "params": {
         "room_id": "int: 房间号",
         "platform": "pc/web/...",
@@ -45,9 +47,12 @@
     "danmu_info": {
       "url": "https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo",
       "method": "GET",
+      "wbi": true,
       "verify": false,
       "params": {
-        "id": "int: 真实房间号"
+        "id": "int: 真实房间号",
+        "type": "int: 0",
+        "web_location": "444.8"
       },
       "comment": "获取聊天弹幕服务器配置信息(websocket)"
     },
@@ -292,6 +297,12 @@
         "pagesize": "每页数量，过多可能报错 默认：30"
       },
       "comment": "获取关注列表中未在直播的直播间信息, 包括上次开播时间, 上次开播的类别, 直播间公告, 是否有录播等."
+    },
+    "live_history": {
+      "url": "https://api.live.bilibili.com/xlive/web-ucenter/v1/history/get_history_by_uid",
+      "method": "GET",
+      "verify": true,
+      "comment": "获取用户直播观看历史."
     }
   },
   "operate": {
@@ -464,6 +475,16 @@
         "from": "int: 1"
       },
       "comment": "创建预约"
+    },
+    "heartbeat_web": {
+      "url": "https://live-trace.bilibili.com/xlive/rdata-interface/v1/heartbeat/webHeartBeat",
+      "method": "GET",
+      "params": {
+        "pf": "str: web",
+        "hb": "str: 60|{直播间真实 id}|1|0 base64加密得到的结果"
+      },
+      "verify": false,
+      "comment": "[直播心跳包]"
     }
   }
 }

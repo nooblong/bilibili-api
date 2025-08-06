@@ -9,11 +9,20 @@ bilibili_api.comment
 + 专栏：cv{9762979} `get_cvid()`。
 + 动态/图文：{116859542} `await get_rid()`。
 + 课程：ep{5556} `get_epid()`
++ 音频：au{13998} `get_auid()`
++ 歌单：am{26241} `get_amid()`
 + 小黑屋: ban/{2600321} `get_id()`
++ 漫画：mc{32749} `get_manga_id()`
++ 活动: {16279} `await get_activity_aid()`
 """
 
+import json
 from enum import Enum
-from typing import Union, Optional
+from typing import List, Union, Optional
+
+from bilibili_api import Picture
+
+from .dynamic import upload_image
 
 from .utils.utils import get_api
 from .utils.network import Api, Credential
@@ -35,6 +44,7 @@ class CommentResourceType(Enum):
     + CHEESE: 课程
     + BLACK_ROOM: 小黑屋
     + MANGA: 漫画
+    + ACTIVITY: 活动
     """
 
     VIDEO = 1
@@ -46,6 +56,7 @@ class CommentResourceType(Enum):
     CHEESE = 33
     BLACK_ROOM = 6
     MANGA = 22
+    ACTIVITY = 4
 
 
 class OrderType(Enum):
@@ -340,6 +351,7 @@ async def send_comment(
     root: Union[int, None] = None,
     parent: Union[int, None] = None,
     credential: Union[None, Credential] = None,
+    pic: Union[Picture, List[Picture], None] = None,
 ) -> dict:
     """
     通用发送评论 API。
@@ -363,6 +375,8 @@ async def send_comment(
 
         parent     (int, optional): 父评论 ID, Defaults to None.
 
+        pic        (Union[Picture, List[Picture]], optional): 图片, Defaults to None.
+
         credential (Credential)   : 凭据
 
     Returns:
@@ -379,7 +393,25 @@ async def send_comment(
         "type": type_.value,
         "message": text,
         "plat": 1,
+        "statistics": {"appId": 100, "platform": 5},
+        "gaia_source": "main_web",
     }
+
+    if pic:
+        if isinstance(pic, Picture):
+            pic = [pic]
+        data["pictures"] = []
+        for p in pic:
+            res = await upload_image(image=p, credential=credential)
+            data["pictures"].append(
+                {
+                    "img_src": res["image_url"],
+                    "img_width": res["image_width"],
+                    "img_height": res["image_height"],
+                    "img_size": res["img_size"],
+                }
+            )
+        data["pictures"] = json.dumps(data["pictures"])
 
     if root is None and parent is None:
         # 直接回复资源

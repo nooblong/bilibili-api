@@ -40,6 +40,7 @@ from ..exceptions import (
     ExClimbWuzhiException,
     ResponseCodeException,
     WbiRetryTimesExceedException,
+    NetworkException,
 )
 from .AsyncEvent import AsyncEvent
 from .utils import get_api, raise_for_statement
@@ -234,15 +235,15 @@ async def handle(desc: str, data: dict) -> None:
 
 sessions: Dict[str, Type["BiliAPIClient"]] = {}
 session_pool: Dict[str, Dict[asyncio.AbstractEventLoop, "BiliAPIClient"]] = {}
+lazy_settings: Dict[str, Dict[asyncio.AbstractEventLoop, Dict[str, Any]]] = {}
 client_settings: Dict[str, list] = {}
 selected_client: str = ""
-
 
 class RequestSettings:
     def __init__(self):
         self.__settings: dict = {
             "proxy": "",
-            "timeout": 5.0,
+            "timeout": 30.0,
             "verify_ssl": True,
             "trust_env": True,
         }
@@ -278,11 +279,13 @@ class RequestSettings:
             name  (str): 设置名称
             value (str): 设置的值
         """
-        global session_pool
+        if value == self.__settings.get(name):
+            return
+        global lazy_settings
         self.__settings[name] = value
-        for _, pool in session_pool.items():
+        for _, pool in lazy_settings.items():
             for _, client in pool.items():
-                client.__getattribute__(f"set_{name}")(value)
+                client[name] = value
 
     def get_proxy(self) -> str:
         """
@@ -597,7 +600,7 @@ class BiliAPIClient(ABC):
             files: Dict[str, BiliAPIFile] = {},
             headers: dict = {},
             cookies: dict = {},
-            allow_redirects: bool = False,
+            allow_redirects: bool = True,
         ) -> BiliAPIResponse:
             """
             进行 HTTP 请求
@@ -610,7 +613,7 @@ class BiliAPIClient(ABC):
                 files (Dict[str, BiliAPIFile], optional): 请求文件. Defaults to {}.
                 headers (dict, optional): 请求头. Defaults to {}.
                 cookies (dict, optional): 请求 Cookies. Defaults to {}.
-                allow_redirects (bool, optional): 是否允许重定向. Defaults to False.
+                allow_redirects (bool, optional): 是否允许重定向. Defaults to True.
 
             Returns:
                 BiliAPIResponse: 响应对象
@@ -806,7 +809,7 @@ class BiliAPIClient(ABC):
         files: Dict[str, BiliAPIFile] = {},
         headers: dict = {},
         cookies: dict = {},
-        allow_redirects: bool = False,
+        allow_redirects: bool = True,
     ) -> BiliAPIResponse:
         """
         进行 HTTP 请求
@@ -819,7 +822,7 @@ class BiliAPIClient(ABC):
             files (Dict[str, BiliAPIFile], optional): 请求文件. Defaults to {}.
             headers (dict, optional): 请求头. Defaults to {}.
             cookies (dict, optional): 请求 Cookies. Defaults to {}.
-            allow_redirects (bool, optional): 是否允许重定向. Defaults to False.
+            allow_redirects (bool, optional): 是否允许重定向. Defaults to True.
 
         Returns:
             BiliAPIResponse: 响应对象
@@ -942,7 +945,7 @@ def register_client(name: str, cls: type, settings: dict = {}) -> None:
         cls      (type): 基于 BiliAPIClient 重写后的请求客户端类。
         settings (dict): 请求客户端在基础设置外的其他设置，键为设置名称，值为设置默认值。Defaults to {}.
     """
-    global sessions, session_pool
+    global sessions, session_pool, lazy_settings
     raise_for_statement(
         issubclass(cls, BiliAPIClient), "传入的类型需要继承 BiliAPIClient"
     )
@@ -953,6 +956,7 @@ def register_client(name: str, cls: type, settings: dict = {}) -> None:
         request_settings.set(key, value)
     client_settings[name] = DEFAULT_SETTINGS.copy()
     client_settings[name] += list(settings.keys())
+    lazy_settings[name] = {}
 
 
 def unregister_client(name: str) -> None:
@@ -1054,6 +1058,16 @@ def get_client() -> BiliAPIClient:
             kwargs[piece] = request_settings.get(piece)
         session = sessions[selected_client](**kwargs)
         session_pool[selected_client][loop] = session
+        lazy_settings[selected_client][loop] = {}
+    else:
+        for name, value in lazy_settings[selected_client][loop].items():
+            try:
+                session.__getattribute__(f"set_{name}")(value)
+            except AttributeError:
+                pass
+            except Exception as e:
+                raise e
+        lazy_settings[selected_client][loop] = {}
     return session
 
 
@@ -1122,6 +1136,7 @@ class Credential:
         buvid4: Union[str, None] = None,
         dedeuserid: Union[str, None] = None,
         ac_time_value: Union[str, None] = None,
+        proxy: Union[str, None] = None,
     ) -> None:
         """
         各字段获取方式查看：https://nemo2011.github.io/bilibili-api/#/get-credential.md
@@ -1138,6 +1153,8 @@ class Credential:
             dedeuserid (str | None, optional): 浏览器 Cookies 中的 DedeUserID 字段值. Defaults to None.
 
             ac_time_value (str | None, optional): 浏览器 Cookies 中的 ac_time_value 字段值. Defaults to None.
+
+            proxy (str | None, optional): 凭据类可选择携带的代理. Defaults to None.
         """
         self.sessdata = (
             None
@@ -1151,6 +1168,7 @@ class Credential:
         self.buvid4 = buvid4
         self.dedeuserid = dedeuserid
         self.ac_time_value = ac_time_value
+        self.proxy = proxy
 
     def get_cookies(self) -> dict:
         """
@@ -1163,6 +1181,25 @@ class Credential:
             "SESSDATA": self.sessdata if self.sessdata else "",
             "buvid3": self.buvid3 if self.buvid3 else "",
             "buvid4": self.buvid4 if self.buvid4 else "",
+            "bili_jct": self.bili_jct if self.bili_jct else "",
+            "ac_time_value": self.ac_time_value if self.ac_time_value else "",
+        }
+        if self.dedeuserid:
+            cookies.update({"DedeUserID": self.dedeuserid})
+
+        return cookies
+
+    async def get_buvid_cookies(self) -> dict:
+        """
+        获取请求 Cookies 字典，自动补充 buvid 字段
+
+        Returns:
+            dict: 请求 Cookies 字典
+        """
+        cookies = {
+            "SESSDATA": self.sessdata if self.sessdata else "",
+            "buvid3": self.buvid3 if self.buvid3 else (await get_buvid())[0],
+            "buvid4": self.buvid4 if self.buvid4 else (await get_buvid())[1],
             "bili_jct": self.bili_jct if self.bili_jct else "",
             "ac_time_value": self.ac_time_value if self.ac_time_value else "",
         }
@@ -1317,7 +1354,7 @@ class Credential:
         c.sessdata = cookies.get("SESSDATA")
         c.bili_jct = cookies.get("bili_jct")
         c.buvid3 = cookies.get("buvid3")
-        c.buvid3 = cookies.get("buvid4")
+        c.buvid4 = cookies.get("buvid4")
         c.dedeuserid = cookies.get("DedeUserID")
         c.ac_time_value = cookies.get("ac_time_value")
         return c
@@ -2196,6 +2233,9 @@ class Api:
     def _process_response(
         self, resp: BiliAPIResponse, raw: bool = False
     ) -> Union[int, str, dict, None]:
+        # 检查状态码
+        if resp.code != 200:
+            raise NetworkException(resp.code, resp.utf8_text())
         # 检查响应头 Content-Length
         content_length = resp.headers.get("content-length")
         if content_length and int(content_length) == 0:
@@ -2246,6 +2286,10 @@ class Api:
             "Api 发起请求",
             self.__dict__,
         )
+        legacy_proxy = None
+        if self.credential.proxy:
+            legacy_proxy = request_settings.get_proxy()
+            request_settings.set_proxy(self.credential.proxy)
         config: dict = await self._prepare_request()
         client: BiliAPIClient = get_client()
         resp: BiliAPIResponse = await client.request(**config)
@@ -2259,6 +2303,8 @@ class Api:
             "Api 获得响应",
             {"result": ret},
         )
+        if self.credential.proxy:
+            request_settings.set_proxy(legacy_proxy)
         return ret
 
     async def request(

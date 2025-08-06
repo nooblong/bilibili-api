@@ -35,6 +35,7 @@ from bilibili_api import ...
   - [async def check\_refresh()](#async-def-check\_refresh)
   - [async def check\_valid()](#async-def-check\_valid)
   - [def from\_cookies()](#def-from\_cookies)
+  - [async def get\_buvid\_cookies()](#async-def-get\_buvid\_cookies)
   - [def get\_cookies()](#def-get\_cookies)
   - [def has\_ac\_time\_value()](#def-has\_ac\_time\_value)
   - [def has\_bili\_jct()](#def-has\_bili\_jct)
@@ -90,6 +91,7 @@ from bilibili_api import ...
   - [async def load\_url()](#async-def-load\_url)
   - [def resize()](#def-resize)
   - [def to\_file()](#def-to\_file)
+  - [def to\_json()](#def-to\_json)
   - [async def upload()](#async-def-upload)
   - [async def upload\_by\_note()](#async-def-upload\_by\_note)
 - [class ResourceType()](#class-ResourceType)
@@ -363,7 +365,7 @@ class BiliAPIClient(ABC):
         files: Dict[str, BiliAPIFile] = {},
         headers: dict = {},
         cookies: dict = {},
-        allow_redirects: bool = False,
+        allow_redirects: bool = True,
     ) -> BiliAPIResponse:
         """
         进行 HTTP 请求
@@ -376,7 +378,7 @@ class BiliAPIClient(ABC):
             files (Dict[str, BiliAPIFile], optional): 请求文件. Defaults to {}.
             headers (dict, optional): 请求头. Defaults to {}.
             cookies (dict, optional): 请求 Cookies. Defaults to {}.
-            allow_redirects (bool, optional): 是否允许重定向. Defaults to False.
+            allow_redirects (bool, optional): 是否允许重定向. Defaults to True.
 
         Returns:
             BiliAPIResponse: 响应对象
@@ -601,6 +603,7 @@ Cookies 刷新错误。
 | `buvid4` | `str \| None, optional` | 浏览器 Cookies 中的 BUVID4 字段值. Defaults to None. |
 | `dedeuserid` | `str \| None, optional` | 浏览器 Cookies 中的 DedeUserID 字段值. Defaults to None. |
 | `ac_time_value` | `str \| None, optional` | 浏览器 Cookies 中的 ac_time_value 字段值. Defaults to None. |
+| `proxy` | `str \| None, optional` | 凭据类可选择携带的代理. Defaults to None. |
 
 
 ### async def check_refresh()
@@ -637,6 +640,17 @@ Cookies 刷新错误。
 | `cookies` | `Dict, optional` | Cookies. Defaults to {}. |
 
 **Returns:** `Credential`:  凭据类
+
+
+
+
+### async def get_buvid_cookies()
+
+获取请求 Cookies 字典，自动补充 buvid 字段
+
+
+
+**Returns:** `dict`:  请求 Cookies 字典
 
 
 
@@ -1297,6 +1311,17 @@ NOTE: `gt`, `challenge`, `token` 为验证码基本字段。`seccode`, `validate
 
 
 
+### def to_json()
+
+转换为 bilibili api 中的 json 格式，提供图片链接/长宽/大小
+
+
+
+**Returns:** `dict`:  图片链接/长宽/大小
+
+
+
+
 ### async def upload()
 
 上传图片至 B 站。
@@ -1351,6 +1376,7 @@ NOTE: `gt`, `challenge`, `token` 为验证码基本字段。`seccode`, `validate
 + MANGA: 漫画
 + NOTE: 笔记
 + OPUS: 图文
++ DLC: 收藏集
 + FAILED: 错误
 
 

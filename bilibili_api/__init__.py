@@ -68,6 +68,7 @@ from .exceptions import (
     WbiRetryTimesExceedException,
 )
 from . import (
+    activity,
     app,
     article_category,
     article,
@@ -86,6 +87,7 @@ from . import (
     favorite_list,
     festival,
     game,
+    garb,
     homepage,
     hot,
     interactive_video,
@@ -111,7 +113,7 @@ from . import (
 )
 
 
-BILIBILI_API_VERSION = "17.1.3.dev0"
+BILIBILI_API_VERSION = "17.3.0"
 
 
 def __register_all_clients():
@@ -172,6 +174,7 @@ __all__ = [
     "VideoUploadException",
     "WbiRetryTimesExceedException",
     "aid2bvid",
+    "activity",
     "app",
     "article",
     "article_category",
@@ -192,6 +195,7 @@ __all__ = [
     "favorite_list",
     "festival",
     "game",
+    "garb",
     "get_available_settings",
     "get_client",
     "get_real_url",

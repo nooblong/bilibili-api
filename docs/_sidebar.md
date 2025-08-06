@@ -7,6 +7,7 @@
 + [`.ivi` 文件和 `ivitools` 相关](/ivifile.md)
 + [模块请求库相关](/request_client.md)
 + API 示例
+    + [activity.py - 活动](/examples/activity.md)
     + [app.py - 应用程序](/examples/app.md)
     + [article_category.py - 专栏分类](/examples/article_category.md)
     + [article.py - 专栏](/examples/article.md)
@@ -25,6 +26,7 @@
     + [favorite_list.py - 收藏夹](/examples/favorite_list.md)
     + [festival.py - 节日](/examples/festival.md)
     + [game.py - 游戏](/examples/game.md)
+    + [garb.py - 装扮/收藏集](/examples/garb.md)
     + [homepage.py - 主页](/examples/homepage.md)
     + [hot.py - 热门](/examples/hot.md)
     + [interactive_video.py - 互动视频](/examples/interactive_video.md)
@@ -49,6 +51,7 @@
     + [watchroom.py - 放映室](/examples/watchroom.md)
 + API 文档
   + [根模块](/modules/bilibili_api.md)
+    + [activity.py - 活动](/modules/activity.md)
   + [app.py - 应用程序](/modules/app.md)
   + [article_category.py - 专栏分类](/modules/article_category.md)
   + [article.py - 专栏](/modules/article.md)
@@ -67,6 +70,7 @@
   + [favorite_list.py - 收藏夹](/modules/favorite_list.md)
   + [festival.py - 节日](/modules/festival.md)
   + [game.py - 游戏](/modules/game.md)
+  + [garb.py - 装扮/收藏集](/modules/garb.md)
   + [homepage.py - 主页](/modules/homepage.md)
   + [hot.py - 热门](/modules/hot.md)
   + [interactive_video.py - 互动视频](/modules/interactive_video.md)
