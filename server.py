@@ -1,5 +1,6 @@
 import enum
 import inspect
+import socket
 import sys
 
 import httpx
@@ -134,4 +135,14 @@ async def req_by_static(request, package, func):
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=9000, dev=False)
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 9001
+    # 手动检测端口占用
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.bind(("0.0.0.0", port))
+        sock.close()
+    except OSError:
+        print(f"端口 {port} 已被占用，请更换端口或关闭占用该端口的程序。")
+        sys.exit(1)
+        
+    app.run(host="0.0.0.0", port=port, dev=False)
