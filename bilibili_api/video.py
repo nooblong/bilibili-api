@@ -21,7 +21,6 @@ from typing import Any, List, Union, Optional, Type
 
 from yarl import URL
 
-from . import user
 from .utils.aid_bvid_transformer import bvid2aid, aid2bvid
 from .utils.utils import get_api, raise_for_statement
 from .utils.AsyncEvent import AsyncEvent
@@ -466,7 +465,6 @@ class Video:
         self,
         page_index: Union[int, None] = None,
         cid: Union[int, None] = None,
-        html5: bool = False,
     ) -> dict:
         """
         获取视频下载信息。
@@ -480,8 +478,6 @@ class Video:
 
             cid        (int | None, optional) : 分 P 的 ID。Defaults to None
 
-            html5      (bool, optional)       : 是否选择移动端 HTML5 播放流（仅支持 MP4 格式）此时获得的媒体流访问无需鉴权。
-
         Returns:
             dict: 调用 API 返回的结果。
         """
@@ -493,78 +489,26 @@ class Video:
 
         api = API["info"]["playurl"]
         params = {
-            "qn": "127",
-            "fnval": 4048,
-            "fnver": 0,
-            "fourk": 1,
-            "gaia_source": "pre-load",
-            "isGaiaAvoided": "true",
             "avid": await self.__get_aid(),
             "bvid": await self.__get_bvid(),
             "cid": cid,
+            "qn": "127",
+            "fnver": 0,
+            "fnval": 4048,
+            "fourk": 1,
+            "gaia_source": "",
             "from_client": "BROWSER",
+            "is_main_page": "false",
+            "need_fragment": "false",
+            "isGaiaAvoided": "true",
             "web_location": 1315873,
+            "voice_balance": 1,
         }
-        if html5:
-            params["platform"] = "html5"
-            params["high_quality"] = "1"
         return (
             await Api(**api, credential=self.credential, wbi=True)
             .update_params(**params)
             .result
         )
-
-    class AudioQuality(Enum):
-        """
-        视频的音频流清晰度枚举
-
-        - _64K: 64K
-        - _132K: 132K
-        - _192K: 192K
-        - HI_RES: Hi-Res 无损
-        - DOLBY: 杜比全景声
-        """
-
-        _64K = 30216
-        _132K = 30232
-        DOLBY = 30250
-        HI_RES = 30251
-        _192K = 30280
-
-    async def my_detect(self, cid=None,
-                        audio_max_quality: AudioQuality = AudioQuality.HI_RES):
-        if cid is None:
-            info = await self.get_download_url(page_index=0)
-        else:
-            info = await self.get_download_url(cid=cid)
-        detecter = VideoDownloadURLDataDetecter(info)
-        return detecter.detect_best_streams(audio_max_quality=audio_max_quality)
-
-    class AudioQuality(Enum):
-        """
-        视频的音频流清晰度枚举
-
-        - _64K: 64K
-        - _132K: 132K
-        - _192K: 192K
-        - HI_RES: Hi-Res 无损
-        - DOLBY: 杜比全景声
-        """
-
-        _64K = 30216
-        _132K = 30232
-        DOLBY = 30250
-        HI_RES = 30251
-        _192K = 30280
-
-    async def my_detect(self, cid=None,
-                        audio_max_quality: AudioQuality = AudioQuality.HI_RES):
-        if cid is None:
-            info = await self.get_download_url()
-        else:
-            info = await self.get_download_url(cid=cid)
-        detecter = VideoDownloadURLDataDetecter(info)
-        return detecter.detect_best_streams(audio_max_quality=audio_max_quality)
 
     async def get_related(self) -> dict:
         """
@@ -1822,65 +1766,6 @@ class Video:
         datas = {"viewed": "false", "aid": await self.__get_aid()}
         return await Api(**api, credential=self.credential).update_data(**datas).result
 
-    async def report_watch_history(
-            self,
-            progress: int = 0,
-            page_index: Union[int, None] = 0,
-            cid: Union[int, None] = None
-    ) -> dict:
-        """
-        上报观看历史
-        Args:
-            progress        (int):          观看进度 (单位 秒)
-            page_index      (int | None):   分 P 序号
-            cid             (int | None):   分 P ID,从视频信息中获取
-
-        Returns:
-            dict: 调用 API 返回的结果
-        """
-
-        if cid is None:
-            if page_index is None:
-                raise ArgsException("page_index 和 cid 至少提供一个。")
-
-            cid = await self.get_cid(page_index=page_index)
-
-        api = get_api("video")["operate"]["report_history"]
-        data = {
-            "aid": self.get_aid(),
-            "cid": cid,
-            "progress": progress,
-            "csrf": self.credential.bili_jct,
-        }
-        return await Api(**api, credential=self.credential).update_data(**data).request(raw=True)
-
-    async def report_start_watching(self, page_index: Union[int, None] = 0) -> dict:
-        """
-        上报开始观看
-        该接口亦被用于计算播放量, 播放量更新不是实时的
-        该接口使用似乎存在 200 播放限制, 请勿滥用!
-        Args:
-            page_index      (int | None):   分 P 序号
-
-        Returns:
-            dict: 调用 API 返回的结果
-        """
-        self_info = await user.get_self_info(self.credential)
-
-        if page_index is None:
-            raise ArgsException("必须提供 page_index")
-
-        cid = await self.get_cid(page_index=page_index)
-
-        api = get_api("video")["operate"]["report_start_watching"]
-        data = {
-            "aid": await self.__get_aid(),
-            "cid": cid,
-            "mid": self_info["mid"],
-            "part": page_index,
-            "csrf": self.credential.bili_jct,
-        }
-        return await Api(**api, credential=self.credential).update_data(**data).request(raw=True)
 
 from .bangumi import Episode
 
@@ -2261,7 +2146,7 @@ class AudioQuality(Enum):
 
     _64K = 30216
     _132K = 30232
-    DOLBY = 30250
+    DOLBY = 30255
     HI_RES = 30251
     _192K = 30280
 
@@ -2274,32 +2159,14 @@ class VideoStreamDownloadURL:
     视频流 URL 类
 
     Attributes:
-        url (str): 视频流 url
+        url           (str)         : 视频流 url
         video_quality (VideoQuality): 视频流清晰度
-        video_codecs (VideoCodecs) : 视频流编码
-        backup_url (list[str]): 备用链接
-        bandwidth (int): 码率
-        codecs (str): 视频流详细编码
-        frame_rate (float): 帧率
-        scale (tuple[int, int]): 画面尺寸
-        sar (tuple[int, int]): 采样纵横比
-        mime_type (str): MIME 类型
-        segment_base_initialization (str): SegmentBase.Initialization
-        segment_base_index_range (str): SegmentBase.indexRange
+        video_codecs  (VideoCodecs) : 视频流编码
     """
 
     url: str
     video_quality: VideoQuality
     video_codecs: VideoCodecs
-    backup_url: list[str]
-    bandwidth: int
-    codecs: str
-    frame_rate: float
-    scale: tuple[int, int]
-    sar: tuple[int, int]
-    mime_type: str
-    segment_base_initialization: str
-    segment_base_index_range: str
 
 
 @dataclass
@@ -2310,24 +2177,12 @@ class AudioStreamDownloadURL:
     音频流 URL 类
 
     Attributes:
-        url (str): 音频流 url
+        url           (str)         : 音频流 url
         audio_quality (AudioQuality): 音频流清晰度
-        backup_url (list[str]): 备用链接
-        bandwidth (int): 码率
-        codecs (str): 视频流详细编码
-        mime_type (str): MIME 类型
-        segment_base_initialization (str): SegmentBase.Initialization
-        segment_base_index_range (str): SegmentBase.indexRange
     """
 
     url: str
     audio_quality: AudioQuality
-    backup_url: list[str]
-    bandwidth: int
-    codecs: str
-    mime_type: str
-    segment_base_initialization: str
-    segment_base_index_range: str
 
 
 @dataclass
@@ -2487,7 +2342,10 @@ class VideoDownloadURLDataDetecter:
             flac_data = self.__data["dash"].get("flac")
             dolby_data = self.__data["dash"].get("dolby")
             for video_data in videos_data:
-                video_stream_url = video_data["base_url"]
+                if video_data.get("baseUrl"):
+                    video_stream_url = video_data["baseUrl"]
+                else:
+                    video_stream_url = video_data["base_url"]
                 video_stream_quality = VideoQuality(video_data["id"])
                 if video_stream_quality == VideoQuality.HDR and no_hdr:
                     continue
@@ -2523,20 +2381,14 @@ class VideoDownloadURLDataDetecter:
                     url=video_stream_url,
                     video_quality=video_stream_quality,
                     video_codecs=video_stream_codecs,  # type: ignore
-                    backup_url=video_data["backup_url"],
-                    bandwidth=video_data["bandwidth"],
-                    codecs=video_data["codecs"],
-                    frame_rate=float(video_data["frame_rate"]),
-                    scale=(video_data["width"], video_data["height"]),
-                    sar=tuple([int(x) for x in video_data["sar"].split(":")] if ":" in video_data["sar"] else (1, 1)),
-                    mime_type=video_data["mime_type"],
-                    segment_base_initialization=video_data["segment_base"]["initialization"],
-                    segment_base_index_range=video_data["segment_base"]["index_range"]
                 )
                 streams.append(video_stream)
             if audios_data:
                 for audio_data in audios_data:
-                    audio_stream_url = audio_data["base_url"]
+                    if audio_data.get("baseUrl"):
+                        audio_stream_url = audio_data["baseUrl"]
+                    else:
+                        audio_stream_url = audio_data["base_url"]
                     audio_stream_quality = AudioQuality(audio_data["id"])
                     if audio_stream_quality.value > audio_max_quality.value:
                         continue
@@ -2545,14 +2397,7 @@ class VideoDownloadURLDataDetecter:
                     if not audio_stream_quality in audio_accepted_qualities:
                         continue
                     audio_stream = AudioStreamDownloadURL(
-                        url=audio_stream_url,
-                        audio_quality=audio_stream_quality,
-                        backup_url=audio_data["backup_url"],
-                        bandwidth=audio_data["bandwidth"],
-                        codecs=audio_data["codecs"],
-                        mime_type=audio_data["mime_type"],
-                        segment_base_initialization=audio_data["segment_base"]["initialization"],
-                        segment_base_index_range=audio_data["segment_base"]["index_range"]
+                        url=audio_stream_url, audio_quality=audio_stream_quality
                     )
                     streams.append(audio_stream)
             if flac_data and (not no_hires):
@@ -2560,14 +2405,7 @@ class VideoDownloadURLDataDetecter:
                     flac_stream_url = flac_data["audio"]["base_url"]
                     flac_stream_quality = AudioQuality(flac_data["audio"]["id"])
                     flac_stream = AudioStreamDownloadURL(
-                        url=flac_stream_url,
-                        audio_quality=flac_stream_quality,
-                        backup_url=flac_data["audio"]["backup_url"],
-                        bandwidth=flac_data["audio"]["bandwidth"],
-                        codecs=flac_data["audio"]["codecs"],
-                        mime_type=flac_data["audio"]["mime_type"],
-                        segment_base_initialization=flac_data["audio"]["segment_base"]["initialization"],
-                        segment_base_index_range=flac_data["audio"]["segment_base"]["index_range"]
+                        url=flac_stream_url, audio_quality=flac_stream_quality
                     )
                     streams.append(flac_stream)
             if dolby_data and (not no_dolby_audio):
@@ -2576,14 +2414,7 @@ class VideoDownloadURLDataDetecter:
                     dolby_stream_url = dolby_stream_data["base_url"]
                     dolby_stream_quality = AudioQuality(dolby_stream_data["id"])
                     dolby_stream = AudioStreamDownloadURL(
-                        url=dolby_stream_url,
-                        audio_quality=dolby_stream_quality,
-                        backup_url=dolby_stream_data["backup_url"],
-                        bandwidth=dolby_stream_data["bandwidth"],
-                        codecs=dolby_stream_data["codecs"],
-                        mime_type=dolby_stream_data["mime_type"],
-                        segment_base_initialization=dolby_stream_data["segment_base"]["initialization"],
-                        segment_base_index_range=dolby_stream_data["segment_base"]["index_range"]
+                        url=dolby_stream_url, audio_quality=dolby_stream_quality
                     )
                     streams.append(dolby_stream)
             return streams
