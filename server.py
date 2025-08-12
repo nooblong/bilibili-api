@@ -135,7 +135,7 @@ async def req_by_static(request, package, func):
 
 
 if __name__ == '__main__':
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 9001
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 9000
     # 手动检测端口占用
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -144,5 +144,5 @@ if __name__ == '__main__':
     except OSError:
         print(f"端口 {port} 已被占用，请更换端口或关闭占用该端口的程序。")
         sys.exit(1)
-        
+
     app.run(host="0.0.0.0", port=port, dev=False)
