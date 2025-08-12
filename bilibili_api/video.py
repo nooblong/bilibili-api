@@ -530,7 +530,7 @@ class Video:
     async def my_detect(self, cid=None,
                         audio_max_quality: AudioQuality = AudioQuality.HI_RES):
         if cid is None:
-            info = await self.get_download_url()
+            info = await self.get_download_url(page_index=0)
         else:
             info = await self.get_download_url(cid=cid)
         detecter = VideoDownloadURLDataDetecter(info)
