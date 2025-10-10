@@ -1,0 +1,43 @@
+# Combined requirements for bilibili-api
+# Generated automatically by analysis on 2025-10-10
+# Core dependencies (from pyproject.toml)
+beautifulsoup4~=4.13.4
+colorama~=0.4.6
+lxml~=5.4.0
+pyyaml~=6.0
+brotli~=1.1.0
+qrcode~=8.2
+APScheduler~=3.11.0
+pillow~=11.2.1
+yarl~=1.20.0
+pycryptodomex~=3.23.0
+qrcode_terminal~=0.8
+PyJWT~=2.10.1
+sanic
+
+# Optional/network clients (choose at least one):
+# The project supports multiple async HTTP clients; install one you prefer.
+# Options: curl_cffi (recommended for full feature), httpx, aiohttp
+curl_cffi>=0.8.1b9  # recommended, supports advanced TLS impersonation
+httpx>=0.27.0  # httpx client (no websockets)
+# aiohttp>=3.8.0  # aiohttp client (websocket support)
+
+# Additional tools detected in repository or docs (optional)
+# uvicorn>=0.18.0  # needed if you use fastapi server in tools/parser
+# fastapi>=0.95.0  # optional: used by bilibili_api.tools.parser
+# PyInstaller>=5.11.0  # used by pyinstaller hooks
+# PyQt6>=6.6.0  # optional: required by ivitools built-in player
+
+# Development/test tooling (optional)
+# setuptools
+# setuptools-scm
+# wheel
+# twine
+# pytest
+
+# Notes:
+# - This file combines declared dependencies from pyproject.toml and
+#   optional/mentioned packages found in code and docs.
+# - The project intentionally allows multiple request clients; pick one or more
+#   from the "Optional/network clients" section before running the library.
+# - If you want a minimal install, keep only the core dependencies above.
