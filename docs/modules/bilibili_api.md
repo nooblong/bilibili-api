@@ -91,6 +91,7 @@ from bilibili_api import ...
   - [async def load\_url()](#async-def-load\_url)
   - [def resize()](#def-resize)
   - [def to\_file()](#def-to\_file)
+  - [def to\_json()](#def-to\_json)
   - [async def upload()](#async-def-upload)
   - [async def upload\_by\_note()](#async-def-upload\_by\_note)
 - [class ResourceType()](#class-ResourceType)
@@ -105,6 +106,8 @@ from bilibili_api import ...
 - [async def bili\_simple\_download()](#async-def-bili\_simple\_download)
 - [def bvid2aid()](#def-bvid2aid)
 - [def get\_available\_settings()](#def-get\_available\_settings)
+- [async def get\_bili\_ticket()](#async-def-get\_bili\_ticket)
+- [async def get\_buvid()](#async-def-get\_buvid)
 - [def get\_client()](#def-get\_client)
 - [async def get\_real\_url()](#async-def-get\_real\_url)
 - [def get\_registered\_available\_settings()](#def-get\_registered\_available\_settings)
@@ -602,6 +605,7 @@ Cookies 刷新错误。
 | `buvid4` | `str \| None, optional` | 浏览器 Cookies 中的 BUVID4 字段值. Defaults to None. |
 | `dedeuserid` | `str \| None, optional` | 浏览器 Cookies 中的 DedeUserID 字段值. Defaults to None. |
 | `ac_time_value` | `str \| None, optional` | 浏览器 Cookies 中的 ac_time_value 字段值. Defaults to None. |
+| `proxy` | `str \| None, optional` | 凭据类可选择携带的代理. Defaults to None. |
 
 
 ### async def check_refresh()
@@ -1309,6 +1313,17 @@ NOTE: `gt`, `challenge`, `token` 为验证码基本字段。`seccode`, `validate
 
 
 
+### def to_json()
+
+转换为 bilibili api 中的 json 格式，提供图片链接/长宽/大小
+
+
+
+**Returns:** `dict`:  图片链接/长宽/大小
+
+
+
+
 ### async def upload()
 
 上传图片至 B 站。
@@ -1503,6 +1518,35 @@ BV 号转 AV 号。
 
 
 **Returns:** `List[str]`:  支持的设置项名称
+
+
+
+
+---
+
+## async def get_bili_ticket()
+
+获取 bili_ticket
+
+
+| name | type | description |
+| - | - | - |
+| `credential` | `Credential, optional` | 凭据. Defaults to None. |
+
+**Returns:** `Tuple[str, str]`:  bili_ticket, bili_ticket_expires
+
+
+
+
+---
+
+## async def get_buvid()
+
+获取 buvid3 和 buvid4
+
+
+
+**Returns:** `Tuple[str, str]`:  第 0 项为 buvid3，第 1 项为 buvid4。
 
 
 

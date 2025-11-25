@@ -16,8 +16,13 @@ bilibili_api.comment
 + 活动: {16279} `await get_activity_aid()`
 """
 
+import json
 from enum import Enum
-from typing import Union, Optional
+from typing import List, Union, Optional
+
+from bilibili_api import Picture
+
+from .dynamic import upload_image
 
 from .utils.utils import get_api
 from .utils.network import Api, Credential
@@ -346,6 +351,7 @@ async def send_comment(
     root: Union[int, None] = None,
     parent: Union[int, None] = None,
     credential: Union[None, Credential] = None,
+    pic: Union[Picture, List[Picture], None] = None,
 ) -> dict:
     """
     通用发送评论 API。
@@ -369,6 +375,8 @@ async def send_comment(
 
         parent     (int, optional): 父评论 ID, Defaults to None.
 
+        pic        (Union[Picture, List[Picture]], optional): 图片, Defaults to None.
+
         credential (Credential)   : 凭据
 
     Returns:
@@ -385,7 +393,25 @@ async def send_comment(
         "type": type_.value,
         "message": text,
         "plat": 1,
+        "statistics": {"appId": 100, "platform": 5},
+        "gaia_source": "main_web",
     }
+
+    if pic:
+        if isinstance(pic, Picture):
+            pic = [pic]
+        data["pictures"] = []
+        for p in pic:
+            res = await upload_image(image=p, credential=credential)
+            data["pictures"].append(
+                {
+                    "img_src": res["image_url"],
+                    "img_width": res["image_width"],
+                    "img_height": res["image_height"],
+                    "img_size": res["img_size"],
+                }
+            )
+        data["pictures"] = json.dumps(data["pictures"])
 
     if root is None and parent is None:
         # 直接回复资源

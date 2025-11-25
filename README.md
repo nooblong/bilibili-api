@@ -6,7 +6,7 @@
 
 [![API 数量](https://img.shields.io/badge/API%20数量-400+-blue)][api.json]
 [![LICENSE](https://img.shields.io/badge/LICENSE-GPLv3+-red)][LICENSE]
-[![Python](https://img.shields.io/badge/python-3.13|3.12|3.11|3.10|3.9-blue)](https://www.python.org)
+[![Python](https://img.shields.io/badge/python-3.9+-blue)](https://www.python.org)
 [![Stable Version](https://img.shields.io/pypi/v/bilibili-api-python?label=stable)][pypi]
 [![Pre-release Version](https://img.shields.io/github/v/release/Nemo2011/bilibili-api?label=pre-release&include_prereleases&sort=semver)][pypi-dev]
 [![STARS](https://img.shields.io/github/stars/nemo2011/bilibili-api?color=yellow&label=Github%20Stars)][stargazers]
@@ -18,15 +18,14 @@
 
 **注意事项：使用此模块时请仅用于学习和测试，禁止用于非法用途及其他恶劣的社区行为如：恶意刷屏、辱骂黄暴、各种形式的滥用等，违规此模块许可证 `GNU General Public License Version 3` 及此条注意事项而产生的任何后果自负，模块的所有贡献者不负任何责任。**
 
-开发文档: [bilibili_api 开发文档][docs] ([GitHub][docs-github]) <!-- ([Gitee][docs-gitee]) -->
+开发文档: [bilibili_api 开发文档][docs] ([GitHub][docs-github])
 
-原仓库地址：[https://github.com/MoyuScript/bilibili-api](https://github.com/MoyuScript/bilibili-api)
+原仓库地址：[https://github.com/MoyuScript/bilibili-api](https://github.com/MoyuScript/bilibili-api) (*现已被删除)
 
 Github 仓库：[https://github.com/nemo2011/bilibili-api](https://github.com/nemo2011/bilibili-api)
 
-<!-- Gitee 仓库：[https://gitee.com/nemo2011/bilibili-api](https://gitee.com/nemo2011/bilibili-api) 长期未同步... -->
-
-> 此仓库是对原仓库 `bilibili-api` 的继续的维护。更多相关的信息请前往原仓库地址进行查看。
+> 模块最早由 @MoyuScript 于 2020 年创建，于 2022 年宣布停止维护。本仓库是原仓库 fork，遵循 `GNU General Public License Version 3`。在此感谢早期的众多模块贡献者与 @MoyuScript 对新仓库的支持。
+> 见 `MoyuScript/bilibili-api` 的 [第一条 commit (2020.01.27)](https://github.com/Nemo2011/bilibili-api/commit/8dc3f9a05fa28ed9b060cafa6d5c23131a28a113)与 [最后一条 commit (2022.01.17)](https://github.com/Nemo2011/bilibili-api/commit/dc518016c7649be2a135ccb8badb091712754a3d)。
 
 # 简介
 
@@ -231,11 +230,10 @@ A: 由于该模块比较特殊，是爬虫模块，如果 b 站的接口变更�
 - \[2\] 代码来源：<https://www.zhihu.com/question/381784377/answer/1099438784> (WTFPL)
 - \[3\] 部分代码来源：<https://github.com/m13253/danmaku2ass> (GPLv3) <https://github.com/ewwink/python-srt2ass>
 - \[4\] 思路来源：<https://socialsisteryi.github.io/bilibili-API-collect/docs/login/cookie_refresh.html> (CC-BY-NC 4.0)
-- \[5\] 大量思路来源 <https://socialsisteryi.github.io/bilibili-API-collect> 中相关讨论。
+- \[5\] 大量思路来源 <https://github.com/SocialSisterYi/bilibili-API-collect> 中相关讨论。
 
 [docs]: https://nemo2011.github.io/bilibili-api
 [docs-github]: https://github.com/nemo2011/bilibili-api/tree/main/docs
-[docs-gitee]: https://gitee.com/nemo2011/bilibili-api/tree/main/docs
 [api.json]: https://github.com/nemo2011/bilibili-api/tree/main/bilibili_api/data/api/
 [license]: https://github.com/nemo2011/bilibili-api/tree/main/LICENSE
 [stargazers]: https://github.com/nemo2011/bilibili-api/stargazers

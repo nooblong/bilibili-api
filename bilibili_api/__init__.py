@@ -33,6 +33,8 @@ from .utils.network import (
     get_session,
     set_session,
     # anti spider
+    get_buvid,
+    get_bili_ticket,
     recalculate_wbi,
     refresh_buvid,
     refresh_bili_ticket,
@@ -113,7 +115,7 @@ from . import (
 )
 
 
-BILIBILI_API_VERSION = "17.3.0"
+BILIBILI_API_VERSION = "17.4.0"
 
 
 def __register_all_clients():
@@ -197,6 +199,8 @@ __all__ = [
     "game",
     "garb",
     "get_available_settings",
+    "get_bili_ticket",
+    "get_buvid",
     "get_client",
     "get_real_url",
     "get_registered_available_settings",
