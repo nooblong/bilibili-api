@@ -21,6 +21,7 @@ from typing import Any, List, Union, Optional, Type
 
 from yarl import URL
 
+from . import user
 from .utils.aid_bvid_transformer import bvid2aid, aid2bvid
 from .utils.utils import get_api, raise_for_statement
 from .utils.AsyncEvent import AsyncEvent
@@ -465,6 +466,7 @@ class Video:
         self,
         page_index: Union[int, None] = None,
         cid: Union[int, None] = None,
+        html5: bool = False,
     ) -> dict:
         """
         获取视频下载信息。
@@ -478,6 +480,8 @@ class Video:
 
             cid        (int | None, optional) : 分 P 的 ID。Defaults to None
 
+            html5      (bool, optional)       : 是否选择移动端 HTML5 播放流（仅支持 MP4 格式）此时获得的媒体流访问无需鉴权。
+
         Returns:
             dict: 调用 API 返回的结果。
         """
@@ -489,21 +493,21 @@ class Video:
 
         api = API["info"]["playurl"]
         params = {
+            "qn": "127",
+            "fnval": 4048,
+            "fnver": 0,
+            "fourk": 1,
+            "gaia_source": "pre-load",
+            "isGaiaAvoided": "true",
             "avid": await self.__get_aid(),
             "bvid": await self.__get_bvid(),
             "cid": cid,
-            "qn": "127",
-            "fnver": 0,
-            "fnval": 4048,
-            "fourk": 1,
-            "gaia_source": "",
             "from_client": "BROWSER",
-            "is_main_page": "false",
-            "need_fragment": "false",
-            "isGaiaAvoided": "true",
             "web_location": 1315873,
-            "voice_balance": 1,
         }
+        if html5:
+            params["platform"] = "html5"
+            params["high_quality"] = "1"
         return (
             await Api(**api, credential=self.credential, wbi=True)
             .update_params(**params)
@@ -1766,6 +1770,65 @@ class Video:
         datas = {"viewed": "false", "aid": await self.__get_aid()}
         return await Api(**api, credential=self.credential).update_data(**datas).result
 
+    async def report_watch_history(
+            self,
+            progress: int = 0,
+            page_index: Union[int, None] = 0,
+            cid: Union[int, None] = None
+    ) -> dict:
+        """
+        上报观看历史
+        Args:
+            progress        (int):          观看进度 (单位 秒)
+            page_index      (int | None):   分 P 序号
+            cid             (int | None):   分 P ID,从视频信息中获取
+
+        Returns:
+            dict: 调用 API 返回的结果
+        """
+
+        if cid is None:
+            if page_index is None:
+                raise ArgsException("page_index 和 cid 至少提供一个。")
+
+            cid = await self.get_cid(page_index=page_index)
+
+        api = get_api("video")["operate"]["report_history"]
+        data = {
+            "aid": self.get_aid(),
+            "cid": cid,
+            "progress": progress,
+            "csrf": self.credential.bili_jct,
+        }
+        return await Api(**api, credential=self.credential).update_data(**data).request(raw=True)
+
+    async def report_start_watching(self, page_index: Union[int, None] = 0) -> dict:
+        """
+        上报开始观看
+        该接口亦被用于计算播放量, 播放量更新不是实时的
+        该接口使用似乎存在 200 播放限制, 请勿滥用!
+        Args:
+            page_index      (int | None):   分 P 序号
+
+        Returns:
+            dict: 调用 API 返回的结果
+        """
+        self_info = await user.get_self_info(self.credential)
+
+        if page_index is None:
+            raise ArgsException("必须提供 page_index")
+
+        cid = await self.get_cid(page_index=page_index)
+
+        api = get_api("video")["operate"]["report_start_watching"]
+        data = {
+            "aid": await self.__get_aid(),
+            "cid": cid,
+            "mid": self_info["mid"],
+            "part": page_index,
+            "csrf": self.credential.bili_jct,
+        }
+        return await Api(**api, credential=self.credential).update_data(**data).request(raw=True)
 
 from .bangumi import Episode
 

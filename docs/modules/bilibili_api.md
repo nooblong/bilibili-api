@@ -106,6 +106,8 @@ from bilibili_api import ...
 - [async def bili\_simple\_download()](#async-def-bili\_simple\_download)
 - [def bvid2aid()](#def-bvid2aid)
 - [def get\_available\_settings()](#def-get\_available\_settings)
+- [async def get\_bili\_ticket()](#async-def-get\_bili\_ticket)
+- [async def get\_buvid()](#async-def-get\_buvid)
 - [def get\_client()](#def-get\_client)
 - [async def get\_real\_url()](#async-def-get\_real\_url)
 - [def get\_registered\_available\_settings()](#def-get\_registered\_available\_settings)
@@ -428,6 +430,16 @@ class BiliAPIClient(ABC):
 
         Returns:
             int: 下载总字节数
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def download_close(self, cnt: int) -> None:
+        """
+        结束下载
+
+        Args:
+            cnt    (int): 下载编号
         """
         raise NotImplementedError
 
@@ -1522,6 +1534,35 @@ BV 号转 AV 号。
 
 ---
 
+## async def get_bili_ticket()
+
+获取 bili_ticket
+
+
+| name | type | description |
+| - | - | - |
+| `credential` | `Credential, optional` | 凭据. Defaults to None. |
+
+**Returns:** `Tuple[str, str]`:  bili_ticket, bili_ticket_expires
+
+
+
+
+---
+
+## async def get_buvid()
+
+获取 buvid3 和 buvid4
+
+
+
+**Returns:** `Tuple[str, str]`:  第 0 项为 buvid3，第 1 项为 buvid4。
+
+
+
+
+---
+
 ## def get_client()
 
 在当前事件循环下获取模块正在使用的请求客户端
@@ -1694,6 +1735,7 @@ Events:
 - WS_CLOSE:    关闭 WebSocket 请求。
 - DWN_CREATE:  新建下载。
 - DWN_PART:    部分下载。
+- DWN_CLOSE:   结束下载。
 - (Api)
 - API_REQUEST: Api 请求。
 - API_RESPONSE: Api 响应。

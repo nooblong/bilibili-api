@@ -218,6 +218,16 @@ class CurlCFFIClient(BiliAPIClient):
         resp = self.__downloads[cnt]
         return int(resp.headers.get("content-length", "0"))
 
+    async def download_close(self, cnt: int) -> None:
+        resp = self.__downloads[cnt]
+        await resp.aclose()
+        del self.__downloads[cnt]
+        request_log.dispatch(
+            "DWN_CLOSE",
+            "结束下载",
+            {"id": cnt},
+        )
+
     async def ws_create(
         self, url: str = "", params: dict = {}, headers: dict = {}
     ) -> int:

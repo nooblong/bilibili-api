@@ -140,9 +140,9 @@ async def get_replies(
     Args:
         credential (Credential): 凭据类.
 
-        last_reply_id (Optional, int): 最后一个评论的 ID
+        last_reply_id (Optional, int): 最后一个评论的 ID. 用于翻页。Defaults to None.
 
-        reply_time (Optional, int): 最后一个评论发送时间
+        reply_time (Optional, int): 最后一个评论发送时间. 用于翻页。Defaults to None.
 
     Returns:
         dict: 调用 API 返回的结果
@@ -161,9 +161,9 @@ async def get_likes(
     Args:
         credential (Credential): 凭据类.
 
-        last_id (Optional, int): 最后一个 ID
+        last_id (Optional, int): 最后一个 ID. 用于翻页。Defaults to None.
 
-        like_time (Optional, int): 最后一个点赞发送时间
+        like_time (Optional, int): 最后一个点赞发送时间. 用于翻页。Defaults to None.
 
     Returns:
         dict: 调用 API 返回的结果
@@ -174,7 +174,7 @@ async def get_likes(
 
 
 async def get_at(
-    credential: Credential, last_uid: int = None, at_time: int = None
+    credential: Credential, last_uid: int = None, at_time: int = None, last_id: int = None
 ) -> dict:
     """
     获取收到的 AT
@@ -182,15 +182,17 @@ async def get_at(
     Args:
         credential (Credential): 凭据类.
 
-        last_id (Optional, int): 最后一个 ID
+        last_id (Optional, int): 最后一个 ID. 用于翻页。Defaults to None.
 
-        at_time (Optional, int): 最后一个点赞发送时间
+        at_time (Optional, int): 最后一个点赞发送时间. 用于翻页。Defaults to None.
 
     Returns:
         dict: 调用 API 返回的结果
     """
     api = API["session"]["at"]
-    params = {"id": last_uid, "at_time": at_time}
+    if last_id is None:
+        last_id = last_uid
+    params = {"id": last_id, "at_time": at_time}
     return await Api(**api, credential=credential).update_params(**params).result
 
 

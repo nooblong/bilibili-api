@@ -61,6 +61,8 @@ from bilibili_api import video
   - [async def operate\_danmaku()](#async-def-operate\_danmaku)
   - [async def pay\_coin()](#async-def-pay\_coin)
   - [async def recall\_danmaku()](#async-def-recall\_danmaku)
+  - [async def report\_start\_watching()](#async-def-report\_start\_watching)
+  - [async def report\_watch\_history()](#async-def-report\_watch\_history)
   - [async def send\_danmaku()](#async-def-send\_danmaku)
   - [def set\_aid()](#def-set\_aid)
   - [def set\_bvid()](#def-set\_bvid)
@@ -406,6 +408,7 @@ page_index 和 cid 至少提供其中一个，其中 cid 优先级最高
 | - | - | - |
 | `page_index` | `int \| None, optional` | 分 P 号，从 0 开始。Defaults to None |
 | `cid` | `int \| None, optional` | 分 P 的 ID。Defaults to None |
+| `html5` | `bool, optional` | 是否选择移动端 HTML5 播放流（仅支持 MP4 格式）此时获得的媒体流访问无需鉴权。 |
 
 **Returns:** `dict`:  调用 API 返回的结果。
 
@@ -754,6 +757,36 @@ page_index 和 cid 至少提供其中一个，其中 cid 优先级最高
 | `page_index` | `int \| None, optional` | 分 P 号 |
 | `dmid` | `int` | 弹幕 id |
 | `cid` | `int \| None, optional` | 分 P 编码 |
+
+**Returns:** `dict`:  调用 API 返回的结果
+
+
+
+
+### async def report_start_watching()
+
+上报开始观看
+该接口亦被用于计算播放量, 播放量更新不是实时的
+该接口使用似乎存在 200 播放限制, 请勿滥用!
+
+| name | type | description |
+| - | - | - |
+| `page_index` | `int \| None` | 分 P 序号 |
+
+**Returns:** `dict`:  调用 API 返回的结果
+
+
+
+
+### async def report_watch_history()
+
+上报观看历史
+
+| name | type | description |
+| - | - | - |
+| `progress` | `int` | 观看进度 (单位 秒) |
+| `page_index` | `int \| None` | 分 P 序号 |
+| `cid` | `int \| None` | 分 P ID,从视频信息中获取 |
 
 **Returns:** `dict`:  调用 API 返回的结果
 
