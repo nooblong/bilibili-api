@@ -10,3 +10,6 @@ yarl
 pycryptodomex
 qrcode_terminal
 PyJWT
+
+sanic
+httpx
