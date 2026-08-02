@@ -462,6 +462,82 @@ class Video:
         """
         return await self.__get_cid_by_index(page_index)
 
+    async def detect_flv(
+        self,
+        page_index: Union[int, None] = None,
+        cid: Union[int, None] = None,
+        html5: bool = False,
+    ):
+        download_url_data = await self.get_download_flv_url(0)
+        # 解析视频下载信息
+        detecter = VideoDownloadURLDataDetecter(data=download_url_data)
+        streams = detecter.detect_best_streams()
+        return streams
+
+    async def detect_dash(
+        self,
+        page_index: Union[int, None] = None,
+        cid: Union[int, None] = None,
+        html5: bool = False,
+    ):
+        download_url_data = await self.get_download_url(0)
+        # 解析视频下载信息
+        detecter = VideoDownloadURLDataDetecter(data=download_url_data)
+        streams = detecter.detect_best_streams()
+        return streams
+
+    async def get_download_flv_url(
+        self,
+        page_index: Union[int, None] = None,
+        cid: Union[int, None] = None,
+        html5: bool = False,
+    ) -> dict:
+        """
+        获取视频下载信息。
+
+        返回结果可以传入 `VideoDownloadURLDataDetecter` 进行解析。
+
+        page_index 和 cid 至少提供其中一个，其中 cid 优先级最高
+
+        Args:
+            page_index (int | None, optional) : 分 P 号，从 0 开始。Defaults to None
+
+            cid        (int | None, optional) : 分 P 的 ID。Defaults to None
+
+            html5      (bool, optional)       : 是否选择移动端 HTML5 播放流（仅支持 MP4 格式）此时获得的媒体流访问无需鉴权。
+
+        Returns:
+            dict: 调用 API 返回的结果。
+        """
+        if cid is None:
+            if page_index is None:
+                raise ArgsException("page_index 和 cid 至少提供一个。")
+
+            cid = await self.__get_cid_by_index(page_index)
+
+        api = API["info"]["playurl"]
+        params = {
+            "qn": "127",
+            "fnval": 0,
+            "fnver": 0,
+            "fourk": 1,
+            "gaia_source": "pre-load",
+            "isGaiaAvoided": "true",
+            "avid": await self.__get_aid(),
+            "bvid": await self.__get_bvid(),
+            "cid": cid,
+            "from_client": "BROWSER",
+            "web_location": 1315873,
+        }
+        if html5:
+            params["platform"] = "html5"
+            params["high_quality"] = "1"
+        return (
+            await Api(**api, credential=self.credential, wbi=True)
+            .update_params(**params)
+            .result
+        )
+
     async def get_download_url(
         self,
         page_index: Union[int, None] = None,
@@ -2599,8 +2675,8 @@ class VideoDownloadURLDataDetecter:
                     return -1
                 return s1.audio_quality.value - s2.audio_quality.value
 
-            video_streams.sort(key=cmp_to_key(video_stream_cmp), reverse=True)
-            audio_streams.sort(key=cmp_to_key(audio_stream_cmp), reverse=True)
+            # video_streams.sort(key=cmp_to_key(video_stream_cmp), reverse=True)
+            # audio_streams.sort(key=cmp_to_key(audio_stream_cmp), reverse=True)
             if len(video_streams) == 0:
                 video_streams = [None]
             if len(audio_streams) == 0:
