@@ -468,7 +468,7 @@ class Video:
         cid: Union[int, None] = None,
         html5: bool = False,
     ):
-        download_url_data = await self.get_download_flv_url(0)
+        download_url_data = await self.get_download_flv_url(page_index=page_index, cid=cid, html5=html5)
         # 解析视频下载信息
         detecter = VideoDownloadURLDataDetecter(data=download_url_data)
         streams = detecter.detect_best_streams()
@@ -480,7 +480,7 @@ class Video:
         cid: Union[int, None] = None,
         html5: bool = False,
     ):
-        download_url_data = await self.get_download_url(0)
+        download_url_data = await self.get_download_url(page_index=page_index, cid=cid, html5=html5)
         # 解析视频下载信息
         detecter = VideoDownloadURLDataDetecter(data=download_url_data)
         streams = detecter.detect_best_streams()
