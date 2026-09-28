@@ -2645,6 +2645,8 @@ class VideoDownloadURLDataDetecter:
             def video_stream_cmp(
                 s1: VideoStreamDownloadURL, s2: VideoStreamDownloadURL
             ):
+                if s1.video_quality is None or s2.video_quality is None:
+                    return 0
                 # 杜比/HDR 优先
                 if s1.video_quality == VideoQuality.DOLBY and (not no_dolby_video):
                     return 1
@@ -2664,6 +2666,8 @@ class VideoDownloadURLDataDetecter:
             def audio_stream_cmp(
                 s1: AudioStreamDownloadURL, s2: AudioStreamDownloadURL
             ):
+                if s1.audio_quality is None or s2.audio_quality is None:
+                    return 0
                 # 杜比/Hi-Res 优先
                 if s1.audio_quality == AudioQuality.DOLBY and (not no_dolby_audio):
                     return 1
